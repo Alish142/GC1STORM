@@ -2,7 +2,7 @@ services:
   - type: web
     name: worldbridgers-regenify-api
     runtime: python
-    rootDir: backend
+    rootDir: worldbridgers-regenify/backend
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
