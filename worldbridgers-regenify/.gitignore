@@ -106,6 +106,16 @@ temp/
 *.sqlite
 *.sqlite3
 
+# Python backend
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.env
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyc.*
+
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 

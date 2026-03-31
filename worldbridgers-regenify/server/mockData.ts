@@ -57,7 +57,7 @@ export interface Document {
 export interface GraphNode {
   id: string;
   label: string;
-  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market";
+  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme";
   region?: string;
   description?: string;
   value?: number;
@@ -165,69 +165,43 @@ export const mockDocuments: Document[] = [
 // ── GRAPH DATA ────────────────────────────────────────────────────────────────
 export const mockGraphData = {
   nodes: [
-    // Issuers
-    { id: "n1", label: "European Investment Bank", type: "Issuer" as const, region: "Europe", description: "Multilateral development bank of the EU", country: "Luxembourg" },
-    { id: "n2", label: "Nordic Green Capital", type: "Issuer" as const, region: "Europe", description: "Nordic sustainable finance institution", country: "Sweden" },
-    { id: "n3", label: "GreenBridge Capital", type: "Issuer" as const, region: "Europe", description: "Impact-focused private equity", country: "Germany" },
-    { id: "n4", label: "Asia Climate Fund", type: "Issuer" as const, region: "Asia", description: "Pan-Asian climate transition fund", country: "Singapore" },
-    { id: "n5", label: "Pacific Regen Trust", type: "Issuer" as const, region: "Pacific", description: "Community regenerative land trust", country: "Australia" },
-    { id: "n6", label: "Iberian Green Corp", type: "Issuer" as const, region: "Europe", description: "Iberian renewable energy corporate", country: "Spain" },
-    { id: "n7", label: "Regenify Infra Corp", type: "Issuer" as const, region: "North America", description: "Regenerative infrastructure developer", country: "Canada" },
-    // Investors
-    { id: "n8", label: "Sovereign Wealth Fund A", type: "Investor" as const, region: "Middle East", description: "GCC sovereign wealth fund", country: "UAE" },
-    { id: "n9", label: "Pension Fund Nordic", type: "Investor" as const, region: "Europe", description: "Scandinavian pension fund", country: "Denmark" },
-    { id: "n10", label: "Impact Capital Asia", type: "Investor" as const, region: "Asia", description: "Asian impact investment firm", country: "Japan" },
-    { id: "n11", label: "Green Endowment UK", type: "Investor" as const, region: "Europe", description: "UK university endowment", country: "United Kingdom" },
-    { id: "n12", label: "US Climate Fund", type: "Investor" as const, region: "North America", description: "US climate-focused fund", country: "United States" },
-    // Opportunities
-    { id: "n13", label: "Solar Farm Portfolio", type: "Opportunity" as const, region: "Europe", description: "Utility-scale solar across Southern Europe", value: 450000000 },
-    { id: "n14", label: "Ocean Restoration", type: "Opportunity" as const, region: "Pacific", description: "Pacific ocean ecosystem restoration", value: 120000000 },
-    { id: "n15", label: "Regenerative Ag", type: "Opportunity" as const, region: "North America", description: "North American regenerative agriculture", value: 280000000 },
-    { id: "n16", label: "Urban Green Infra", type: "Opportunity" as const, region: "Asia", description: "Asian urban green infrastructure", value: 650000000 },
-    { id: "n17", label: "Carbon Sequestration", type: "Opportunity" as const, region: "South America", description: "Amazon carbon sequestration project", value: 190000000 },
-    // Projects
-    { id: "n18", label: "Nordic Wind Project", type: "Project" as const, region: "Europe", description: "Offshore wind development in North Sea", value: 800000000 },
-    { id: "n19", label: "Singapore Green Hub", type: "Project" as const, region: "Asia", description: "Singapore sustainable urban development", value: 350000000 },
-    { id: "n20", label: "Sahel Reforestation", type: "Project" as const, region: "Africa", description: "Large-scale Sahel reforestation initiative", value: 95000000 },
-    // Markets
-    { id: "n21", label: "European Carbon Market", type: "Market" as const, region: "Europe", description: "EU Emissions Trading System" },
-    { id: "n22", label: "Asia-Pacific ESG Market", type: "Market" as const, region: "Asia", description: "APAC ESG investment market" },
-    { id: "n23", label: "WBX Exchange", type: "Market" as const, region: "Global", description: "Worldbridgers Exchange platform" },
+    { id: "theme-1", label: "Entrepreneurship", type: "Theme" as const, region: "Global", description: "Venture lifecycle and entrepreneurship ecosystems." },
+    { id: "theme-2", label: "Social Justice", type: "Theme" as const, region: "Global", description: "Diversity, equity, inclusion, and rights." },
+    { id: "theme-3", label: "Sustainable Development", type: "Theme" as const, region: "Global", description: "SDG pathways and sustainable systems." },
+    { id: "theme-4", label: "Global Governance", type: "Theme" as const, region: "Global", description: "Institutions, rules, and cross-border cooperation." },
+    { id: "theme-5", label: "Civic Participation", type: "Theme" as const, region: "Global", description: "Citizen engagement and participatory governance." },
+    { id: "theme-6", label: "Social Protection", type: "Theme" as const, region: "Global", description: "Welfare, social safety nets, and resilience." },
+    { id: "theme-7", label: "Youth Perspectives", type: "Theme" as const, region: "Global", description: "Youth-led priorities and intergenerational equity." },
+    { id: "theme-8", label: "Future of Work", type: "Theme" as const, region: "Global", description: "Labour transitions, reskilling, and technology." },
+    { id: "issuer-eib", label: "European Investment Bank", type: "Issuer" as const, region: "Europe", country: "Luxembourg", description: "Public development finance institution." },
+    { id: "issuer-ngc", label: "Nordic Green Capital", type: "Issuer" as const, region: "Europe", country: "Sweden", description: "Sustainable finance issuer focused on green instruments." },
+    { id: "issuer-acf", label: "Asia Climate Fund", type: "Issuer" as const, region: "Asia", country: "Singapore", description: "Climate-focused issuer active across APAC markets." },
+    { id: "investor-nordic", label: "Pension Fund Nordic", type: "Investor" as const, region: "Europe", country: "Denmark", description: "Long-horizon institutional investor." },
+    { id: "investor-impact-asia", label: "Impact Capital Asia", type: "Investor" as const, region: "Asia", country: "Japan", description: "Impact-first investment manager." },
+    { id: "investor-us-climate", label: "US Climate Fund", type: "Investor" as const, region: "North America", country: "United States", description: "Climate transition investor." },
   ] as GraphNode[],
 
   edges: [
-    // Issuer → Opportunity
-    { id: "e1", source: "n1", target: "n13", label: "FUNDS", weight: 3 },
-    { id: "e2", source: "n2", target: "n18", label: "DEVELOPS", weight: 4 },
-    { id: "e3", source: "n3", target: "n13", label: "CO_FUNDS", weight: 2 },
-    { id: "e4", source: "n4", target: "n16", label: "FUNDS", weight: 3 },
-    { id: "e5", source: "n5", target: "n14", label: "MANAGES", weight: 4 },
-    { id: "e6", source: "n6", target: "n13", label: "DEVELOPS", weight: 3 },
-    { id: "e7", source: "n7", target: "n15", label: "DEVELOPS", weight: 3 },
-    // Investor → Opportunity
-    { id: "e8", source: "n8", target: "n13", label: "INVESTS_IN", weight: 5 },
-    { id: "e9", source: "n9", target: "n18", label: "INVESTS_IN", weight: 4 },
-    { id: "e10", source: "n10", target: "n16", label: "INVESTS_IN", weight: 3 },
-    { id: "e11", source: "n11", target: "n14", label: "INVESTS_IN", weight: 2 },
-    { id: "e12", source: "n12", target: "n15", label: "INVESTS_IN", weight: 4 },
-    // Opportunity → Project
-    { id: "e13", source: "n13", target: "n18", label: "INCLUDES", weight: 2 },
-    { id: "e14", source: "n16", target: "n19", label: "INCLUDES", weight: 3 },
-    { id: "e15", source: "n17", target: "n20", label: "INCLUDES", weight: 2 },
-    // Issuer → Market
-    { id: "e16", source: "n1", target: "n21", label: "LISTED_ON", weight: 5 },
-    { id: "e17", source: "n2", target: "n23", label: "LISTED_ON", weight: 3 },
-    { id: "e18", source: "n4", target: "n22", label: "LISTED_ON", weight: 4 },
-    { id: "e19", source: "n6", target: "n21", label: "LISTED_ON", weight: 3 },
-    { id: "e20", source: "n7", target: "n23", label: "LISTED_ON", weight: 2 },
-    // Investor → Market
-    { id: "e21", source: "n9", target: "n21", label: "PARTICIPATES_IN", weight: 4 },
-    { id: "e22", source: "n10", target: "n22", label: "PARTICIPATES_IN", weight: 3 },
-    { id: "e23", source: "n12", target: "n23", label: "PARTICIPATES_IN", weight: 3 },
-    // Cross relationships
-    { id: "e24", source: "n1", target: "n2", label: "PARTNERS_WITH", weight: 2 },
-    { id: "e25", source: "n3", target: "n6", label: "PARTNERS_WITH", weight: 2 },
-    { id: "e26", source: "n8", target: "n9", label: "CO_INVESTS", weight: 3 },
-    { id: "e27", source: "n21", target: "n23", label: "CONNECTED_TO", weight: 2 },
+    { id: "te1", source: "theme-1", target: "theme-8", label: "INFLUENCES", weight: 3 },
+    { id: "te2", source: "theme-1", target: "theme-3", label: "SUPPORTS", weight: 2 },
+    { id: "te3", source: "theme-2", target: "theme-6", label: "SHAPES", weight: 3 },
+    { id: "te4", source: "theme-2", target: "theme-5", label: "DRIVES", weight: 2 },
+    { id: "te5", source: "theme-3", target: "theme-4", label: "COORDINATES_WITH", weight: 3 },
+    { id: "te6", source: "theme-3", target: "theme-8", label: "TRANSITIONS", weight: 2 },
+    { id: "te7", source: "theme-4", target: "theme-5", label: "ENABLES", weight: 2 },
+    { id: "te8", source: "theme-7", target: "theme-8", label: "REIMAGINES", weight: 3 },
+    { id: "te9", source: "theme-7", target: "theme-5", label: "AMPLIFIES", weight: 2 },
+    { id: "te10", source: "theme-6", target: "theme-8", label: "PROTECTS_DURING", weight: 2 },
+    { id: "map1", source: "theme-1", target: "issuer-ngc", label: "RELATED_ISSUER", weight: 2 },
+    { id: "map2", source: "theme-3", target: "issuer-eib", label: "RELATED_ISSUER", weight: 2 },
+    { id: "map3", source: "theme-3", target: "issuer-acf", label: "RELATED_ISSUER", weight: 2 },
+    { id: "map4", source: "theme-8", target: "issuer-ngc", label: "RELATED_ISSUER", weight: 2 },
+    { id: "map5", source: "theme-1", target: "investor-impact-asia", label: "RELATED_INVESTOR", weight: 2 },
+    { id: "map6", source: "theme-8", target: "investor-us-climate", label: "RELATED_INVESTOR", weight: 2 },
+    { id: "map7", source: "theme-2", target: "investor-nordic", label: "RELATED_INVESTOR", weight: 2 },
+    { id: "map8", source: "theme-3", target: "investor-us-climate", label: "RELATED_INVESTOR", weight: 2 },
+    { id: "rel1", source: "investor-impact-asia", target: "issuer-acf", label: "INVESTS_IN", weight: 3 },
+    { id: "rel2", source: "investor-us-climate", target: "issuer-eib", label: "INVESTS_IN", weight: 3 },
+    { id: "rel3", source: "investor-nordic", target: "issuer-ngc", label: "INVESTS_IN", weight: 3 },
   ] as GraphEdge[],
 };

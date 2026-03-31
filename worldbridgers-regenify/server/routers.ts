@@ -14,17 +14,20 @@ const DEMO_OPEN_ID = "demo-regenify-user-9999";
 
 async function createDemoToken(email: string) {
   // Upsert the demo user so authenticateRequest can find them in DB
-  await upsertUser({
-    openId: DEMO_OPEN_ID,
-    name: "Demo User",
-    email,
-    loginMethod: "demo",
-    lastSignedIn: new Date(),
-  });
+  if (ENV.databaseUrl) {
+    await upsertUser({
+      openId: DEMO_OPEN_ID,
+      name: "Demo User",
+      email,
+      loginMethod: "demo",
+      lastSignedIn: new Date(),
+    });
+  }
   // Create a proper session token the SDK can verify
+  // Use a stable local fallback when VITE_APP_ID is not configured.
   return sdk.signSession({
     openId: DEMO_OPEN_ID,
-    appId: ENV.appId,
+    appId: ENV.appId || "local-dev-app",
     name: "Demo User",
   });
 }

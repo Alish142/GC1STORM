@@ -1,31 +1,41 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Search, ZoomIn, ZoomOut, Maximize2, X, Network,
-  Building2, Users, Lightbulb, Layers, BarChart3,
-  Globe2, Info, Filter, RefreshCw, Loader2,
+  Building2,
+  Filter,
+  Globe2,
+  Info,
+  Layers,
+  Lightbulb,
+  Loader2,
+  Maximize2,
+  Network,
+  RefreshCw,
+  Search,
+  Users,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 interface GraphNode {
   id: string;
   label: string;
-  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market";
+  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme";
   region?: string;
   description?: string;
   value?: number;
   country?: string;
-  // Layout
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  fx?: number;
-  fy?: number;
+  angle?: number;
+  ring?: 0 | 1 | 2;
+  targetX?: number;
+  targetY?: number;
 }
 
 interface GraphEdge {
@@ -36,131 +46,207 @@ interface GraphEdge {
   weight?: number;
 }
 
-// ── Node config ───────────────────────────────────────────────────────────────
-const NODE_CONFIG: Record<string, { color: string; bg: string; icon: React.ElementType; label: string }> = {
-  Issuer:      { color: "#22c55e", bg: "rgba(34,197,94,0.15)",   icon: Building2,  label: "Issuers" },
-  Investor:    { color: "#3b82f6", bg: "rgba(59,130,246,0.15)",  icon: Users,      label: "Investors" },
-  Opportunity: { color: "#f59e0b", bg: "rgba(245,158,11,0.15)",  icon: Lightbulb,  label: "Opportunities" },
-  Project:     { color: "#a855f7", bg: "rgba(168,85,247,0.15)",  icon: Layers,     label: "Projects" },
-  Market:      { color: "#06b6d4", bg: "rgba(6,182,212,0.15)",   icon: BarChart3,  label: "Markets" },
+const NODE_CONFIG: Record<string, { color: string; icon: React.ElementType; label: string }> = {
+  Issuer: { color: "#22c55e", icon: Building2, label: "Issuers" },
+  Investor: { color: "#3b82f6", icon: Users, label: "Investors" },
+  Opportunity: { color: "#f59e0b", icon: Lightbulb, label: "Opportunities" },
+  Project: { color: "#f97316", icon: Layers, label: "Projects" },
+  Market: { color: "#06b6d4", icon: Globe2, label: "Markets" },
+  Theme: { color: "#111827", icon: Network, label: "Themes" },
 };
 
-const FILTER_TYPES = ["Issuer", "Investor", "Opportunity", "Project", "Market"];
-const FILTER_REGIONS = ["Europe", "Asia", "Pacific", "North America", "South America", "Africa", "Middle East", "Global"];
+const FILTER_TYPES = ["Theme", "Issuer", "Investor", "Opportunity", "Project", "Market"];
+const FILTER_REGIONS = [
+  "Europe",
+  "Asia",
+  "Pacific",
+  "North America",
+  "South America",
+  "Africa",
+  "Middle East",
+  "Global",
+];
 
-// ── Force-directed layout ─────────────────────────────────────────────────────
-function applyForceLayout(nodes: GraphNode[], edges: GraphEdge[], width: number, height: number) {
-  const cx = width / 2;
-  const cy = height / 2;
-  const k = Math.sqrt((width * height) / nodes.length) * 0.8;
+function drawHexagon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
 
-  for (let iter = 0; iter < 80; iter++) {
-    // Repulsion
-    for (let i = 0; i < nodes.length; i++) {
-      nodes[i].vx = 0;
-      nodes[i].vy = 0;
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue;
-        const dx = nodes[i].x - nodes[j].x;
-        const dy = nodes[i].y - nodes[j].y;
-        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
-        const force = (k * k) / dist;
-        nodes[i].vx += (dx / dist) * force * 0.8;
-        nodes[i].vy += (dy / dist) * force * 0.8;
+function drawTextInsideHexagon(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  cy: number,
+  radius: number,
+) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return;
+
+  const maxTextWidth = radius * 1.45;
+  const maxLines = 3;
+  let fontSize = 15;
+  let lines: string[] = [];
+
+  const buildLines = (size: number) => {
+    ctx.font = `700 ${size}px Inter, sans-serif`;
+    const words = normalized.split(" ");
+    const result: string[] = [];
+    let current = "";
+
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width <= maxTextWidth) {
+        current = test;
+      } else {
+        if (current) result.push(current);
+        current = word;
       }
     }
-    // Attraction
-    for (const edge of edges) {
-      const src = nodes.find((n) => n.id === edge.source);
-      const tgt = nodes.find((n) => n.id === edge.target);
-      if (!src || !tgt) continue;
-      const dx = tgt.x - src.x;
-      const dy = tgt.y - src.y;
-      const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
-      const force = (dist * dist) / k;
-      const fx = (dx / dist) * force * 0.3;
-      const fy = (dy / dist) * force * 0.3;
-      src.vx += fx;
-      src.vy += fy;
-      tgt.vx -= fx;
-      tgt.vy -= fy;
-    }
-    // Gravity to center
-    for (const n of nodes) {
-      n.vx += (cx - n.x) * 0.01;
-      n.vy += (cy - n.y) * 0.01;
-    }
-    // Apply
-    const cooling = 1 - iter / 80;
-    for (const n of nodes) {
-      n.x += n.vx * cooling * 0.5;
-      n.y += n.vy * cooling * 0.5;
-      n.x = Math.max(60, Math.min(width - 60, n.x));
-      n.y = Math.max(60, Math.min(height - 60, n.y));
-    }
+    if (current) result.push(current);
+    return result;
+  };
+
+  for (let i = 0; i < 6; i++) {
+    lines = buildLines(fontSize);
+    const lineHeight = fontSize * 1.1;
+    const totalHeight = lines.length * lineHeight;
+    const fitsHeight = totalHeight <= radius * 1.35;
+    const fitsLines = lines.length <= maxLines;
+    const fitsWidth = lines.every((line) => ctx.measureText(line).width <= maxTextWidth);
+    if (fitsHeight && fitsLines && fitsWidth) break;
+    fontSize -= 1;
+  }
+
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    const last = lines[maxLines - 1] ?? "";
+    lines[maxLines - 1] = last.length > 2 ? `${last.slice(0, Math.max(0, last.length - 2))}..` : `${last}..`;
+  }
+
+  const lineHeight = fontSize * 1.1;
+  const totalHeight = lines.length * lineHeight;
+  let y = cy - totalHeight / 2 + lineHeight * 0.85;
+  ctx.fillStyle = "white";
+  ctx.font = `700 ${fontSize}px Inter, sans-serif`;
+  ctx.textAlign = "center";
+
+  for (const line of lines) {
+    ctx.fillText(line, cx, y);
+    y += lineHeight;
   }
 }
 
-// ── Node Detail Panel ─────────────────────────────────────────────────────────
+function chooseCenterNodeId(nodes: GraphNode[]) {
+  const byLabel = nodes.find((n) => /entrepreneur|regenify|exchange/i.test(n.label));
+  return (byLabel ?? nodes[0])?.id ?? "";
+}
+
+function buildRadialLayout(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  width: number,
+  height: number,
+  centerId?: string,
+): GraphNode[] {
+  if (nodes.length === 0) return [];
+  const fallbackCenterId = chooseCenterNodeId(nodes);
+  const center =
+    nodes.find((n) => n.id === centerId) ??
+    nodes.find((n) => n.id === fallbackCenterId) ??
+    nodes[0];
+  const others = nodes.filter((n) => n.id !== center.id);
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const innerR = Math.min(width, height) * 0.2;
+  const outerR = Math.min(width, height) * 0.36;
+
+  const connectedToCenter = new Set(
+    edges
+      .filter((e) => e.source === center.id || e.target === center.id)
+      .map((e) => (e.source === center.id ? e.target : e.source)),
+  );
+
+  const innerNodes = others.filter((n) => connectedToCenter.has(n.id));
+  const outerNodes = others.filter((n) => !connectedToCenter.has(n.id));
+
+  const place = (list: GraphNode[], radius: number, ring: 1 | 2) =>
+    list.map((node, i) => {
+      const angle = (Math.PI * 2 * i) / Math.max(list.length, 1) - Math.PI / 2;
+      return {
+        ...node,
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius,
+        angle,
+        ring,
+      };
+    });
+
+  return [
+    { ...center, x: cx, y: cy, angle: 0, ring: 0 },
+    ...place(innerNodes, innerR, 1),
+    ...place(outerNodes, outerR, 2),
+  ];
+}
+
 function NodeDetailPanel({ node, onClose }: { node: GraphNode; onClose: () => void }) {
   const cfg = NODE_CONFIG[node.type];
   const Icon = cfg.icon;
-
   return (
-    <div className="absolute top-4 right-4 w-72 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-2xl overflow-hidden animate-slide-in-right">
-      {/* Header */}
-      <div className="flex items-start justify-between p-4 border-b border-slate-700/50">
+    <div className="absolute top-4 right-4 w-72 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+      <div className="flex items-start justify-between p-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: cfg.bg }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100">
             <Icon className="w-5 h-5" style={{ color: cfg.color }} />
           </div>
           <div>
-            <div className="text-sm font-semibold text-white leading-tight">{node.label}</div>
-            <div className="text-xs mt-0.5" style={{ color: cfg.color }}>{node.type}</div>
+            <div className="text-sm font-semibold text-slate-900 leading-tight">{node.label}</div>
+            <div className="text-xs mt-0.5" style={{ color: cfg.color }}>
+              {node.type}
+            </div>
           </div>
         </div>
-        <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors">
+        <button
+          onClick={onClose}
+          className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
-
-      {/* Details */}
       <div className="p-4 space-y-3">
-        {node.description && (
-          <p className="text-xs text-slate-400 leading-relaxed">{node.description}</p>
+        {node.description && <p className="text-xs text-slate-600 leading-relaxed">{node.description}</p>}
+        {node.region && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500">Region</span>
+            <span className="text-slate-900">{node.region}</span>
+          </div>
         )}
-
-        <div className="space-y-2">
-          {node.region && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Region</span>
-              <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                <Globe2 className="w-3 h-3" />
-                {node.region}
-              </div>
-            </div>
-          )}
-          {node.country && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Country</span>
-              <span className="text-xs text-slate-300">{node.country}</span>
-            </div>
-          )}
-          {node.value !== undefined && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Value</span>
-              <span className="text-xs text-slate-300 font-semibold">
-                USD {(node.value / 1_000_000).toFixed(0)}M
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="pt-2 border-t border-slate-700/50">
-          <Badge
-            className="text-xs font-medium border-0"
-            style={{ backgroundColor: cfg.bg, color: cfg.color }}
-          >
+        {node.country && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500">Country</span>
+            <span className="text-slate-900">{node.country}</span>
+          </div>
+        )}
+        {node.value !== undefined && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500">Value</span>
+            <span className="text-slate-900 font-semibold">USD {(node.value / 1_000_000).toFixed(0)}M</span>
+          </div>
+        )}
+        <div className="pt-2 border-t border-slate-200">
+          <Badge className="text-xs font-medium border-0 text-white" style={{ backgroundColor: cfg.color }}>
             {node.type}
           </Badge>
         </div>
@@ -169,25 +255,22 @@ function NodeDetailPanel({ node, onClose }: { node: GraphNode; onClose: () => vo
   );
 }
 
-// ── Main Graph View ───────────────────────────────────────────────────────────
 export default function GraphView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const animRef = useRef<number>(0);
   const nodesRef = useRef<GraphNode[]>([]);
   const edgesRef = useRef<GraphEdge[]>([]);
   const transformRef = useRef({ scale: 1, tx: 0, ty: 0 });
+  const hoverRef = useRef<string | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
-  const dragNodeRef = useRef<GraphNode | null>(null);
-  const hoveredNodeRef = useRef<string | null>(null);
 
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [activeCenterId, setActiveCenterId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [filterRegions, setFilterRegions] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [isLayoutReady, setIsLayoutReady] = useState(false);
 
   const { data, isLoading, refetch } = trpc.graph.data.useQuery({
     filterTypes: filterTypes.length ? filterTypes : undefined,
@@ -195,29 +278,40 @@ export default function GraphView() {
     search: search || undefined,
   });
 
-  // Initialize layout when data arrives
+  const hasData = useMemo(() => Boolean(data && data.nodes.length), [data]);
+
   useEffect(() => {
     if (!data || !containerRef.current) return;
-    const w = containerRef.current.offsetWidth;
-    const h = containerRef.current.offsetHeight;
+    const width = containerRef.current.offsetWidth;
+    const height = containerRef.current.offsetHeight;
+    const incoming = data.nodes.map((n) => ({ ...n, x: 0, y: 0 })) as GraphNode[];
+    const centerId =
+      activeCenterId && incoming.some((n) => n.id === activeCenterId)
+        ? activeCenterId
+        : chooseCenterNodeId(incoming);
 
-    const nodes: GraphNode[] = data.nodes.map((n) => ({
-      ...n,
-      x: w / 2 + (Math.random() - 0.5) * w * 0.6,
-      y: h / 2 + (Math.random() - 0.5) * h * 0.6,
-      vx: 0,
-      vy: 0,
-    }));
-
-    applyForceLayout(nodes, data.edges as GraphEdge[], w, h);
-    nodesRef.current = nodes;
+    const laidOut = buildRadialLayout(
+      incoming,
+      data.edges as GraphEdge[],
+      width,
+      height,
+      centerId,
+    );
+    const prevById = new Map(nodesRef.current.map((n) => [n.id, n]));
+    nodesRef.current = laidOut.map((n) => {
+      const prev = prevById.get(n.id);
+      return {
+        ...n,
+        x: prev?.x ?? n.x,
+        y: prev?.y ?? n.y,
+        targetX: n.x,
+        targetY: n.y,
+      };
+    });
     edgesRef.current = data.edges as GraphEdge[];
-    setIsLayoutReady(true);
-  }, [data]);
+  }, [activeCenterId, data]);
 
-  // Canvas draw loop
   useEffect(() => {
-    if (!isLayoutReady) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -225,20 +319,40 @@ export default function GraphView() {
 
     const resize = () => {
       if (!containerRef.current) return;
-      canvas.width = containerRef.current.offsetWidth * window.devicePixelRatio;
-      canvas.height = containerRef.current.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = containerRef.current.offsetWidth * ratio;
+      canvas.height = containerRef.current.offsetHeight * ratio;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+      if (nodesRef.current.length > 0) {
+        const laidOut = buildRadialLayout(
+          nodesRef.current.map((n) => ({ ...n, x: 0, y: 0 })),
+          edgesRef.current,
+          containerRef.current.offsetWidth,
+          containerRef.current.offsetHeight,
+          activeCenterId ?? undefined,
+        );
+        const prevById = new Map(nodesRef.current.map((n) => [n.id, n]));
+        nodesRef.current = laidOut.map((n) => {
+          const prev = prevById.get(n.id);
+          return {
+            ...n,
+            x: prev?.x ?? n.x,
+            y: prev?.y ?? n.y,
+            targetX: n.x,
+            targetY: n.y,
+          };
+        });
+      }
     };
+
     resize();
     window.addEventListener("resize", resize);
 
-    const W = () => canvas.offsetWidth;
-    const H = () => canvas.offsetHeight;
-
-    let frame = 0;
+    let raf = 0;
     const draw = () => {
-      const w = W();
-      const h = H();
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
       ctx.clearRect(0, 0, w, h);
 
       const { scale, tx, ty } = transformRef.current;
@@ -249,100 +363,110 @@ export default function GraphView() {
       const nodes = nodesRef.current;
       const edges = edgesRef.current;
 
-      // Draw edges
+      for (const node of nodes) {
+        if (node.targetX !== undefined) node.x += (node.targetX - node.x) * 0.14;
+        if (node.targetY !== undefined) node.y += (node.targetY - node.y) * 0.14;
+      }
+
+      const center = nodes.find((n) => n.ring === 0);
+      if (center) {
+        const innerR = Math.min(w, h) * 0.2;
+        const outerR = Math.min(w, h) * 0.36;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, innerR, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(24, 46, 100, 0.15)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, outerR, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(24, 46, 100, 0.25)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        const grad = ctx.createRadialGradient(center.x, center.y, 10, center.x, center.y, 70);
+        grad.addColorStop(0, "#f59e0b");
+        grad.addColorStop(0.6, "#f97316");
+        grad.addColorStop(1, "#1e3a8a");
+        drawHexagon(ctx, center.x, center.y, 64);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(30, 58, 138, 0.8)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        if (selectedNode && center.id === selectedNode.id) {
+          drawTextInsideHexagon(ctx, center.label, center.x, center.y, 64);
+        }
+
+      }
+
       for (const edge of edges) {
         const src = nodes.find((n) => n.id === edge.source);
         const tgt = nodes.find((n) => n.id === edge.target);
         if (!src || !tgt) continue;
-
-        const isHighlighted =
-          selectedNode?.id === edge.source || selectedNode?.id === edge.target;
+        const highlighted =
+          selectedNode?.id === src.id ||
+          selectedNode?.id === tgt.id ||
+          hoverRef.current === src.id ||
+          hoverRef.current === tgt.id;
+        const mx = (src.x + tgt.x) / 2;
+        const my = (src.y + tgt.y) / 2;
+        const curvePull = center ? 0.15 : 0;
+        const cx = center ? mx + (center.x - mx) * curvePull : mx;
+        const cy = center ? my + (center.y - my) * curvePull : my;
 
         ctx.beginPath();
         ctx.moveTo(src.x, src.y);
-        ctx.lineTo(tgt.x, tgt.y);
-        ctx.strokeStyle = isHighlighted
-          ? "rgba(100,200,160,0.6)"
-          : "rgba(100,150,200,0.15)";
-        ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
+        ctx.quadraticCurveTo(cx, cy, tgt.x, tgt.y);
+        ctx.strokeStyle = highlighted ? "rgba(31, 85, 206, 0.45)" : "rgba(14, 30, 60, 0.12)";
+        ctx.lineWidth = highlighted ? 1.5 : 1;
         ctx.stroke();
-
-        // Edge label on hover
-        if (isHighlighted) {
-          const mx = (src.x + tgt.x) / 2;
-          const my = (src.y + tgt.y) / 2;
-          ctx.fillStyle = "rgba(100,200,160,0.8)";
-          ctx.font = "9px Inter, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(edge.label, mx, my - 4);
-        }
       }
 
-      // Draw nodes
       for (const node of nodes) {
+        if (node.ring === 0) continue;
         const cfg = NODE_CONFIG[node.type];
         const isSelected = selectedNode?.id === node.id;
-        const isHovered = hoveredNodeRef.current === node.id;
-        const isConnected = selectedNode
-          ? edges.some(
-              (e) =>
-                (e.source === selectedNode.id && e.target === node.id) ||
-                (e.target === selectedNode.id && e.source === node.id)
-            )
-          : false;
+        const isHovered = hoverRef.current === node.id;
+        const r = isSelected ? 13 : 10;
 
-        const r = isSelected ? 14 : isConnected ? 11 : 8;
-        const alpha = selectedNode && !isSelected && !isConnected ? 0.3 : 1;
-
-        ctx.globalAlpha = alpha;
-
-        // Glow
-        const grd = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r + 12);
-        grd.addColorStop(0, cfg.color.replace(")", ", 0.25)").replace("rgb", "rgba"));
-        grd.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, r + 12, 0, Math.PI * 2);
-        ctx.fillStyle = grd;
-        ctx.fill();
-
-        // Ring for selected
-        if (isSelected) {
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, r + 4, 0, Math.PI * 2);
-          ctx.strokeStyle = cfg.color;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
-        // Core circle
         ctx.beginPath();
         ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = cfg.color;
+        ctx.fillStyle = "white";
         ctx.fill();
+        ctx.strokeStyle = cfg.color;
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.stroke();
 
-        // Label
-        ctx.fillStyle = isSelected || isHovered ? "rgba(255,255,255,0.95)" : "rgba(200,220,240,0.75)";
-        ctx.font = `${isSelected ? "bold " : ""}10px Inter, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.fillText(node.label, node.x, node.y + r + 14);
+        const labelOffset = node.ring === 2 ? 22 : 18;
+        ctx.fillStyle = isSelected || isHovered ? "rgba(17, 24, 39, 0.95)" : "rgba(30, 41, 59, 0.75)";
+        ctx.font = `${isSelected ? "700" : "500"} 11px Inter, sans-serif`;
 
-        ctx.globalAlpha = 1;
+        if (node.ring === 2 && node.angle !== undefined) {
+          const lx = node.x + Math.cos(node.angle) * labelOffset;
+          const ly = node.y + Math.sin(node.angle) * labelOffset;
+          const rightSide = Math.cos(node.angle) >= 0;
+          ctx.textAlign = rightSide ? "left" : "right";
+          ctx.fillText(node.label, lx, ly + 4);
+        } else {
+          ctx.textAlign = "center";
+          ctx.fillText(node.label, node.x, node.y + labelOffset);
+        }
       }
 
       ctx.restore();
-      frame++;
-      animRef.current = requestAnimationFrame(draw);
+      raf = requestAnimationFrame(draw);
     };
 
     draw();
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animRef.current);
     };
-  }, [isLayoutReady, selectedNode]);
+  }, [activeCenterId, selectedNode]);
 
-  // Mouse interactions
-  const getNodeAt = useCallback((clientX: number, clientY: number) => {
+  const findNodeAt = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -351,62 +475,57 @@ export default function GraphView() {
     const y = (clientY - rect.top - ty) / scale;
 
     for (const node of nodesRef.current) {
-      const dx = node.x - x;
-      const dy = node.y - y;
-      if (Math.sqrt(dx * dx + dy * dy) < 18) return node;
+      const radius = node.ring === 0 ? 60 : 13;
+      const dx = x - node.x;
+      const dy = y - node.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= radius) return node;
     }
     return null;
-  }, []);
+  };
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const node = getNodeAt(e.clientX, e.clientY);
-    if (node) {
-      dragNodeRef.current = node;
-    } else {
+  const onMouseDown = (e: React.MouseEvent) => {
+    const node = findNodeAt(e.clientX, e.clientY);
+    if (!node) {
       isDraggingRef.current = true;
-      dragStartRef.current = { x: e.clientX - transformRef.current.tx, y: e.clientY - transformRef.current.ty };
+      dragStartRef.current = {
+        x: e.clientX - transformRef.current.tx,
+        y: e.clientY - transformRef.current.ty,
+      };
     }
-  }, [getNodeAt]);
+  };
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const node = getNodeAt(e.clientX, e.clientY);
-    hoveredNodeRef.current = node?.id ?? null;
+  const onMouseMove = (e: React.MouseEvent) => {
+    const node = findNodeAt(e.clientX, e.clientY);
+    hoverRef.current = node?.id ?? null;
     if (canvasRef.current) {
       canvasRef.current.style.cursor = node ? "pointer" : isDraggingRef.current ? "grabbing" : "grab";
     }
+    if (!isDraggingRef.current) return;
+    transformRef.current.tx = e.clientX - dragStartRef.current.x;
+    transformRef.current.ty = e.clientY - dragStartRef.current.y;
+  };
 
-    if (dragNodeRef.current) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const { scale, tx, ty } = transformRef.current;
-      dragNodeRef.current.x = (e.clientX - rect.left - tx) / scale;
-      dragNodeRef.current.y = (e.clientY - rect.top - ty) / scale;
-    } else if (isDraggingRef.current) {
-      transformRef.current.tx = e.clientX - dragStartRef.current.x;
-      transformRef.current.ty = e.clientY - dragStartRef.current.y;
-    }
-  }, [getNodeAt]);
-
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (dragNodeRef.current) {
-      dragNodeRef.current = null;
-    } else if (!isDraggingRef.current) {
-      const node = getNodeAt(e.clientX, e.clientY);
-      setSelectedNode(node ? (node.id === selectedNode?.id ? null : node) : null);
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current) {
+      const node = findNodeAt(e.clientX, e.clientY);
+      setSelectedNode(node ?? null);
+      if (node) {
+        setActiveCenterId(node.id);
+      } else if (data?.nodes?.length) {
+        setActiveCenterId(chooseCenterNodeId(data.nodes as GraphNode[]));
+      }
     }
     isDraggingRef.current = false;
-  }, [getNodeAt, selectedNode]);
+  };
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newScale = Math.max(0.3, Math.min(3, transformRef.current.scale * factor));
-    transformRef.current.scale = newScale;
-  }, []);
+    const factor = e.deltaY < 0 ? 1.1 : 0.92;
+    transformRef.current.scale = Math.max(0.5, Math.min(2.4, transformRef.current.scale * factor));
+  };
 
   const zoom = (factor: number) => {
-    transformRef.current.scale = Math.max(0.3, Math.min(3, transformRef.current.scale * factor));
+    transformRef.current.scale = Math.max(0.5, Math.min(2.4, transformRef.current.scale * factor));
   };
 
   const resetView = () => {
@@ -414,53 +533,47 @@ export default function GraphView() {
   };
 
   const toggleType = (t: string) =>
-    setFilterTypes((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
-
+    setFilterTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   const toggleRegion = (r: string) =>
-    setFilterRegions((prev) => prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]);
+    setFilterRegions((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardHeader />
-
-      <div className="flex-1 flex flex-col bg-slate-900 relative overflow-hidden">
-        {/* Top toolbar */}
+      <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50">
         <div className="absolute top-4 left-4 right-4 z-20 flex items-center gap-3">
-          {/* Title */}
-          <div className="flex items-center gap-2 bg-slate-800/90 backdrop-blur-md rounded-xl px-4 py-2.5 border border-slate-700/50">
-            <Network className="w-4 h-4 text-green-400" />
-            <span className="text-sm font-semibold text-white">Relationship Graph</span>
+          <div className="flex items-center gap-2 bg-white/90 backdrop-blur-md rounded-xl px-4 py-2.5 border border-slate-200">
+            <Network className="w-4 h-4 text-blue-700" />
+            <span className="text-sm font-semibold text-slate-900">Ecosystem Ring View</span>
             {data && (
-              <span className="text-xs text-slate-400 ml-1">
+              <span className="text-xs text-slate-500 ml-1">
                 {data.nodes.length} nodes · {data.edges.length} edges
               </span>
             )}
           </div>
 
-          {/* Search */}
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <Input
               placeholder="Search nodes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-9 bg-slate-800/90 border-slate-700/50 text-white placeholder:text-slate-500 text-sm backdrop-blur-md focus-visible:ring-green-500/30"
+              className="pl-8 h-9 bg-white/90 border-slate-200 text-slate-900 placeholder:text-slate-400"
             />
           </div>
 
-          {/* Filter toggle */}
           <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
+            onClick={() => setShowFilters((s) => !s)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border ${
               showFilters || filterTypes.length || filterRegions.length
-                ? "bg-green-500/20 border-green-500/40 text-green-400"
-                : "bg-slate-800/90 border-slate-700/50 text-slate-300 hover:text-white"
-            } backdrop-blur-md`}
+                ? "bg-blue-100 border-blue-300 text-blue-700"
+                : "bg-white/90 border-slate-200 text-slate-700"
+            }`}
           >
             <Filter className="w-3.5 h-3.5" />
             Filters
             {(filterTypes.length + filterRegions.length) > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-green-500 text-white text-[10px] font-bold leading-none">
+              <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
                 {filterTypes.length + filterRegions.length}
               </span>
             )}
@@ -468,71 +581,76 @@ export default function GraphView() {
 
           <button
             onClick={() => refetch()}
-            className="p-2 rounded-xl bg-slate-800/90 border border-slate-700/50 text-slate-400 hover:text-white transition-colors backdrop-blur-md"
+            className="p-2 rounded-xl bg-white/90 border border-slate-200 text-slate-600 hover:text-slate-900"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Filter panel */}
         {showFilters && (
-          <div className="absolute top-16 left-4 z-20 w-72 bg-slate-800/95 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-2xl p-4 animate-fade-in">
+          <div className="absolute top-16 left-4 z-20 w-80 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-white">Filter Graph</span>
-              <button onClick={() => { setFilterTypes([]); setFilterRegions([]); }} className="text-xs text-slate-400 hover:text-white">Clear all</button>
+              <span className="text-sm font-semibold text-slate-900">Filter Graph</span>
+              <button
+                onClick={() => {
+                  setFilterTypes([]);
+                  setFilterRegions([]);
+                }}
+                className="text-xs text-slate-500 hover:text-slate-900"
+              >
+                Clear all
+              </button>
             </div>
-
             <div className="mb-4">
-              <div className="text-xs font-medium text-slate-400 mb-2">Entity Type</div>
+              <div className="text-xs font-medium text-slate-500 mb-2">Entity Type</div>
               <div className="flex flex-wrap gap-1.5">
                 {FILTER_TYPES.map((t) => {
                   const cfg = NODE_CONFIG[t];
+                  const active = filterTypes.includes(t);
                   return (
                     <button
                       key={t}
                       onClick={() => toggleType(t)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border"
+                      className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
                       style={{
-                        backgroundColor: filterTypes.includes(t) ? cfg.bg : "transparent",
-                        borderColor: filterTypes.includes(t) ? cfg.color : "rgba(100,116,139,0.4)",
-                        color: filterTypes.includes(t) ? cfg.color : "rgba(148,163,184,1)",
+                        color: active ? cfg.color : "#475569",
+                        borderColor: active ? cfg.color : "rgba(148,163,184,0.5)",
+                        backgroundColor: active ? "rgba(241,245,249,0.95)" : "transparent",
                       }}
                     >
-                      <cfg.icon className="w-3 h-3" />
                       {t}
                     </button>
                   );
                 })}
               </div>
             </div>
-
             <div>
-              <div className="text-xs font-medium text-slate-400 mb-2">Region</div>
+              <div className="text-xs font-medium text-slate-500 mb-2">Region</div>
               <div className="flex flex-wrap gap-1.5">
-                {FILTER_REGIONS.map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => toggleRegion(r)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-                      filterRegions.includes(r)
-                        ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
-                        : "border-slate-600/50 text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
+                {FILTER_REGIONS.map((r) => {
+                  const active = filterRegions.includes(r);
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => toggleRegion(r)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        active ? "bg-cyan-100 border-cyan-300 text-cyan-700" : "border-slate-300 text-slate-600"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
 
-        {/* Canvas */}
-        <div ref={containerRef} className="flex-1 relative">
+        <div ref={containerRef} className="absolute inset-0">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="flex flex-col items-center gap-3 text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin text-green-400" />
+              <div className="flex flex-col items-center gap-3 text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                 <span className="text-sm">Loading graph data...</span>
               </div>
             </div>
@@ -541,71 +659,74 @@ export default function GraphView() {
           <canvas
             ref={canvasRef}
             className="w-full h-full"
-            style={{ background: "transparent" }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={() => { isDraggingRef.current = false; dragNodeRef.current = null; }}
-            onWheel={handleWheel}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={() => {
+              isDraggingRef.current = false;
+            }}
+            onWheel={onWheel}
           />
-
-          {/* Background grid */}
-          <div className="absolute inset-0 pointer-events-none opacity-5" style={{
-            backgroundImage: "linear-gradient(rgba(100,200,160,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(100,200,160,0.4) 1px, transparent 1px)",
-            backgroundSize: "40px 40px"
-          }} />
         </div>
 
-        {/* Zoom controls */}
         <div className="absolute bottom-6 left-4 flex flex-col gap-1.5 z-20">
-          <button onClick={() => zoom(1.2)} className="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700/50 text-slate-300 hover:text-white flex items-center justify-center transition-colors backdrop-blur-md">
+          <button
+            onClick={() => zoom(1.15)}
+            className="w-8 h-8 rounded-lg bg-white/90 border border-slate-200 text-slate-700 flex items-center justify-center"
+          >
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button onClick={() => zoom(0.8)} className="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700/50 text-slate-300 hover:text-white flex items-center justify-center transition-colors backdrop-blur-md">
+          <button
+            onClick={() => zoom(0.85)}
+            className="w-8 h-8 rounded-lg bg-white/90 border border-slate-200 text-slate-700 flex items-center justify-center"
+          >
             <ZoomOut className="w-4 h-4" />
           </button>
-          <button onClick={resetView} className="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700/50 text-slate-300 hover:text-white flex items-center justify-center transition-colors backdrop-blur-md">
+          <button
+            onClick={resetView}
+            className="w-8 h-8 rounded-lg bg-white/90 border border-slate-200 text-slate-700 flex items-center justify-center"
+          >
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Legend */}
-        <div className="absolute bottom-6 right-4 z-20 bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700/50 p-3">
-          <div className="text-[10px] font-semibold text-slate-400 mb-2 uppercase tracking-wider">Legend</div>
+        <div className="absolute bottom-6 right-4 z-20 bg-white/95 rounded-xl border border-slate-200 p-3">
+          <div className="text-[10px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Legend</div>
           <div className="space-y-1.5">
             {Object.entries(NODE_CONFIG).map(([type, cfg]) => {
               const Icon = cfg.icon;
               return (
                 <div key={type} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
+                  <div className="w-3 h-3 rounded-full border-2" style={{ borderColor: cfg.color }} />
                   <Icon className="w-3 h-3" style={{ color: cfg.color }} />
-                  <span className="text-[11px] text-slate-300">{cfg.label}</span>
+                  <span className="text-[11px] text-slate-700">{cfg.label}</span>
                 </div>
               );
             })}
           </div>
-          <div className="mt-2 pt-2 border-t border-slate-700/50 text-[10px] text-slate-500">
-            Click to select · Drag to pan · Scroll to zoom
+          <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-500 flex items-center gap-1">
+            <Info className="w-3 h-3" />
+            Ring layout for executive storytelling
           </div>
         </div>
 
-        {/* Node detail panel */}
-        {selectedNode && (
-          <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
-        )}
+        {selectedNode && <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />}
 
-        {/* Empty state */}
-        {!isLoading && data?.nodes.length === 0 && (
+        {!isLoading && hasData === false && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="text-center text-slate-400">
+            <div className="text-center text-slate-500">
               <Network className="w-12 h-12 mx-auto mb-3 opacity-40" />
               <p className="text-sm font-medium">No nodes match your filters.</p>
               <p className="text-xs mt-1">Try adjusting your search or filter criteria.</p>
               <Button
                 variant="outline"
                 size="sm"
-                className="mt-4 border-slate-600 text-slate-300 hover:bg-slate-700"
-                onClick={() => { setFilterTypes([]); setFilterRegions([]); setSearch(""); }}
+                className="mt-4 border-slate-300 text-slate-700"
+                onClick={() => {
+                  setFilterTypes([]);
+                  setFilterRegions([]);
+                  setSearch("");
+                }}
               >
                 Clear filters
               </Button>

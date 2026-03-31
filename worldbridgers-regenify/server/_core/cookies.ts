@@ -39,10 +39,15 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+  // Browsers reject SameSite=None cookies unless Secure=true.
+  // Use Lax for local HTTP development so auth cookie can be stored.
+  const sameSite: CookieOptions["sameSite"] = secure ? "none" : "lax";
+
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    sameSite,
+    secure,
   };
 }

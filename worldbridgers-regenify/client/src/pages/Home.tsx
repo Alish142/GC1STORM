@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
-import HeroCanvas from "@/components/HeroCanvas";
 import {
   ArrowRight,
   BarChart3,
@@ -139,14 +138,17 @@ const HOW_IT_WORKS = [
   },
 ];
 
-/* ─── Graph preview nodes (decorative) ──────────────────────────────────────── */
-const PREVIEW_NODES = [
-  { label: "Green Bond Issuer", x: 50, y: 50, color: "#4ade80", size: 14 },
-  { label: "ESG Fund", x: 75, y: 30, color: "#60a5fa", size: 10 },
-  { label: "Carbon Credit", x: 25, y: 30, color: "#fbbf24", size: 10 },
-  { label: "Infrastructure", x: 80, y: 65, color: "#a78bfa", size: 9 },
-  { label: "Renewable Energy", x: 20, y: 68, color: "#4ade80", size: 9 },
-  { label: "Social Bond", x: 55, y: 78, color: "#60a5fa", size: 8 },
+/* ─── Graph preview nodes (circular ring style) ────────────────────────────── */
+const PREVIEW_RING_NODES = [
+  { label: "Entrepreneurship", ring: "inner" as const, angle: -90, color: "#111827", type: "Theme" },
+  { label: "Future of Work", ring: "inner" as const, angle: 30, color: "#111827", type: "Theme" },
+  { label: "Social Justice", ring: "inner" as const, angle: 150, color: "#111827", type: "Theme" },
+  { label: "EIB", ring: "outer" as const, angle: -30, color: "#4ade80", type: "Issuer" },
+  { label: "NGC", ring: "outer" as const, angle: 25, color: "#4ade80", type: "Issuer" },
+  { label: "Impact Asia", ring: "outer" as const, angle: 95, color: "#60a5fa", type: "Investor" },
+  { label: "US Climate", ring: "outer" as const, angle: 160, color: "#60a5fa", type: "Investor" },
+  { label: "Carbon", ring: "outer" as const, angle: 215, color: "#fbbf24", type: "Opportunity" },
+  { label: "APAC Market", ring: "outer" as const, angle: -120, color: "#a78bfa", type: "Markets" },
 ];
 
 export default function Home() {
@@ -158,7 +160,15 @@ export default function Home() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden bg-hero-gradient">
-        <HeroCanvas />
+        {/* Static grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.14] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(88,133,255,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(88,133,255,0.28) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
 
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/20 pointer-events-none" />
@@ -213,7 +223,7 @@ export default function Home() {
                 { label: "SFDR Compliant" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-2 text-white/60 text-sm">
-                  <ShieldCheck className="w-4 h-4 text-green-400" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
                   {item.label}
                 </div>
               ))}
@@ -305,7 +315,7 @@ export default function Home() {
         <div className="container relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold mb-6">
                 <Network className="w-3.5 h-3.5" /> Relationship Intelligence
               </div>
               <h2 className="text-4xl font-bold text-white mb-6">
@@ -327,15 +337,15 @@ export default function Home() {
                   "Real-time relationship updates",
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-slate-300 text-sm">
-                    <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    <div className="w-5 h-5 rounded-full bg-emerald-400/20 flex items-center justify-center shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
                     </div>
                     {item}
                   </div>
                 ))}
               </div>
               <Button
-                className="bg-green-500 hover:bg-green-400 text-slate-900 font-semibold"
+                className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold"
                 onClick={() => navigate("/login")}
               >
                 Explore Graph View
@@ -348,59 +358,57 @@ export default function Home() {
               <div className="aspect-square max-w-md mx-auto relative">
                 <div className="absolute inset-0 rounded-3xl bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
                   <svg viewBox="0 0 400 400" className="w-full h-full">
-                    {/* Edges */}
-                    {[
-                      [200, 200, 300, 120],
-                      [200, 200, 100, 120],
-                      [200, 200, 320, 260],
-                      [200, 200, 80, 270],
-                      [200, 200, 220, 310],
-                      [300, 120, 320, 260],
-                      [100, 120, 80, 270],
-                    ].map(([x1, y1, x2, y2], i) => (
-                      <line
-                        key={i}
-                        x1={x1} y1={y1} x2={x2} y2={y2}
-                        stroke="rgba(100,200,160,0.25)"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                      />
-                    ))}
-                    {/* Nodes */}
-                    {PREVIEW_NODES.map((n, i) => (
-                      <g key={i}>
-                        <circle
-                          cx={n.x * 4}
-                          cy={n.y * 4}
-                          r={n.size + 6}
-                          fill={n.color}
-                          opacity={0.12}
+                    {/* Rings */}
+                    <circle cx={200} cy={200} r={78} fill="none" stroke="rgba(148,163,184,0.22)" strokeWidth="1.5" />
+                    <circle cx={200} cy={200} r={130} fill="none" stroke="rgba(148,163,184,0.30)" strokeWidth="2" />
+
+                    {/* Curved edges from center to all nodes */}
+                    {PREVIEW_RING_NODES.map((n, i) => {
+                      const radius = n.ring === "inner" ? 78 : 130;
+                      const rad = (n.angle * Math.PI) / 180;
+                      const x = 200 + Math.cos(rad) * radius;
+                      const y = 200 + Math.sin(rad) * radius;
+                      const cx = 200 + Math.cos(rad) * (radius * 0.45);
+                      const cy = 200 + Math.sin(rad) * (radius * 0.45);
+                      return (
+                        <path
+                          key={`edge-center-${i}`}
+                          d={`M 200 200 Q ${cx} ${cy} ${x} ${y}`}
+                          stroke="rgba(125,211,252,0.18)"
+                          strokeWidth="1.2"
+                          fill="none"
                         />
-                        <circle
-                          cx={n.x * 4}
-                          cy={n.y * 4}
-                          r={n.size}
-                          fill={n.color}
-                          opacity={0.9}
-                        />
-                        <text
-                          x={n.x * 4}
-                          y={n.y * 4 + n.size + 14}
-                          textAnchor="middle"
-                          fill="rgba(255,255,255,0.6)"
-                          fontSize="9"
-                          fontFamily="Inter, sans-serif"
-                        >
-                          {n.label}
-                        </text>
-                      </g>
-                    ))}
-                    {/* Center node */}
-                    <circle cx={200} cy={200} r={22} fill="rgba(74,222,128,0.15)" />
-                    <circle cx={200} cy={200} r={14} fill="#4ade80" opacity={0.9} />
-                    <text x={200} y={230} textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="10" fontFamily="Inter, sans-serif">
-                      Central Hub
-                    </text>
+                      );
+                    })}
+
+                    {/* Ring nodes */}
+                    {PREVIEW_RING_NODES.map((n, i) => {
+                      const radius = n.ring === "inner" ? 78 : 130;
+                      const rad = (n.angle * Math.PI) / 180;
+                      const x = 200 + Math.cos(rad) * radius;
+                      const y = 200 + Math.sin(rad) * radius;
+                      return (
+                        <g key={`ring-node-${i}`}>
+                          <circle cx={x} cy={y} r={11} fill="rgba(15,23,42,0.9)" />
+                          <circle cx={x} cy={y} r={8.5} fill="rgba(255,255,255,0.95)" stroke={n.color} strokeWidth="2" />
+                        </g>
+                      );
+                    })}
+
+                    {/* Center hexagon node */}
+                    <polygon
+                      points="200,164 231,182 231,218 200,236 169,218 169,182"
+                      fill="url(#centerGrad)"
+                      stroke="rgba(59,130,246,0.75)"
+                      strokeWidth="2.5"
+                    />
+                    <defs>
+                      <radialGradient id="centerGrad" cx="50%" cy="50%" r="60%">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="60%" stopColor="#f97316" />
+                        <stop offset="100%" stopColor="#1e3a8a" />
+                      </radialGradient>
+                    </defs>
                   </svg>
                 </div>
 
@@ -554,7 +562,7 @@ export default function Home() {
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
             <p>© 2026 Worldbridgers Regenify. All rights reserved.</p>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>EU Taxonomy Aligned · SFDR Compliant · ISO 14001</span>
             </div>
           </div>

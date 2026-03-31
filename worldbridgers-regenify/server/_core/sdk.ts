@@ -32,8 +32,8 @@ class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
     console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
     if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
+      console.log(
+        "[OAuth] OAUTH_SERVER_URL is not configured. OAuth routes are disabled in local demo mode."
       );
     }
   }
@@ -155,7 +155,8 @@ class SDKServer {
   }
 
   private getSessionSecret() {
-    const secret = ENV.cookieSecret;
+    // Local development fallback to avoid hard failure when JWT_SECRET is unset.
+    const secret = ENV.cookieSecret || "local-dev-jwt-secret";
     return new TextEncoder().encode(secret);
   }
 
@@ -201,7 +202,6 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
       return null;
     }
 
@@ -269,6 +269,21 @@ class SDKServer {
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
+
+    // Local development fallback: allow session-based auth without DB/OAuth.
+    if (!user && !ENV.databaseUrl) {
+      return {
+        id: 0,
+        openId: session.openId,
+        name: session.name || "Local User",
+        email: null,
+        loginMethod: "session",
+        role: "user",
+        createdAt: signedInAt,
+        updatedAt: signedInAt,
+        lastSignedIn: signedInAt,
+      };
+    }
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
