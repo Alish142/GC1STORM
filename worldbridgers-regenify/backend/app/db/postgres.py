@@ -9,7 +9,16 @@ import app.models  # noqa: F401
 
 settings = get_settings()
 
-engine = create_engine(settings.postgres_dsn, pool_pre_ping=True)
+
+def _normalize_postgres_dsn(dsn: str) -> str:
+    if dsn.startswith("postgres://"):
+        return dsn.replace("postgres://", "postgresql+psycopg://", 1)
+    if dsn.startswith("postgresql://") and "+psycopg" not in dsn:
+        return dsn.replace("postgresql://", "postgresql+psycopg://", 1)
+    return dsn
+
+
+engine = create_engine(_normalize_postgres_dsn(settings.postgres_dsn), pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
@@ -22,4 +31,8 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_postgres() -> None:
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        # Keep API running for demo mode even if SQL DB isn't reachable yet.
+        print(f"[Database] Postgres init skipped: {exc}")
