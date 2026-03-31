@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
 import DataTable, { Column } from "@/components/DataTable";
 import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { backendApi } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
@@ -16,6 +17,11 @@ import { Link } from "wouter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey = "issuers" | "offerings" | "indices" | "documents";
+type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number };
+type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string };
+type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number };
+type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string };
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "issuers", label: "Issuers", icon: Building2 },
@@ -134,6 +140,19 @@ function formatCurrency(amount: number, currency: string) {
   return `${currency} ${amount.toLocaleString()}`;
 }
 
+function buildParams(input: Record<string, string | number | boolean | string[] | undefined>) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    if (value === undefined || value === "") continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => params.append(key, v));
+      continue;
+    }
+    params.set(key, String(value));
+  }
+  return params;
+}
+
 function ChangeCell({ value, suffix = "%" }: { value: number; suffix?: string }) {
   const isPos = value >= 0;
   return (
@@ -147,9 +166,18 @@ function ChangeCell({ value, suffix = "%" }: { value: number; suffix?: string })
 // ── Dashboard Home ────────────────────────────────────────────────────────────
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
-  const issuersQ = trpc.issuers.list.useQuery({ page: 1, pageSize: 3 });
-  const offeringsQ = trpc.offerings.list.useQuery({ page: 1, pageSize: 3 });
-  const indicesQ = trpc.indices.list.useQuery({ page: 1, pageSize: 4 });
+  const issuersQ = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["issuers", "home"],
+    queryFn: () => backendApi.issuers(buildParams({ page: 1, page_size: 3 })) as Promise<Paginated<IssuerRow>>,
+  });
+  const offeringsQ = useQuery<Paginated<OfferingRow>>({
+    queryKey: ["offerings", "home"],
+    queryFn: () => backendApi.offerings(buildParams({ page: 1, page_size: 3 })) as Promise<Paginated<OfferingRow>>,
+  });
+  const indicesQ = useQuery<Paginated<IndexRow>>({
+    queryKey: ["indices", "home"],
+    queryFn: () => backendApi.indices(buildParams({ page: 1, page_size: 4 })) as Promise<Paginated<IndexRow>>,
+  });
 
   const stats = [
     { label: "Issuers", value: "340+", icon: Building2, color: "text-primary bg-primary/10", tab: "issuers" as TabKey },
@@ -316,16 +344,19 @@ function IssuersTab() {
     setPage(1);
   };
 
-  const { data, isLoading } = trpc.issuers.list.useQuery({
-    search: search || undefined,
-    classifications: filters.classifications?.length ? filters.classifications : undefined,
-    regions: filters.regions?.length ? filters.regions : undefined,
-    wbxLabel: filters.wbx?.includes("wbxLabel") || undefined,
-    euTaxonomy: filters.wbx?.includes("euTaxonomy") || undefined,
-    page,
-    pageSize: 15,
-    sortBy,
-    sortDir,
+  const { data, isLoading } = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["issuers", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.issuers(buildParams({
+      search: search || undefined,
+      classifications: filters.classifications?.length ? filters.classifications : undefined,
+      regions: filters.regions?.length ? filters.regions : undefined,
+      wbx_label: filters.wbx?.includes("wbxLabel") || undefined,
+      eu_taxonomy: filters.wbx?.includes("euTaxonomy") || undefined,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<IssuerRow>>,
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -400,14 +431,17 @@ function OfferingsTab() {
     setPage(1);
   };
 
-  const { data, isLoading } = trpc.offerings.list.useQuery({
-    search: search || undefined,
-    types: filters.types?.length ? filters.types : undefined,
-    includeDelisted: filters.delisted?.includes("includeDelisted") ?? false,
-    page,
-    pageSize: 15,
-    sortBy,
-    sortDir,
+  const { data, isLoading } = useQuery<Paginated<OfferingRow>>({
+    queryKey: ["offerings", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.offerings(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      include_delisted: filters.delisted?.includes("includeDelisted") ?? false,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<OfferingRow>>,
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -481,14 +515,17 @@ function IndicesTab() {
     setPage(1);
   };
 
-  const { data, isLoading } = trpc.indices.list.useQuery({
-    search: search || undefined,
-    types: filters.types?.length ? filters.types : undefined,
-    currencies: filters.currencies?.length ? filters.currencies : undefined,
-    page,
-    pageSize: 15,
-    sortBy,
-    sortDir,
+  const { data, isLoading } = useQuery<Paginated<IndexRow>>({
+    queryKey: ["indices", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.indices(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      currencies: filters.currencies?.length ? filters.currencies : undefined,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<IndexRow>>,
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -559,12 +596,15 @@ function DocumentsTab() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
-  const { data, isLoading } = trpc.documents.list.useQuery({
-    search: search || undefined,
-    types: filters.types?.length ? filters.types : undefined,
-    subTypes: filters.subTypes?.length ? filters.subTypes : undefined,
-    page,
-    pageSize: 15,
+  const { data, isLoading } = useQuery<Paginated<DocumentRow>>({
+    queryKey: ["documents", search, page, filters],
+    queryFn: () => backendApi.documents(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      sub_types: filters.subTypes?.length ? filters.subTypes : undefined,
+      page,
+      page_size: 15,
+    })) as Promise<Paginated<DocumentRow>>,
   });
 
   const totalActive = Object.values(filters).flat().length;

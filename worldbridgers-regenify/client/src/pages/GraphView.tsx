@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { backendApi } from "@/lib/backendApi";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -272,10 +273,15 @@ export default function GraphView() {
   const [filterRegions, setFilterRegions] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data, isLoading, refetch } = trpc.graph.data.useQuery({
-    filterTypes: filterTypes.length ? filterTypes : undefined,
-    filterRegions: filterRegions.length ? filterRegions : undefined,
-    search: search || undefined,
+  const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
+    queryKey: ["graph", filterTypes, filterRegions, search],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (filterTypes.length) filterTypes.forEach((v) => params.append("filter_types", v));
+      if (filterRegions.length) filterRegions.forEach((v) => params.append("filter_regions", v));
+      if (search) params.set("search", search);
+      return backendApi.graph(params) as Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }>;
+    },
   });
 
   const hasData = useMemo(() => Boolean(data && data.nodes.length), [data]);

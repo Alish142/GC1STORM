@@ -28,7 +28,6 @@ import {
   Wallet,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 
 const NAV_ITEMS = [
   {
@@ -67,11 +66,7 @@ export default function DashboardHeader() {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [, navigate] = useLocation();
-  const { user } = useAuth();
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => navigate("/"),
-  });
+  const { user, logout } = useAuth();
 
   const initials = user?.name
     ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -203,7 +198,10 @@ export default function DashboardHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-sm gap-2.5 text-destructive focus:text-destructive"
-                  onClick={() => logoutMutation.mutate()}
+                  onClick={async () => {
+                    await logout();
+                    navigate("/");
+                  }}
                 >
                   <LogOut className="w-3.5 h-3.5" /> Sign Out
                 </DropdownMenuItem>

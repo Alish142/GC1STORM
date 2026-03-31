@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Leaf, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { backendApi } from "@/lib/backendApi";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Login() {
@@ -18,13 +19,15 @@ export default function Login() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
   const { refresh: refreshAuth } = useAuth();
 
-  const loginMutation = trpc.auth.demoLogin.useMutation({
+  const loginMutation = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      backendApi.demoLogin(email, password),
     onSuccess: async () => {
       // Refresh auth state to pick up the new session cookie
-      await utils.auth.me.invalidate();
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       await refreshAuth();
       // Small delay to ensure state is updated before navigation
       setTimeout(() => navigate("/dashboard"), 100);
