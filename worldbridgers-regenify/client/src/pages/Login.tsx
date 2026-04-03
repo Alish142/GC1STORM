@@ -25,15 +25,20 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       backendApi.demoLogin(email, password),
-    onSuccess: async () => {
-      // Refresh auth state to pick up the new session cookie
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      await refreshAuth();
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => navigate("/dashboard"), 100);
+    onSuccess: async (result) => {
+      // Seed auth state immediately so the route guard does not bounce while
+      // the cookie-backed auth check catches up.
+      queryClient.setQueryData(["auth", "me"], result.user);
+      localStorage.setItem("manus-runtime-user-info", JSON.stringify(result.user));
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"], refetchType: "none" });
+      void refreshAuth();
+      navigate("/dashboard");
     },
     onError: (err) => {
       setErrors({ general: err.message || "Invalid credentials. Please try again." });
+      setIsLoading(false);
+    },
+    onSettled: () => {
       setIsLoading(false);
     },
   });

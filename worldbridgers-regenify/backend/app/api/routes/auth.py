@@ -1,10 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
 from app.core.security import create_session_token, decode_session_token
-from app.crud.users import create_or_update_user
-from app.db import get_db
 
 COOKIE_NAME = "app_session_id"
 
@@ -44,7 +40,6 @@ def demo_login(
     input_data: DemoLoginInput,
     req: Request,
     res: Response,
-    db: Session = Depends(get_db),
 ):
     valid = (
         (input_data.email == "demo@regenify.com" and input_data.password == "demo1234")
@@ -53,11 +48,9 @@ def demo_login(
     if not valid:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-    try:
-        user = create_or_update_user(db, email=input_data.email, name="Demo User")
-        user_id = user.id
-    except Exception:
-        user_id = 0
+    # Keep demo auth independent from database availability so local demos
+    # still work when Postgres is offline.
+    user_id = 0
 
     token = create_session_token(
         {
