@@ -214,13 +214,21 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
             <button
               key={i}
               onClick={() => onTabChange(s.tab)}
-              className="bg-card rounded-xl p-4 border border-border shadow-card hover:shadow-card-hover transition-all text-left group"
+              className={`group rounded-[24px] border p-5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
+                s.label === "Issuers"
+                  ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+                  : s.label === "Offerings"
+                    ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                    : s.label === "Indices"
+                      ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white"
+                      : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"
+              }`}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${s.color}`}>
+              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${s.color}`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-foreground">{s.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+              <div className="text-[2rem] font-bold leading-none text-foreground">{s.value}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
               <div className="mt-2 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                 View all <ArrowRight className="w-3 h-3" />
               </div>
@@ -695,20 +703,20 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#f4f6fa] flex flex-col">
       <DashboardHeader />
 
       <div className="flex-1 flex flex-col">
         {/* Tab navigation */}
-        <div className="bg-white border-b border-border">
+        <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
           <div className="container">
-            <div className="flex items-center gap-0 overflow-x-auto">
+            <div className="flex items-center gap-1 overflow-x-auto py-1.5">
               <button
                 onClick={() => navigate("/dashboard")}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                   activeTab === "home"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                    ? "bg-white text-[#1f2e3b]"
+                    : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 <BarChart3 className="w-4 h-4" />
@@ -720,10 +728,10 @@ export default function Dashboard() {
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                       activeTab === tab.key
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                        ? "bg-white text-[#1f2e3b]"
+                        : "text-white/72 hover:bg-white/8 hover:text-white"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -733,7 +741,11 @@ export default function Dashboard() {
               })}
               <Link
                 href="/dashboard/graph"
-                className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-border transition-colors whitespace-nowrap"
+                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                  location.includes("/dashboard/graph")
+                    ? "bg-white text-[#1f2e3b]"
+                    : "text-white/72 hover:bg-white/8 hover:text-white"
+                }`}
               >
                 <Network className="w-4 h-4" />
                 Graph View
@@ -743,7 +755,7 @@ export default function Dashboard() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 container py-5">
+        <div className="container flex-1 py-6">
           {activeTab === "home" && <DashboardHome onTabChange={handleTabChange} />}
           {activeTab === "issuers" && (
             <div className="h-[calc(100vh-160px)]">

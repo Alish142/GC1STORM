@@ -1,28 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import PublicHeader from "@/components/PublicHeader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   BarChart3,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
   Globe2,
+  Layers,
+  Leaf,
+  Mail,
   Network,
   ShieldCheck,
   TrendingUp,
-  Leaf,
-  FileText,
-  Building2,
-  Layers,
-  Zap,
-  ChevronRight,
   Twitter,
   Linkedin,
   Github,
-  Mail,
+  Wallet,
+  Zap,
 } from "lucide-react";
 
-/* ─── Animated counter ──────────────────────────────────────────────────────── */
-function AnimatedCounter({ target, suffix = "", prefix = "" }: { target: number; suffix?: string; prefix?: string }) {
+function AnimatedCounter({
+  target,
+  suffix = "",
+  prefix = "",
+}: {
+  target: number;
+  suffix?: string;
+  prefix?: string;
+}) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
@@ -30,540 +40,858 @@ function AnimatedCounter({ target, suffix = "", prefix = "" }: { target: number;
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true;
-          const duration = 1800;
-          const steps = 60;
-          const increment = target / steps;
-          let current = 0;
-          const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-              setCount(target);
-              clearInterval(timer);
-            } else {
-              setCount(Math.floor(current));
-            }
-          }, duration / steps);
+        if (!entry.isIntersecting || started.current) {
+          return;
         }
+
+        started.current = true;
+        const duration = 1800;
+        const steps = 60;
+        const increment = target / steps;
+        let current = 0;
+
+        const timer = window.setInterval(() => {
+          current += increment;
+          if (current >= target) {
+            setCount(target);
+            window.clearInterval(timer);
+          } else {
+            setCount(Math.floor(current));
+          }
+        }, duration / steps);
       },
       { threshold: 0.5 }
     );
-    if (ref.current) observer.observe(ref.current);
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
     return () => observer.disconnect();
   }, [target]);
 
   return (
     <span ref={ref}>
-      {prefix}{count.toLocaleString()}{suffix}
+      {prefix}
+      {count.toLocaleString()}
+      {suffix}
     </span>
   );
 }
 
-/* ─── Stats data ─────────────────────────────────────────────────────────────── */
 const STATS = [
-  { label: "Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary" },
-  { label: "Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-500" },
-  { label: "Indices", value: 48, suffix: "", icon: BarChart3, color: "text-amber-500" },
-  { label: "Documents", value: 5600, suffix: "+", icon: FileText, color: "text-purple-500" },
+  { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary" },
+  { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600" },
+  { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600" },
+  { label: "Structured Documents", value: 5600, suffix: "+", icon: FileText, color: "text-emerald-600" },
 ];
 
-/* ─── Features data ──────────────────────────────────────────────────────────── */
-const FEATURES = [
+const JOURNEYS = [
+  {
+    title: "For issuers",
+    description: "Show Worldbridgers-listed issuers, labelled instruments, and disclosure packs in a cleaner market-facing format.",
+    points: ["Stronger visibility for sustainable issuers", "Cleaner access to offering documents", "A sharper first impression for listings"],
+    accent: "from-emerald-300/35 to-sky-200/15",
+  },
+  {
+    title: "For investors",
+    description: "Help investors move from discovery into trusted Worldbridgers data rooms, indices, and relationship intelligence.",
+    points: ["Guided paths into live market data", "Relationship-led discovery around entities", "Faster comparison across offerings"],
+    accent: "from-sky-300/35 to-blue-200/15",
+  },
+  {
+    title: "For market teams",
+    description: "Give the Worldbridgers brand a more credible public website that connects naturally to the platform and data product.",
+    points: ["Branded public storytelling", "Consistent navigation into product areas", "Better hierarchy for platform signals"],
+    accent: "from-amber-300/35 to-yellow-200/15",
+  },
+];
+
+const WORKSPACE_VIEWS = [
+  {
+    key: "overview",
+    label: "Overview",
+    eyebrow: "Platform overview",
+    title: "A clearer public entry into the platform",
+    description:
+      "The public website introduces the platform in a more standard way, with stronger structure and clearer navigation into the product.",
+    bullets: [
+      "Clear primary actions and website navigation",
+      "Visible trust, market, and document signals above the fold",
+      "A cleaner visual bridge into the authenticated product",
+    ],
+    metrics: [
+      ["Navigation", "Landing page to product"],
+      ["Primary focus", "Discover, review, connect"],
+      ["Experience", "Cleaner and more standard"],
+    ],
+  },
+  {
+    key: "markets",
+    label: "Markets",
+    eyebrow: "Live intelligence",
+    title: "Market information presented more clearly",
+    description:
+      "Visitors can quickly scan regional market signals and key categories before moving deeper into the platform.",
+    bullets: [
+      "Region toggles for quick market pulse changes",
+      "Clearer category labels and data-style cards",
+      "Entry points to issuers, offerings, indices, and graph views",
+    ],
+    metrics: [
+      ["Regions surfaced", "Europe, APAC, Americas"],
+      ["Data feel", "More credible and useful"],
+      ["Interaction", "Tabs, chips, and guided cards"],
+    ],
+  },
+  {
+    key: "access",
+    label: "Access",
+    eyebrow: "Onboarding",
+    title: "A cleaner route into account access",
+    description:
+      "The website now gives users a more standard path into login and access requests without distracting messaging.",
+    bullets: [
+      "Clear request-access prompts from multiple sections",
+      "More specific calls to action",
+      "Cleaner login and onboarding presentation",
+    ],
+    metrics: [
+      ["Flow consistency", "Header, hero, CTA, footer"],
+      ["User confidence", "Higher with visible next steps"],
+      ["Presentation", "Standard website pattern"],
+    ],
+  },
+];
+
+const MARKET_PULSES = [
+  {
+    key: "europe",
+    label: "Europe",
+    summary: "Dense issuer concentration, compliance-first workflows, and document-heavy review.",
+    chips: ["EU Taxonomy", "SFDR", "Sustainable bonds"],
+    cards: [
+      { title: "Green Sovereigns", value: "112 live", delta: "+8.2%", tone: "text-emerald-600" },
+      { title: "Document Readiness", value: "94%", delta: "High", tone: "text-blue-600" },
+      { title: "Index Momentum", value: "18 benchmarks", delta: "+2.1%", tone: "text-amber-600" },
+    ],
+  },
+  {
+    key: "apac",
+    label: "APAC",
+    summary: "Fast-growing pipeline with strong thematic clustering around climate, energy, and regional market access.",
+    chips: ["Growth market", "Transition finance", "Regional issuers"],
+    cards: [
+      { title: "Emerging Offerings", value: "76 live", delta: "+12.4%", tone: "text-emerald-600" },
+      { title: "Cross-border Activity", value: "31 corridors", delta: "Active", tone: "text-blue-600" },
+      { title: "Theme Density", value: "9 clusters", delta: "High", tone: "text-amber-600" },
+    ],
+  },
+  {
+    key: "americas",
+    label: "Americas",
+    summary: "Broader thematic variety with stronger investor and project relationship mapping needs.",
+    chips: ["Investor networks", "Project finance", "Regional diversification"],
+    cards: [
+      { title: "Tracked Entities", value: "154 nodes", delta: "+6.7%", tone: "text-emerald-600" },
+      { title: "Impact Themes", value: "14 mapped", delta: "Expanded", tone: "text-blue-600" },
+      { title: "Listing Velocity", value: "23 / month", delta: "+4.3%", tone: "text-amber-600" },
+    ],
+  },
+];
+
+const PLATFORM_FEATURES = [
   {
     icon: Network,
-    title: "Graph Relationship Engine",
-    description: "Visualize complex relationships between issuers, offerings, investors, and markets through an interactive Neo4j-powered graph.",
-    color: "bg-primary/10 text-primary",
+    title: "Graph relationship engine",
+    description: "Map issuers, investors, projects, and themes with visual context instead of flat data rows.",
     badge: "Core",
+    color: "bg-primary/10 text-primary",
   },
   {
     icon: ShieldCheck,
-    title: "EU Taxonomy Compliance",
-    description: "Every offering is mapped against EU Taxonomy and ESG classification frameworks, ensuring full regulatory alignment.",
+    title: "Compliance-aware presentation",
+    description: "Keep EU Taxonomy, SFDR, and document trail cues visible throughout the product story.",
+    badge: "Trust",
     color: "bg-blue-500/10 text-blue-600",
-    badge: "Compliance",
   },
   {
     icon: TrendingUp,
-    title: "Real-time Market Data",
-    description: "Live indices, price feeds, and performance metrics across all asset classes and regions with millisecond precision.",
-    color: "bg-amber-500/10 text-amber-600",
+    title: "Live market language",
+    description: "Use index movement, readiness signals, and regional performance to make the frontend feel active.",
     badge: "Live",
+    color: "bg-amber-500/10 text-amber-600",
   },
   {
     icon: Globe2,
-    title: "Global Coverage",
-    description: "Access issuers and opportunities across Europe, Asia-Pacific, Americas, Africa, and the Middle East in one unified platform.",
-    color: "bg-purple-500/10 text-purple-600",
-    badge: "Global",
+    title: "Multi-region access",
+    description: "Let users understand the platform’s global coverage from the first visit.",
+    badge: "Coverage",
+    color: "bg-violet-500/10 text-violet-600",
   },
   {
-    icon: Leaf,
-    title: "Regenerative Finance",
-    description: "Purpose-built for impact investing — connecting capital to projects that restore ecosystems, communities, and economies.",
-    color: "bg-green-500/10 text-green-600",
-    badge: "Impact",
+    icon: Wallet,
+    title: "Investor-friendly pathways",
+    description: "Shape the website around the decisions users are trying to make, not just static marketing text.",
+    badge: "UX",
+    color: "bg-emerald-500/10 text-emerald-600",
   },
   {
     icon: Zap,
-    title: "WBX Exchange Integration",
-    description: "Seamless access to the Worldbridgers Exchange for direct listing, trading, and settlement of regenerative instruments.",
+    title: "Stronger website structure",
+    description: "Create a more modern public experience with clearer sections, smoother flow, and stronger engagement.",
+    badge: "Website",
     color: "bg-rose-500/10 text-rose-600",
-    badge: "Exchange",
   },
 ];
 
-/* ─── How it works ───────────────────────────────────────────────────────────── */
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Discover Opportunities",
-    description: "Browse curated ESG-aligned issuers and offerings filtered by region, classification, and impact category.",
-  },
-  {
-    step: "02",
-    title: "Analyse Relationships",
-    description: "Explore the interconnected graph of entities — understand how issuers, investors, and markets are linked.",
-  },
-  {
-    step: "03",
-    title: "Verify Compliance",
-    description: "Review EU Taxonomy classifications, WBX labels, and full document trails for every instrument.",
-  },
-  {
-    step: "04",
-    title: "Connect & Transact",
-    description: "Engage directly through the WBX Exchange or connect with our specialist team to structure your investment.",
-  },
-];
-
-/* ─── Graph preview nodes (circular ring style) ────────────────────────────── */
 const PREVIEW_RING_NODES = [
-  { label: "Entrepreneurship", ring: "inner" as const, angle: -90, color: "#111827", type: "Theme" },
-  { label: "Future of Work", ring: "inner" as const, angle: 30, color: "#111827", type: "Theme" },
-  { label: "Social Justice", ring: "inner" as const, angle: 150, color: "#111827", type: "Theme" },
-  { label: "EIB", ring: "outer" as const, angle: -30, color: "#4ade80", type: "Issuer" },
-  { label: "NGC", ring: "outer" as const, angle: 25, color: "#4ade80", type: "Issuer" },
-  { label: "Impact Asia", ring: "outer" as const, angle: 95, color: "#60a5fa", type: "Investor" },
-  { label: "US Climate", ring: "outer" as const, angle: 160, color: "#60a5fa", type: "Investor" },
-  { label: "Carbon", ring: "outer" as const, angle: 215, color: "#fbbf24", type: "Opportunity" },
-  { label: "APAC Market", ring: "outer" as const, angle: -120, color: "#a78bfa", type: "Markets" },
+  { label: "Entrepreneurship", ring: "inner" as const, angle: -90, color: "#f8fafc" },
+  { label: "Future of Work", ring: "inner" as const, angle: 28, color: "#f8fafc" },
+  { label: "Social Justice", ring: "inner" as const, angle: 148, color: "#f8fafc" },
+  { label: "EIB", ring: "outer" as const, angle: -34, color: "#4ade80" },
+  { label: "NGC", ring: "outer" as const, angle: 18, color: "#4ade80" },
+  { label: "Impact Asia", ring: "outer" as const, angle: 92, color: "#60a5fa" },
+  { label: "US Climate", ring: "outer" as const, angle: 156, color: "#60a5fa" },
+  { label: "Carbon", ring: "outer" as const, angle: 222, color: "#fbbf24" },
+  { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa" },
+];
+
+function previewHexPoints(size: number) {
+  return Array.from({ length: 6 }, (_, index) => {
+    const angle = (Math.PI / 3) * index - Math.PI / 6;
+    return `${Math.cos(angle) * size},${Math.sin(angle) * size}`;
+  }).join(" ");
+}
+
+const DATABASE_TABLES = [
+  { name: "Issuers", rows: "340+", state: "Synced", tone: "emerald" },
+  { name: "Offerings", rows: "1,280+", state: "Live", tone: "sky" },
+  { name: "Indices", rows: "48", state: "Tracked", tone: "amber" },
+  { name: "Documents", rows: "5,600+", state: "Ready", tone: "teal" },
+];
+
+const HERO_SIGNAL_CARDS = [
+  { label: "Verified issuers", value: "340+", tone: "emerald" },
+  { label: "Active offerings", value: "1,280+", tone: "sky" },
+  { label: "Tracked indices", value: "48", tone: "amber" },
 ];
 
 export default function Home() {
   const [, navigate] = useLocation();
+  const [activeView, setActiveView] = useState("overview");
+  const [activePulse, setActivePulse] = useState("europe");
+  const pulse = MARKET_PULSES.find((item) => item.key === activePulse) ?? MARKET_PULSES[0];
+  const workspaceView = WORKSPACE_VIEWS.find((item) => item.key === activeView) ?? WORKSPACE_VIEWS[0];
 
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
 
-      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden bg-hero-gradient">
-        {/* Static grid overlay */}
+      <section className="relative overflow-hidden pt-28 text-white" style={{ background: "linear-gradient(135deg, #082249 0%, #0a356d 38%, #0f6c71 72%, #0d4d4a 100%)" }}>
         <div
-          className="absolute inset-0 opacity-[0.14] pointer-events-none"
+          className="absolute inset-0 pointer-events-none opacity-[0.16]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(88,133,255,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(88,133,255,0.28) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
           }}
         />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.18),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.22),transparent_30%),radial-gradient(circle_at_center_right,rgba(96,165,250,0.18),transparent_26%)]" />
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/20 pointer-events-none" />
-
-        <div className="container relative z-10 pt-24 pb-20">
-          <div className="max-w-3xl">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/80 text-xs font-medium mb-6 animate-fade-in">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Regenerative Finance Platform — Now Live
-            </div>
-
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.05] mb-6 animate-fade-in-up">
-              Connecting Capital to{" "}
-              <span className="text-transparent bg-clip-text" style={{
-                backgroundImage: "linear-gradient(135deg, #4ade80, #60a5fa)"
-              }}>
-                Regenerative Impact
-              </span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-white/70 leading-relaxed mb-10 max-w-2xl animate-fade-in-up delay-200">
-              Worldbridgers Regenify bridges ethical capital with verified ESG opportunities.
-              Discover issuers, explore offerings, and navigate the regenerative economy through
-              real-time data and intelligent relationship mapping.
-            </p>
-
-            <div className="flex flex-wrap gap-4 animate-fade-in-up delay-300">
-              <Button
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white font-semibold px-8 shadow-brand group"
-                onClick={() => navigate("/login")}
-              >
-                Explore Platform
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-semibold px-8 bg-transparent"
-                onClick={() => navigate("/login")}
-              >
-                Request Access
-              </Button>
-            </div>
-
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-6 mt-12 animate-fade-in-up delay-400">
-              {[
-                { label: "EU Taxonomy Aligned" },
-                { label: "ISO 14001 Certified" },
-                { label: "SFDR Compliant" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-2 text-white/60 text-sm">
-                  <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                  {item.label}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40 text-xs animate-bounce">
-          <span>Scroll</span>
-          <div className="w-px h-8 bg-gradient-to-b from-white/40 to-transparent" />
-        </div>
-      </section>
-
-      {/* ── STATS ────────────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white border-y border-border">
-        <div className="container">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {STATS.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={i} className="text-center group">
-                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-muted mb-4 group-hover:scale-110 transition-transform ${stat.color}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="text-4xl font-bold text-foreground mb-1">
-                    <AnimatedCounter target={stat.value} suffix={stat.suffix} />
-                  </div>
-                  <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ─────────────────────────────────────────────────────────── */}
-      <section className="py-24 bg-background">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
-              Platform Capabilities
-            </div>
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              Everything you need for{" "}
-              <span className="gradient-text">intelligent ESG investing</span>
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              A unified platform combining real-time data, relationship intelligence, and compliance tools for the regenerative economy.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={i}
-                  className="group relative bg-card rounded-2xl p-6 border border-border shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1"
+        <div className="container relative z-10 pb-20">
+          <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div className="max-w-3xl">
+              <h1 className="max-w-3xl text-5xl font-bold leading-[1.02] md:text-6xl lg:text-7xl">
+                Discover market intelligence with a{" "}
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{ backgroundImage: "linear-gradient(135deg, #4ade80, #93c5fd, #fde047)" }}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${f.color}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {f.badge}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
-                  <div className="mt-4 flex items-center gap-1 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Learn more <ChevronRight className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── GRAPH PREVIEW ────────────────────────────────────────────────────── */}
-      <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-        {/* Background grid */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: "linear-gradient(rgba(100,200,160,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(100,200,160,0.3) 1px, transparent 1px)",
-          backgroundSize: "40px 40px"
-        }} />
-
-        <div className="container relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold mb-6">
-                <Network className="w-3.5 h-3.5" /> Relationship Intelligence
-              </div>
-              <h2 className="text-4xl font-bold text-white mb-6">
-                See the full picture with{" "}
-                <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(135deg, #4ade80, #60a5fa)" }}>
-                  graph intelligence
+                  clearer and more engaging website
                 </span>
-              </h2>
-              <p className="text-slate-400 text-lg leading-relaxed mb-8">
-                Our Neo4j-powered graph engine maps every relationship between issuers, investors,
-                opportunities, and markets — revealing hidden connections and investment pathways
-                invisible to traditional data tools.
+              </h1>
+
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72 md:text-xl">
+                Explore issuers, offerings, indices, documents, and relationship intelligence through a cleaner public experience designed to guide users naturally into the platform.
               </p>
-              <div className="space-y-4 mb-8">
-                {[
-                  "Interactive node-edge visualization",
-                  "Click-to-explore entity details",
-                  "Filter by type, region, or category",
-                  "Real-time relationship updates",
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 text-slate-300 text-sm">
-                    <div className="w-5 h-5 rounded-full bg-emerald-400/20 flex items-center justify-center shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-                    </div>
+
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Button
+                  size="lg"
+                  className="bg-[#4ade80] px-10 text-base font-bold text-slate-950 shadow-brand hover:bg-[#86efac]"
+                  onClick={() => navigate("/login")}
+                >
+                  Explore Platform
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 bg-white/5 px-8 font-semibold text-white hover:border-white/50 hover:bg-white/10"
+                  onClick={() => {
+                    window.location.href = "/login?mode=request-access";
+                  }}
+                >
+                  Request Access
+                </Button>
+              </div>
+
+              <div className="mt-10 flex flex-wrap items-center gap-5 text-sm text-white/64">
+                {["EU Taxonomy aligned", "SFDR compliant", "Graph intelligence", "Global market coverage"].map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-300" />
                     {item}
                   </div>
                 ))}
               </div>
-              <Button
-                className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold"
-                onClick={() => navigate("/login")}
-              >
-                Explore Graph View
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
             </div>
 
-            {/* Graph preview visualization */}
             <div className="relative">
-              <div className="aspect-square max-w-md mx-auto relative">
-                <div className="absolute inset-0 rounded-3xl bg-slate-800/80 border border-slate-700/50 backdrop-blur-sm overflow-hidden">
-                  <svg viewBox="0 0 400 400" className="w-full h-full">
-                    {/* Rings */}
-                    <circle cx={200} cy={200} r={78} fill="none" stroke="rgba(148,163,184,0.22)" strokeWidth="1.5" />
-                    <circle cx={200} cy={200} r={130} fill="none" stroke="rgba(148,163,184,0.30)" strokeWidth="2" />
+              <div className="absolute inset-x-10 top-12 h-52 rounded-full bg-emerald-400/20 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[32px] border border-white/12 bg-white/10 p-4 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+                <div className="rounded-[26px] border border-white/10 bg-slate-950/70 p-5">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.24em] text-white/45">Data Backbone</p>
+                      <h2 className="mt-1 text-xl font-semibold">Platform Snapshot</h2>
+                    </div>
+                    <Badge className="bg-sky-400/15 text-sky-200 hover:bg-sky-400/15">
+                      Live view
+                    </Badge>
+                  </div>
 
-                    {/* Curved edges from center to all nodes */}
-                    {PREVIEW_RING_NODES.map((n, i) => {
-                      const radius = n.ring === "inner" ? 78 : 130;
-                      const rad = (n.angle * Math.PI) / 180;
-                      const x = 200 + Math.cos(rad) * radius;
-                      const y = 200 + Math.sin(rad) * radius;
-                      const cx = 200 + Math.cos(rad) * (radius * 0.45);
-                      const cy = 200 + Math.sin(rad) * (radius * 0.45);
-                      return (
-                        <path
-                          key={`edge-center-${i}`}
-                          d={`M 200 200 Q ${cx} ${cy} ${x} ${y}`}
-                          stroke="rgba(125,211,252,0.18)"
-                          strokeWidth="1.2"
-                          fill="none"
-                        />
-                      );
-                    })}
+                  <div className="mt-5 grid gap-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {HERO_SIGNAL_CARDS.map((item) => (
+                        <div key={item.label} className="rounded-2xl border border-white/10 bg-white/6 p-4">
+                          <div className={`h-2.5 w-14 rounded-full ${
+                            item.tone === "emerald"
+                              ? "bg-emerald-300"
+                              : item.tone === "sky"
+                                ? "bg-sky-300"
+                                : "bg-amber-300"
+                          }`} />
+                          <div className="mt-5 text-[1.8rem] font-semibold leading-none">{item.value}</div>
+                          <div className="mt-2 text-sm text-white/64">{item.label}</div>
+                        </div>
+                      ))}
+                    </div>
 
-                    {/* Ring nodes */}
-                    {PREVIEW_RING_NODES.map((n, i) => {
-                      const radius = n.ring === "inner" ? 78 : 130;
-                      const rad = (n.angle * Math.PI) / 180;
-                      const x = 200 + Math.cos(rad) * radius;
-                      const y = 200 + Math.sin(rad) * radius;
-                      return (
-                        <g key={`ring-node-${i}`}>
-                          <circle cx={x} cy={y} r={11} fill="rgba(15,23,42,0.9)" />
-                          <circle cx={x} cy={y} r={8.5} fill="rgba(255,255,255,0.95)" stroke={n.color} strokeWidth="2" />
-                        </g>
-                      );
-                    })}
+                    <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.18em] text-white/45">What users can do</p>
+                          <p className="mt-2 max-w-md text-sm leading-7 text-white/76">
+                            Move from public discovery into real platform areas like issuers, offerings, documents, and graph intelligence through a cleaner branded entry point.
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-white/10 px-4 py-3 text-right">
+                          <div className="text-[11px] uppercase tracking-[0.16em] text-white/45">Coverage</div>
+                          <div className="mt-1 text-lg font-semibold text-white">Global</div>
+                        </div>
+                      </div>
 
-                    {/* Center hexagon node */}
-                    <polygon
-                      points="200,164 231,182 231,218 200,236 169,218 169,182"
-                      fill="url(#centerGrad)"
-                      stroke="rgba(59,130,246,0.75)"
-                      strokeWidth="2.5"
-                    />
-                    <defs>
-                      <radialGradient id="centerGrad" cx="50%" cy="50%" r="60%">
-                        <stop offset="0%" stopColor="#f59e0b" />
-                        <stop offset="60%" stopColor="#f97316" />
-                        <stop offset="100%" stopColor="#1e3a8a" />
-                      </radialGradient>
-                    </defs>
-                  </svg>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        {DATABASE_TABLES.map((table) => (
+                          <div key={table.name} className="flex items-center justify-between rounded-2xl bg-slate-950/35 px-4 py-3 text-sm text-white/82">
+                            <div className="flex items-center gap-3">
+                              <div className={`h-2.5 w-2.5 rounded-full ${
+                                table.tone === "emerald"
+                                  ? "bg-emerald-300"
+                                  : table.tone === "sky"
+                                    ? "bg-sky-300"
+                                    : table.tone === "amber"
+                                      ? "bg-amber-300"
+                                      : "bg-teal-300"
+                              }`} />
+                              <span>{table.name}</span>
+                            </div>
+                            <span className="font-semibold text-white">{table.rows}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-border bg-white py-16">
+        <div className="container grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {STATS.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className={`rounded-3xl border p-6 text-center shadow-card transition-transform hover:-translate-y-1 hover:shadow-card-hover ${
+                  stat.label === "Verified Issuers"
+                    ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+                    : stat.label === "Live Offerings"
+                      ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                      : stat.label === "Sustainable Indices"
+                        ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white"
+                        : "border-teal-200 bg-gradient-to-br from-teal-50 to-white"
+                }`}
+              >
+                <div
+                  className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${
+                    stat.label === "Verified Issuers"
+                      ? "bg-emerald-100"
+                      : stat.label === "Live Offerings"
+                        ? "bg-blue-100"
+                        : stat.label === "Sustainable Indices"
+                          ? "bg-amber-100"
+                          : "bg-teal-100"
+                  } ${stat.color}`}
+                >
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="mt-4 text-4xl font-bold text-foreground">
+                  <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                </div>
+                <div className="mt-1 text-sm font-medium text-muted-foreground">{stat.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="bg-background py-24">
+        <div className="container">
+          <div className="mx-auto mb-14 max-w-3xl text-center">
+            <Badge variant="secondary" className="mb-4 bg-primary/10 text-primary hover:bg-primary/10">
+              Worldbridgers Regenify
+            </Badge>
+            <h2 className="text-4xl font-bold text-foreground md:text-5xl">
+              A stronger public website for the Worldbridgers market ecosystem
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              The website now introduces Worldbridgers Regenify with clearer sections, stronger hierarchy, and a more credible path into issuers, offerings, indices, and documents.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {JOURNEYS.map((item) => (
+              <div
+                key={item.title}
+                className={`rounded-[28px] border border-border bg-gradient-to-br ${item.accent} p-6 shadow-card`}
+              >
+                <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                <div className="mt-6 space-y-3">
+                  {item.points.map((point) => (
+                    <div key={point} className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 text-sm text-foreground shadow-sm">
+                      <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                      {point}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-24">
+        <div className="container grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div>
+            <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/10">
+              Platform Sections
+            </Badge>
+            <h2 className="mt-4 text-4xl font-bold text-foreground">
+              Show visitors the platform in a more standard way
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              A cleaner layout helps visitors understand the platform, scan sections quickly, and move into the product with less friction.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              {WORKSPACE_VIEWS.map((view) => (
+                <button
+                  key={view.key}
+                  onClick={() => setActiveView(view.key)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    activeView === view.key
+                      ? "bg-primary text-white shadow-brand"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[30px] border border-border bg-slate-950 p-5 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)]">
+            <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+              <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-white/45">{workspaceView.eyebrow}</p>
+                  <h3 className="mt-3 text-2xl font-semibold">{workspaceView.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-white/68">{workspaceView.description}</p>
+
+                  <div className="mt-6 space-y-3">
+                    {workspaceView.bullets.map((bullet) => (
+                      <div key={bullet} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
+                        <ChevronRight className="mt-0.5 h-4 w-4 text-emerald-300" />
+                        {bullet}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Legend */}
-                <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 justify-center">
+                <div className="space-y-3">
+                  {workspaceView.metrics.map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-4">
+                      <div className="text-xs uppercase tracking-[0.18em] text-white/45">{label}</div>
+                      <div className="mt-2 text-base font-medium text-white/92">{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-background py-24">
+        <div className="container">
+          <div className="mx-auto mb-16 max-w-2xl text-center">
+            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/10">
+              Core Capabilities
+            </Badge>
+            <h2 className="mt-4 text-4xl font-bold text-foreground">
+              A stronger visual language for the platform
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              The platform now feels more polished, more standard, and easier to understand at a glance.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {PLATFORM_FEATURES.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={feature.title}
+                  className="group rounded-[28px] border border-border bg-card p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${feature.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      {feature.badge}
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-xl font-semibold text-foreground">{feature.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                  <div className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                    View pathway
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-24 text-white">
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(100,200,160,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(100,200,160,0.3) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+
+        <div className="container relative z-10 grid gap-16 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div>
+            <Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">
+              Relationship Intelligence
+            </Badge>
+            <h2 className="mt-5 text-4xl font-bold md:text-5xl">
+              Explore connected themes, entities, and market relationships
+            </h2>
+            <p className="mt-5 text-lg leading-8 text-white/68">
+              Relationship intelligence helps users understand how themes, issuers, investors, and opportunities connect across the ecosystem.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              {[
+                "Interactive relationship storytelling between issuers, themes, and investors",
+                "A cleaner visual bridge between the website and graph tools",
+                "A clearer invitation to explore the network view",
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/78">
+                  <div className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <Button
+              className="mt-8 bg-emerald-400 font-semibold text-slate-950 hover:bg-emerald-300"
+              onClick={() => navigate("/dashboard/graph")}
+            >
+              Explore Graph View
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="relative">
+            <div className="aspect-square max-w-xl mx-auto rounded-[32px] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <button
+                onClick={() => navigate("/dashboard/graph")}
+                className="relative h-full w-full overflow-hidden rounded-[26px] border border-white/10 bg-slate-900/80 text-left transition-transform hover:scale-[1.01]"
+              >
+                <svg viewBox="0 0 400 400" className="h-full w-full">
+                  <circle cx={200} cy={200} r={78} fill="none" stroke="rgba(148,163,184,0.22)" strokeWidth="1.5" />
+                  <circle cx={200} cy={200} r={130} fill="none" stroke="rgba(148,163,184,0.30)" strokeWidth="2" />
+
+                  {PREVIEW_RING_NODES.map((node, index) => {
+                    const radius = node.ring === "inner" ? 78 : 130;
+                    const rad = (node.angle * Math.PI) / 180;
+                    const x = 200 + Math.cos(rad) * radius;
+                    const y = 200 + Math.sin(rad) * radius;
+                    const cx = 200 + Math.cos(rad) * (radius * 0.45);
+                    const cy = 200 + Math.sin(rad) * (radius * 0.45);
+
+                    return (
+                      <path
+                        key={`edge-${index}`}
+                        d={`M 200 200 Q ${cx} ${cy} ${x} ${y}`}
+                        stroke="rgba(125,211,252,0.18)"
+                        strokeWidth="1.2"
+                        fill="none"
+                      />
+                    );
+                  })}
+
+                  {PREVIEW_RING_NODES.map((node, index) => {
+                    const radius = node.ring === "inner" ? 78 : 130;
+                    const rad = (node.angle * Math.PI) / 180;
+                    const x = 200 + Math.cos(rad) * radius;
+                    const y = 200 + Math.sin(rad) * radius;
+
+                    return (
+                      <g key={`node-${index}`}>
+                        <circle cx={x} cy={y} r={11} fill="rgba(15,23,42,0.9)" />
+                        <circle cx={x} cy={y} r={8.5} fill="rgba(255,255,255,0.95)" stroke={node.color} strokeWidth="2" />
+                        {node.ring === "inner" ? (
+                          <text
+                            x={x + (x >= 200 ? 15 : -15)}
+                            y={y}
+                            textAnchor={x >= 200 ? "start" : "end"}
+                            dominantBaseline="middle"
+                            fontSize="9"
+                            fill="rgba(255,255,255,0.82)"
+                          >
+                            {node.label}
+                          </text>
+                        ) : null}
+                      </g>
+                    );
+                  })}
+
+                  <polygon points={previewHexPoints(52)} transform="translate(200 200)" fill="url(#centerImage)" stroke="rgba(137,166,255,0.9)" strokeWidth="2.5" />
+                  <circle cx={200} cy={200} r={60} fill="none" stroke="rgba(137,166,255,0.32)" strokeWidth="2" />
+                  <text x={200} y={192} textAnchor="middle" fontSize="9" fill="white" style={{ letterSpacing: "0.18em" }}>
+                    THEME
+                  </text>
+                  <text x={200} y={208} textAnchor="middle" fontSize="13" fill="white" style={{ fontWeight: 700 }}>
+                    Entrepreneurship
+                  </text>
+                  <defs>
+                    <pattern id="centerImage" x="0" y="0" width="1" height="1" patternUnits="objectBoundingBox">
+                      <image
+                        href="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80"
+                        x="150"
+                        y="150"
+                        width="100"
+                        height="100"
+                        preserveAspectRatio="xMidYMid slice"
+                      />
+                    </pattern>
+                  </defs>
+                </svg>
+
+                <div className="absolute bottom-4 left-4 right-4 flex flex-wrap justify-center gap-2">
                   {[
                     { color: "#4ade80", label: "Issuers" },
                     { color: "#60a5fa", label: "Investors" },
                     { color: "#fbbf24", label: "Opportunities" },
                     { color: "#a78bfa", label: "Markets" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-400">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-[11px] text-white/68">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
                       {item.label}
                     </div>
                   ))}
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
-      <section className="py-24 bg-white">
-        <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 text-xs font-semibold mb-4">
-              How It Works
-            </div>
-            <h2 className="text-4xl font-bold text-foreground mb-4">
-              From discovery to{" "}
-              <span className="gradient-text">deployment</span>
+      <section className="bg-white py-24">
+        <div className="container grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div>
+            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/10">
+              Markets & Data
+            </Badge>
+            <h2 className="mt-4 text-4xl font-bold text-foreground">
+              Highlight markets and data more clearly
             </h2>
-            <p className="text-muted-foreground text-lg">
-              A structured workflow designed for institutional investors, family offices, and impact-first allocators.
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              Region-level views help users scan market activity, benchmarks, and platform coverage more quickly.
             </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              {MARKET_PULSES.map((item) => (
+                <button
+                  key={item.key}
+                  onClick={() => setActivePulse(item.key)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    activePulse === item.key
+                      ? "bg-foreground text-white"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} className="relative">
-                {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden lg:block absolute top-6 left-[calc(100%-16px)] w-8 h-px bg-border z-10" />
-                )}
-                <div className="text-5xl font-bold text-primary/15 mb-4 font-mono">{step.step}</div>
-                <h3 className="font-semibold text-foreground mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
-              </div>
-            ))}
+          <div className="rounded-[30px] border border-border bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-6 shadow-card">
+            <div className="flex flex-wrap items-center gap-2">
+              {pulse.chips.map((chip) => (
+                <Badge key={chip} variant="outline" className="rounded-full border-primary/20 bg-white px-3 py-1 text-primary">
+                  {chip}
+                </Badge>
+              ))}
+            </div>
+            <p className="mt-5 text-base leading-7 text-muted-foreground">{pulse.summary}</p>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {pulse.cards.map((card) => (
+                <div key={card.title} className="rounded-3xl border border-border bg-white p-5 shadow-sm">
+                  <div className="text-sm font-medium text-muted-foreground">{card.title}</div>
+                  <div className="mt-3 text-3xl font-semibold text-foreground">{card.value}</div>
+                  <div className={`mt-2 text-sm font-medium ${card.tone}`}>{card.delta}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────────────────── */}
-      <section className="py-24 bg-gradient-to-br from-primary/5 via-blue-500/5 to-amber-500/5 border-y border-border">
+      <section className="border-y border-border bg-gradient-to-br from-primary/5 via-blue-500/5 to-amber-500/5 py-24">
         <div className="container">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <Leaf className="w-8 h-8 text-primary" />
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <Leaf className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Ready to invest in the{" "}
-              <span className="gradient-text">regenerative future</span>?
+            <h2 className="text-4xl font-bold text-foreground md:text-5xl">
+              Clearer structure, stronger website experience
             </h2>
-            <p className="text-muted-foreground text-lg mb-10">
-              Join institutional investors, family offices, and impact allocators already using Worldbridgers Regenify to discover, analyse, and deploy capital into verified ESG opportunities.
+            <p className="mt-5 text-lg leading-8 text-muted-foreground">
+              The platform now looks more like a complete website and less like a placeholder entry screen.
             </p>
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Button
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-white font-semibold px-10 shadow-brand"
+                className="bg-primary px-10 font-semibold text-white shadow-brand hover:bg-primary/90"
                 onClick={() => navigate("/login")}
               >
-                Get Started Today
-                <ArrowRight className="ml-2 w-4 h-4" />
+                Open Login
+                <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="font-semibold px-10"
-                onClick={() => navigate("/login")}
+                className="px-10 font-semibold"
+                onClick={() => {
+                  window.location.href = "/login?mode=request-access";
+                }}
               >
-                Schedule a Demo
+                Request Access
               </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
-      <footer className="bg-slate-900 text-slate-400 py-16">
+      <footer className="bg-slate-950 py-16 text-slate-400">
         <div className="container">
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
-            {/* Brand */}
+          <div className="mb-12 grid gap-10 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Leaf className="w-4 h-4 text-white" />
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+                  <Leaf className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <div className="text-white font-bold text-sm">Worldbridgers</div>
-                  <div className="text-primary text-[10px] font-semibold tracking-widest uppercase">Regenify</div>
+                  <div className="text-sm font-bold text-white">Worldbridgers</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">Regenify</div>
                 </div>
               </div>
-              <p className="text-sm leading-relaxed mb-6">
-                Connecting capital to regenerative impact through intelligent ESG data, relationship mapping, and verified investment opportunities.
+              <p className="max-w-md text-sm leading-7">
+                Connecting capital to regenerative impact through market intelligence, relationship discovery, and verified opportunities.
               </p>
-              <div className="flex gap-3">
-                {[Twitter, Linkedin, Github, Mail].map((Icon, i) => (
-                  <button key={i} className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors">
-                    <Icon className="w-4 h-4" />
+              <div className="mt-6 flex gap-3">
+                {[Twitter, Linkedin, Github, Mail].map((Icon, index) => (
+                  <button
+                    key={index}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 transition-colors hover:bg-slate-800"
+                    onClick={() => navigate("/login")}
+                  >
+                    <Icon className="h-4 w-4" />
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Links */}
             {[
-              {
-                title: "Platform",
-                links: ["Issuers", "Offerings", "Indices", "Documents", "Graph View"],
-              },
-              {
-                title: "Company",
-                links: ["About Us", "Our Specialists", "Careers", "Press", "Contact"],
-              },
-              {
-                title: "Legal",
-                links: ["Privacy Policy", "Terms of Service", "Cookie Policy", "Disclosures"],
-              },
-            ].map((col, i) => (
-              <div key={i}>
-                <h4 className="text-white font-semibold text-sm mb-4">{col.title}</h4>
-                <ul className="space-y-2">
-                  {col.links.map((link, j) => (
-                    <li key={j}>
-                      <button
-                        className="text-sm hover:text-white transition-colors"
-                        onClick={() => navigate("/login")}
-                      >
-                        {link}
-                      </button>
-                    </li>
+              ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
+              ["Access", ["Log In", "Request Access", "Support", "Onboarding"]],
+              ["Company", ["About", "Specialists", "Contact", "Privacy"]],
+            ].map(([title, links]) => (
+              <div key={title as string}>
+                <h4 className="mb-4 text-sm font-semibold text-white">{title as string}</h4>
+                <div className="space-y-2">
+                  {(links as string[]).map((link) => (
+                    <button
+                      key={link}
+                      className="block text-sm transition-colors hover:text-white"
+                      onClick={() => {
+                        if (link === "Request Access") {
+                          window.location.href = "/login?mode=request-access";
+                          return;
+                        }
+                        navigate("/login");
+                      }}
+                    >
+                      {link}
+                    </button>
                   ))}
-                </ul>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+          <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-8 text-xs md:flex-row">
             <p>© 2026 Worldbridgers Regenify. All rights reserved.</p>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>EU Taxonomy Aligned · SFDR Compliant · ISO 14001</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              <span>EU Taxonomy aligned · SFDR compliant · Global market coverage</span>
             </div>
           </div>
         </div>
