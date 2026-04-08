@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -33,6 +33,9 @@ def get_db() -> Generator[Session, None, None]:
 def init_postgres() -> None:
     try:
         Base.metadata.create_all(bind=engine)
+        with engine.connect() as connection:
+            connection.execute(text("select 1"))
+        print("[Database] Postgres connection OK")
     except Exception as exc:
         # Keep API running for demo mode even if SQL DB isn't reachable yet.
         print(f"[Database] Postgres init skipped: {exc}")
