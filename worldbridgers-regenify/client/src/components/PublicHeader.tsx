@@ -10,8 +10,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { publicHighlights, publicNavigation } from "@/lib/navigation";
-import { Search, ChevronDown, Menu, X, Leaf } from "lucide-react";
+import { Search, ChevronDown, Menu, X, Leaf, User, Wallet, Settings, HelpCircle, LogOut } from "lucide-react";
+
+function resolveAuthenticatedHref(href: string, isAuthenticated: boolean) {
+  if (!isAuthenticated) {
+    return href;
+  }
+
+  if (href.startsWith("/login?next=")) {
+    const params = new URLSearchParams(href.split("?")[1] ?? "");
+    return params.get("next") || "/dashboard";
+  }
+
+  if (href.startsWith("/login")) {
+    return "/dashboard";
+  }
+
+  return href;
+}
 
 export default function PublicHeader() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -20,6 +38,11 @@ export default function PublicHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
+  const initials = user?.name
+    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "DU";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -47,9 +70,9 @@ export default function PublicHeader() {
       }`}
     >
       <div className="container">
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between gap-4 py-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" className="mr-2 flex shrink-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-brand">
               <Leaf className="h-4 w-4 text-white" />
             </div>
@@ -64,7 +87,7 @@ export default function PublicHeader() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden flex-1 items-center justify-center gap-2 xl:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-start gap-1 px-2 xl:flex">
             {publicNavigation.map((group) => (
               <DropdownMenu
                 key={group.label}
@@ -73,7 +96,7 @@ export default function PublicHeader() {
               >
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors ${
                       scrolled
                         ? "text-foreground/70 hover:text-foreground hover:bg-muted"
                         : "text-white/80 hover:text-white hover:bg-white/10"
@@ -95,7 +118,7 @@ export default function PublicHeader() {
                     <DropdownMenuItem
                       key={item.label}
                       className="rounded-xl px-3 py-3"
-                      onClick={() => navigate(item.href)}
+                      onClick={() => navigate(resolveAuthenticatedHref(item.href, isAuthenticated))}
                     >
                       <div className="flex items-start gap-3">
                         {item.icon ? (
@@ -118,14 +141,14 @@ export default function PublicHeader() {
           </nav>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {/* Search */}
-            <div className="relative hidden md:flex items-center">
+            <div className="relative hidden lg:flex items-center">
               {searchOpen ? (
                 <Input
                   autoFocus
                   placeholder="Search platform..."
-                  className="h-10 w-60 rounded-xl border-white/15 bg-white/90 text-sm"
+                  className="h-10 w-44 rounded-xl border-white/15 bg-white/90 text-sm 2xl:w-56"
                   onBlur={() => setSearchOpen(false)}
                 />
               ) : (
@@ -143,7 +166,7 @@ export default function PublicHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className={`hidden md:flex text-sm font-medium ${
+              className={`hidden xl:flex text-sm font-medium ${
                 scrolled ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
               }`}
               onClick={() => navigate("/discover")}
@@ -151,28 +174,67 @@ export default function PublicHeader() {
               Discover
             </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`hidden md:flex text-sm font-medium ${
-                scrolled ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
-              }`}
-              onClick={() => {
-                window.location.href = "/login";
-              }}
-            >
-              Log In
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="hidden xl:flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 py-2 pl-2.5 pr-3.5 text-white backdrop-blur-sm transition-colors hover:bg-white/15">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-xs font-bold text-primary">
+                      {initials}
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-medium leading-none">{user.name || "Demo User"}</div>
+                      <div className="mt-0.5 text-[11px] text-white/68">{user.email || "demo@regenify.com"}</div>
+                    </div>
+                    <ChevronDown className="h-3 w-3 text-white/70" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=profile"; }}>
+                    <User className="h-3.5 w-3.5" /> Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=portfolio"; }}>
+                    <Wallet className="h-3.5 w-3.5" /> My WBX Portfolio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=settings"; }}>
+                    <Settings className="h-3.5 w-3.5" /> Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=support"; }}>
+                    <HelpCircle className="h-3.5 w-3.5" /> Help & Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="gap-2.5 text-sm text-destructive focus:text-destructive" onClick={() => { window.location.href = "/logout"; }}>
+                    <LogOut className="h-3.5 w-3.5" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`hidden xl:flex text-sm font-medium ${
+                    scrolled ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
+                  }`}
+                  onClick={() => {
+                    window.location.href = "/login";
+                  }}
+                >
+                  Log In
+                </Button>
 
-            <Button
-              size="sm"
-              className="hidden md:flex text-sm font-semibold bg-primary hover:bg-primary/90 text-white shadow-brand"
-              onClick={() => {
-                window.location.href = "/login?mode=request-access";
-              }}
-            >
-              Request Access
-            </Button>
+                <Button
+                  size="sm"
+                  className="hidden xl:flex whitespace-nowrap text-sm font-semibold bg-primary px-4 hover:bg-primary/90 text-white shadow-brand"
+                  onClick={() => {
+                    window.location.href = "/login?mode=request-access";
+                  }}
+                >
+                  Request Access
+                </Button>
+              </>
+            )}
 
             {/* Mobile menu toggle */}
             <button
@@ -195,7 +257,7 @@ export default function PublicHeader() {
                 className="flex w-full items-start gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 text-left"
                 onClick={() => {
                   setMobileOpen(false);
-                  navigate(item.href);
+                  navigate(resolveAuthenticatedHref(item.href, isAuthenticated));
                 }}
               >
                 {item.icon ? (
@@ -230,7 +292,7 @@ export default function PublicHeader() {
                         className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
                         onClick={() => {
                           setMobileOpen(false);
-                          navigate(sub.href);
+                          navigate(resolveAuthenticatedHref(sub.href, isAuthenticated));
                         }}
                       >
                         <div className="font-medium text-foreground">{sub.label}</div>

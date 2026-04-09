@@ -14,7 +14,7 @@ import {
 } from "@/lib/frontendFallbackData";
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL ?? "http://localhost:8000";
-const LOCAL_USER_KEY = "manus-runtime-user-info";
+const LOCAL_USER_KEY = "regenify-user-info";
 
 type AuthUser = {
   id: number;

@@ -63,7 +63,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem("manus-runtime-user-info", JSON.stringify(meQuery.data ?? null));
+    localStorage.setItem("regenify-user-info", JSON.stringify(meQuery.data ?? null));
   }, [meQuery.data]);
 
   useEffect(() => {

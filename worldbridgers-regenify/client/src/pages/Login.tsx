@@ -54,7 +54,7 @@ export default function Login() {
       backendApi.demoLogin(inputEmail, inputPassword),
     onSuccess: async (result) => {
       queryClient.setQueryData(["auth", "me"], result.user);
-      localStorage.setItem("manus-runtime-user-info", JSON.stringify(result.user));
+      localStorage.setItem("regenify-user-info", JSON.stringify(result.user));
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"], refetchType: "none" });
       void refreshAuth();
       navigate(nextUrl);

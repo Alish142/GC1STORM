@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -63,8 +63,29 @@ function getView(search: string): AccountView {
 export default function Account() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
-  const view = useMemo(() => getView(window.location.search), [location]);
+  const [view, setView] = useState<AccountView>(() =>
+    getView(typeof window !== "undefined" ? window.location.search : "")
+  );
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setView(getView(window.location.search));
+  }, [location]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncView = () => setView(getView(window.location.search));
+    window.addEventListener("popstate", syncView);
+    return () => window.removeEventListener("popstate", syncView);
+  }, []);
+
+  const openView = (nextView: AccountView) => {
+    setView(nextView);
+    if (typeof window !== "undefined") {
+      window.history.pushState({}, "", `/dashboard/account?view=${nextView}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -115,7 +136,7 @@ export default function Account() {
                 return (
                   <button
                     key={tab.key}
-                    onClick={() => navigate(`/dashboard/account?view=${tab.key}`)}
+                    onClick={() => openView(tab.key)}
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-primary text-white shadow-brand"
