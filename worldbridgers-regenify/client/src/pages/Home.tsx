@@ -86,13 +86,14 @@ type LandingStat = {
   suffix?: string;
   icon: typeof Building2;
   color: string;
+  href: string;
 };
 
 const STATS: LandingStat[] = [
-  { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary" },
-  { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600" },
-  { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600" },
-  { label: "Structured Documents", value: 5600, suffix: "+", icon: FileText, color: "text-emerald-600" },
+  { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
+  { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
+  { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600", href: "/dashboard/indices" },
+  { label: "Structured Documents", value: 5600, suffix: "+", icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
 ];
 
 const PLATFORM_FEATURES = [
@@ -394,8 +395,12 @@ export default function Home() {
           {displayStats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div
+              <button
                 key={stat.label}
+                type="button"
+                onClick={() =>
+                  navigate(isAuthenticated ? stat.href : `/login?next=${encodeURIComponent(stat.href)}`)
+                }
                 className={`rounded-3xl border p-6 text-center shadow-card transition-transform hover:-translate-y-1 hover:shadow-card-hover ${
                   stat.label === "Verified Issuers"
                     ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
@@ -423,7 +428,7 @@ export default function Home() {
                   <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                 </div>
                 <div className="mt-2 text-[0.95rem] font-medium text-muted-foreground">{stat.label}</div>
-              </div>
+              </button>
             );
           })}
         </div>
