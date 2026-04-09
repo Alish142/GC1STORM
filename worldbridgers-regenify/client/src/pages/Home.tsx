@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PublicHeader from "@/components/PublicHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { backendApi } from "@/lib/backendApi";
 import {
   ArrowRight,
   BarChart3,
@@ -78,7 +80,15 @@ function AnimatedCounter({
   );
 }
 
-const STATS = [
+type LandingStat = {
+  label: string;
+  value: number;
+  suffix?: string;
+  icon: typeof Building2;
+  color: string;
+};
+
+const STATS: LandingStat[] = [
   { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary" },
   { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600" },
   { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600" },
@@ -172,6 +182,26 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user);
+  const landingStatsQuery = useQuery<LandingStat[]>({
+    queryKey: ["landing-stats"],
+    queryFn: async () => {
+      const [issuers, offerings, indices, documents] = await Promise.all([
+        backendApi.issuers(new URLSearchParams({ page: "1", page_size: "1" })),
+        backendApi.offerings(new URLSearchParams({ page: "1", page_size: "1" })),
+        backendApi.indices(new URLSearchParams({ page: "1", page_size: "1" })),
+        backendApi.documents(new URLSearchParams({ page: "1", page_size: "1" })),
+      ]);
+
+      return [
+        { ...STATS[0], value: issuers.total },
+        { ...STATS[1], value: offerings.total },
+        { ...STATS[2], value: indices.total },
+        { ...STATS[3], value: documents.total },
+      ];
+    },
+    staleTime: 60_000,
+  });
+  const displayStats = landingStatsQuery.data ?? STATS;
 
   return (
     <div className="min-h-screen bg-background">
@@ -361,7 +391,7 @@ export default function Home() {
 
       <section className="border-y border-border bg-white py-16">
         <div className="container grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {STATS.map((stat) => {
+          {displayStats.map((stat) => {
             const Icon = stat.icon;
             return (
               <div

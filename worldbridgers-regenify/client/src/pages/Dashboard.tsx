@@ -178,12 +178,40 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
     queryKey: ["indices", "home"],
     queryFn: () => backendApi.indices(buildParams({ page: 1, page_size: 4 })) as Promise<Paginated<IndexRow>>,
   });
+  const documentsQ = useQuery<Paginated<DocumentRow>>({
+    queryKey: ["documents", "home"],
+    queryFn: () => backendApi.documents(buildParams({ page: 1, page_size: 1 })) as Promise<Paginated<DocumentRow>>,
+  });
 
   const stats = [
-    { label: "Issuers", value: "340+", icon: Building2, color: "text-primary bg-primary/10", tab: "issuers" as TabKey },
-    { label: "Offerings", value: "1,280+", icon: Layers, color: "text-blue-600 bg-blue-500/10", tab: "offerings" as TabKey },
-    { label: "Indices", value: "48", icon: BarChart3, color: "text-amber-600 bg-amber-500/10", tab: "indices" as TabKey },
-    { label: "Documents", value: "5,600+", icon: FileText, color: "text-purple-600 bg-purple-500/10", tab: "documents" as TabKey },
+    {
+      label: "Issuers",
+      value: `${issuersQ.data?.total ?? 0}+`,
+      icon: Building2,
+      color: "text-primary bg-primary/10",
+      tab: "issuers" as TabKey,
+    },
+    {
+      label: "Offerings",
+      value: `${offeringsQ.data?.total ?? 0}+`,
+      icon: Layers,
+      color: "text-blue-600 bg-blue-500/10",
+      tab: "offerings" as TabKey,
+    },
+    {
+      label: "Indices",
+      value: `${indicesQ.data?.total ?? 0}`,
+      icon: BarChart3,
+      color: "text-amber-600 bg-amber-500/10",
+      tab: "indices" as TabKey,
+    },
+    {
+      label: "Documents",
+      value: `${documentsQ.data?.total ?? 0}+`,
+      icon: FileText,
+      color: "text-purple-600 bg-purple-500/10",
+      tab: "documents" as TabKey,
+    },
   ];
 
   return (
