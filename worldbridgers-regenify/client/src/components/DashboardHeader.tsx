@@ -178,16 +178,16 @@ export default function DashboardHeader() {
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => { window.location.href = "/dashboard/account?view=profile"; }}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=profile")}>
                   <User className="w-3.5 h-3.5" /> Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => { window.location.href = "/dashboard/account?view=portfolio"; }}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=portfolio")}>
                   <Wallet className="w-3.5 h-3.5" /> My WBX Portfolio
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => { window.location.href = "/dashboard/account?view=settings"; }}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=settings")}>
                   <Settings className="w-3.5 h-3.5" /> Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => { window.location.href = "/dashboard/account?view=support"; }}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=support")}>
                   <HelpCircle className="w-3.5 h-3.5" /> Help & Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

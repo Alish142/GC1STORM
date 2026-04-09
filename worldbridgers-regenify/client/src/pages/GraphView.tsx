@@ -57,6 +57,8 @@ const CENTER_IMAGES: Record<GraphNode["type"], string> = {
   Theme: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80",
 };
 
+const GRAPH_TRANSITION = "all 520ms cubic-bezier(0.22, 1, 0.36, 1)";
+
 function wrapCenterLabel(label: string) {
   const words = label.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -101,19 +103,26 @@ function centerImageForNode(node: GraphNode | null) {
   return CENTER_IMAGES[node.type];
 }
 
-function buildCircularLayout(nodes: GraphNode[], selectedId: string) {
+function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId: string) {
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
   const others = nodes.filter((node) => node.id !== selected.id);
-  const inner = others.slice(0, Math.min(8, others.length));
-  const outer = others.slice(inner.length);
+  const relatedIds = new Set<string>();
+
+  for (const edge of edges) {
+    if (edge.source === selected.id) relatedIds.add(edge.target);
+    if (edge.target === selected.id) relatedIds.add(edge.source);
+  }
+
+  const inner = others.filter((node) => relatedIds.has(node.id));
+  const outer = others.filter((node) => !relatedIds.has(node.id));
 
   const center = { ...selected, x: 0, y: 0, ring: "center" as const, angle: 0 };
   const innerNodes = inner.map((node, index) => {
     const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(inner.length, 1);
     return {
       ...node,
-      x: Math.cos(angle) * 120,
-      y: Math.sin(angle) * 120,
+      x: Math.cos(angle) * 118,
+      y: Math.sin(angle) * 118,
       ring: "inner" as const,
       angle,
     };
@@ -123,14 +132,49 @@ function buildCircularLayout(nodes: GraphNode[], selectedId: string) {
     const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(outer.length, 1);
     return {
       ...node,
-      x: Math.cos(angle) * 225,
-      y: Math.sin(angle) * 225,
+      x: Math.cos(angle) * 230,
+      y: Math.sin(angle) * 230,
       ring: "outer" as const,
       angle,
     };
   });
 
   return { center, innerNodes, outerNodes };
+}
+
+function curvedPath(
+  source: { x: number; y: number; ring: "center" | "inner" | "outer" },
+  target: { x: number; y: number; ring: "center" | "inner" | "outer" },
+  highlighted: boolean
+) {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const distance = Math.hypot(dx, dy) || 1;
+  const sx = source.x;
+  const sy = source.y;
+  const tx = target.x;
+  const ty = target.y;
+  const sourceRadius = Math.hypot(sx, sy) || 1;
+  const targetRadius = Math.hypot(tx, ty) || 1;
+  const sourceTowardCenterX = sx - (sx / sourceRadius) * (highlighted ? 68 : 92);
+  const sourceTowardCenterY = sy - (sy / sourceRadius) * (highlighted ? 68 : 92);
+  const targetTowardCenterX = tx - (tx / targetRadius) * (highlighted ? 68 : 92);
+  const targetTowardCenterY = ty - (ty / targetRadius) * (highlighted ? 68 : 92);
+  const mx = (sx + tx) / 2;
+  const my = (sy + ty) / 2;
+  const nx = -dy / distance;
+  const ny = dx / distance;
+  const sweep =
+    source.ring === "outer" && target.ring === "outer"
+      ? highlighted ? 34 : 24
+      : source.ring === "center" || target.ring === "center"
+        ? highlighted ? 14 : 8
+        : highlighted ? 24 : 16;
+  const direction = mx >= 0 ? 1 : -1;
+  const bendX = mx + nx * sweep * direction;
+  const bendY = my + ny * sweep * direction;
+
+  return `M ${sx} ${sy} C ${sourceTowardCenterX} ${sourceTowardCenterY}, ${bendX} ${bendY}, ${targetTowardCenterX} ${targetTowardCenterY} S ${tx} ${ty}, ${tx} ${ty}`;
 }
 
 function connectionPairs(edges: GraphEdge[], visibleIds: Set<string>) {
@@ -152,6 +196,7 @@ export default function GraphView() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
     queryKey: ["graph-view", search],
@@ -175,8 +220,8 @@ export default function GraphView() {
     if (!filteredNodes.length || !defaultSelectedId) {
       return null;
     }
-    return buildCircularLayout(filteredNodes, defaultSelectedId);
-  }, [filteredNodes, defaultSelectedId]);
+    return buildCircularLayout(filteredNodes, data?.edges ?? [], defaultSelectedId);
+  }, [data?.edges, filteredNodes, defaultSelectedId]);
 
   const visibleNodeMap = useMemo(() => {
     if (!graph) {
@@ -310,7 +355,6 @@ export default function GraphView() {
                 ) : graph ? (
                   <div className="overflow-auto">
                     <svg viewBox="-360 -360 720 720" className="mx-auto h-[720px] w-full min-w-[640px]">
-                      <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
                       <circle cx="0" cy="0" r="225" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
 
                       {visibleEdges.map((edge) => {
@@ -319,18 +363,27 @@ export default function GraphView() {
                         if (!source || !target) return null;
                         const isSelectedConnection =
                           edge.source === selectedNode?.id || edge.target === selectedNode?.id;
-                        const mx = (source.x + target.x) / 2;
-                        const my = (source.y + target.y) / 2;
-                        const cx = mx * 0.86;
-                        const cy = my * 0.86;
+                        const isHoveredConnection =
+                          hoveredId != null && (edge.source === hoveredId || edge.target === hoveredId);
+                        const isContextConnection =
+                          selectedConnections.has(edge.source) && selectedConnections.has(edge.target);
                         return (
                           <path
                             key={edge.id}
-                            d={`M ${source.x} ${source.y} Q ${cx} ${cy} ${target.x} ${target.y}`}
+                            d={curvedPath(source, target, isSelectedConnection)}
                             fill="none"
-                            stroke={isSelectedConnection ? "#4159c7" : "#8f9db6"}
-                            strokeWidth={isSelectedConnection ? "2.3" : "1.4"}
-                            opacity={isSelectedConnection ? "0.96" : "0.48"}
+                            stroke={
+                              isSelectedConnection
+                                ? "#3f56be"
+                                : isHoveredConnection
+                                  ? "#5f6f9b"
+                                  : isContextConnection
+                                    ? "#717e99"
+                                    : "#96a3b9"
+                            }
+                            strokeWidth={isSelectedConnection ? "2.5" : isHoveredConnection ? "1.9" : isContextConnection ? "1.6" : "1.2"}
+                            opacity={isSelectedConnection ? "0.96" : isHoveredConnection ? "0.64" : isContextConnection ? "0.5" : "0.26"}
+                            style={{ transition: GRAPH_TRANSITION }}
                           />
                         );
                       })}
@@ -339,21 +392,34 @@ export default function GraphView() {
                         const isActive = node.id === selectedNode?.id;
                         const isRelated = selectedConnections.has(node.id);
                         const angle = node.angle * 180 / Math.PI;
-                        const labelX = Math.cos(node.angle) * 278;
-                        const labelY = Math.sin(node.angle) * 278;
+                        const labelX = Math.cos(node.angle) * 258;
+                        const labelY = Math.sin(node.angle) * 258;
                         const rotate = angle > 90 || angle < -90 ? angle + 180 : angle;
                         const anchor = angle > 90 || angle < -90 ? "end" : "start";
                         return (
-                          <g key={node.id}>
+                          <g
+                            key={node.id}
+                            style={{
+                              transition: GRAPH_TRANSITION,
+                            }}
+                          >
                             <circle
                               cx={node.x}
                               cy={node.y}
-                              r={isActive ? 12.5 : 10.5}
-                              fill={isActive ? NODE_CONFIG[node.type].color : "white"}
-                              stroke={NODE_CONFIG[node.type].color}
-                              strokeWidth={isActive ? 3 : isRelated ? 2.4 : 1.9}
+                              r={isActive ? 12.5 : isRelated ? 10.8 : 9.5}
+                              fill={isActive ? NODE_CONFIG[node.type].color : isRelated ? "white" : "#f4f5f8"}
+                              stroke={isActive ? NODE_CONFIG[node.type].color : isRelated ? NODE_CONFIG[node.type].color : "#626976"}
+                              strokeWidth={isActive ? 3 : hoveredId === node.id ? 2.8 : isRelated ? 2.3 : 1.8}
                               onClick={() => setSelectedId(node.id)}
-                              style={{ cursor: "pointer" }}
+                              onMouseEnter={() => setHoveredId(node.id)}
+                              onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
+                              style={{
+                                cursor: "pointer",
+                                transition: GRAPH_TRANSITION,
+                                filter: hoveredId === node.id ? "drop-shadow(0 0 10px rgba(80,95,140,0.24))" : "none",
+                                transform: hoveredId === node.id ? "scale(1.08)" : "scale(1)",
+                                transformOrigin: `${node.x}px ${node.y}px`,
+                              }}
                             />
                             <text
                               x={labelX}
@@ -362,8 +428,12 @@ export default function GraphView() {
                               dominantBaseline="middle"
                               transform={`rotate(${rotate} ${labelX} ${labelY})`}
                               fontSize="11"
-                              fill={isActive ? "#1c2d80" : "#222631"}
-                              style={{ fontWeight: isActive || isRelated ? 700 : 500 }}
+                              fill={isActive ? "#1c2d80" : isRelated ? "#1f2430" : "#3f4758"}
+                              style={{
+                                fontWeight: isActive || hoveredId === node.id || isRelated ? 700 : 500,
+                                opacity: hoveredId === node.id || isRelated ? 1 : 0.94,
+                                transition: GRAPH_TRANSITION,
+                              }}
                             >
                               {shortLabel(node.label)}
                             </text>
@@ -375,14 +445,26 @@ export default function GraphView() {
                         const isActive = node.id === selectedNode?.id;
                         const isRelated = selectedConnections.has(node.id);
                         return (
-                        <g key={node.id} onClick={() => setSelectedId(node.id)} style={{ cursor: "pointer" }}>
+                        <g
+                          key={node.id}
+                          onClick={() => setSelectedId(node.id)}
+                          onMouseEnter={() => setHoveredId(node.id)}
+                          onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
+                          style={{ cursor: "pointer", transition: GRAPH_TRANSITION }}
+                        >
                           <circle
                             cx={node.x}
                             cy={node.y}
-                            r={isActive ? 14 : 12.5}
-                            fill={isActive ? NODE_CONFIG[node.type].color : "white"}
+                            r={isActive ? 14 : 13}
+                            fill={isActive ? NODE_CONFIG[node.type].color : "#fbfcff"}
                             stroke={NODE_CONFIG[node.type].color}
-                            strokeWidth={isActive ? 3 : isRelated ? 2.5 : 2.1}
+                            strokeWidth={isActive ? 3 : hoveredId === node.id ? 3 : 2.6}
+                            style={{
+                              transition: GRAPH_TRANSITION,
+                              filter: hoveredId === node.id ? "drop-shadow(0 0 12px rgba(64,88,168,0.24))" : "none",
+                              transform: hoveredId === node.id ? "scale(1.08)" : "scale(1)",
+                              transformOrigin: `${node.x}px ${node.y}px`,
+                            }}
                           />
                           <text
                             x={node.x + (node.x >= 0 ? 18 : -18)}
@@ -391,7 +473,10 @@ export default function GraphView() {
                             dominantBaseline="middle"
                             fontSize="12"
                             fill={isActive ? "#1c2d80" : "#1f2430"}
-                            style={{ fontWeight: isActive || isRelated ? 700 : 600 }}
+                            style={{
+                              fontWeight: isActive || hoveredId === node.id || isRelated ? 700 : 650,
+                              transition: GRAPH_TRANSITION,
+                            }}
                           >
                             {shortLabel(node.label)}
                           </text>
@@ -399,11 +484,10 @@ export default function GraphView() {
                       )})}
 
                       <g>
-                        <polygon points={hexPoints(74)} fill="url(#centerFill)" stroke="#cbd3f5" strokeWidth="3" />
-                        <polygon points={hexPoints(60)} fill={`url(#centerImagePattern)`} />
-                        <polygon points={hexPoints(60)} fill="rgba(28, 32, 40, 0.28)" />
-                        <circle cx="0" cy="0" r="88" fill="none" stroke="#c9d3f2" strokeWidth="2.5" />
-                        <circle cx="0" cy="0" r="103" fill="none" stroke="#dae1f5" strokeWidth="1.8" />
+                        <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
+                        <polygon points={hexPoints(72)} fill="url(#centerFill)" stroke="#8ea5ef" strokeWidth="3.2" />
+                        <polygon points={hexPoints(58)} fill={`url(#centerImagePattern)`} />
+                        <polygon points={hexPoints(58)} fill="rgba(28, 32, 40, 0.22)" />
                         <text x="0" y="-14" textAnchor="middle" fontSize="11" fill="white" style={{ fontWeight: 500, letterSpacing: "0.12em" }}>
                           {selectedNode?.type?.toUpperCase() || "NODE"}
                         </text>
