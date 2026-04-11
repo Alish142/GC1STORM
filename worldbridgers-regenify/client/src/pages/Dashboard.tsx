@@ -163,6 +163,10 @@ function ChangeCell({ value, suffix = "%" }: { value: number; suffix?: string })
   );
 }
 
+function HeaderDot({ color }: { color: string }) {
+  return <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />;
+}
+
 // ── Dashboard Home ────────────────────────────────────────────────────────────
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
@@ -398,14 +402,29 @@ function IssuersTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "name", label: "Issuer Name", sortable: true, className: "min-w-[200px]" },
+    {
+      key: "name",
+      label: (
+        <>
+          <HeaderDot color="bg-emerald-500" />
+          <span>Issuer Name</span>
+        </>
+      ),
+      sortable: true,
+      className: "min-w-[200px]",
+    },
     { key: "country", label: "Country", sortable: true },
     { key: "classification", label: "Classification", sortable: true,
       render: (v) => (
         <Badge variant="secondary" className="text-xs font-medium">{String(v)}</Badge>
       )
     },
-    { key: "wbxLabel", label: "WBX Label",
+    { key: "wbxLabel", label: (
+        <>
+          <HeaderDot color="bg-sky-500" />
+          <span>WBX Label</span>
+        </>
+      ),
       render: (v) => v ? (
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
           <ShieldCheck className="w-3 h-3" /> WBX
@@ -483,11 +502,21 @@ function OfferingsTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: "Type", sortable: true,
+    { key: "type", label: (
+        <>
+          <HeaderDot color="bg-amber-500" />
+          <span>Type</span>
+        </>
+      ), sortable: true,
       render: (v) => <Badge variant="outline" className="text-xs">{String(v)}</Badge>
     },
     { key: "segment", label: "Segment / Market", sortable: true },
-    { key: "issuer", label: "Issuer", sortable: true, className: "min-w-[160px]" },
+    { key: "issuer", label: (
+        <>
+          <HeaderDot color="bg-emerald-500" />
+          <span>Issuer</span>
+        </>
+      ), sortable: true, className: "min-w-[160px]" },
     { key: "isin", label: "ISIN", className: "font-mono text-xs" },
     { key: "name", label: "Name", className: "min-w-[200px]" },
     { key: "issuedAmount", label: "Issued Amount", className: "text-right",
@@ -567,7 +596,12 @@ function IndicesTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: "Type", sortable: true,
+    { key: "type", label: (
+        <>
+          <HeaderDot color="bg-violet-500" />
+          <span>Type</span>
+        </>
+      ), sortable: true,
       render: (v) => <span className="text-xs font-medium text-muted-foreground">{String(v)}</span>
     },
     { key: "name", label: "Name", sortable: true, className: "min-w-[220px] font-medium" },
@@ -646,14 +680,24 @@ function DocumentsTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: "Type",
+    { key: "type", label: (
+        <>
+          <HeaderDot color="bg-rose-500" />
+          <span>Type</span>
+        </>
+      ),
       render: (v) => <Badge variant="secondary" className="text-xs">{String(v)}</Badge>
     },
     { key: "subType", label: "Sub Type",
       render: (v) => <span className="text-xs text-muted-foreground">{String(v)}</span>
     },
     { key: "name", label: "Name", className: "min-w-[260px] font-medium" },
-    { key: "issuer", label: "Issuer", className: "min-w-[160px]" },
+    { key: "issuer", label: (
+        <>
+          <HeaderDot color="bg-emerald-500" />
+          <span>Issuer</span>
+        </>
+      ), className: "min-w-[160px]" },
     { key: "memberStates", label: "Member States",
       render: (v) => (
         <div className="flex flex-wrap gap-1">

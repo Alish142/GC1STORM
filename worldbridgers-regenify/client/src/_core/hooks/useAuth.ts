@@ -36,13 +36,18 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    queryClient.setQueryData(["auth", "me"], null);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("regenify-user-info", "null");
+    }
+
     try {
       await logoutMutation.mutateAsync();
     } catch {
       // Ignore logout API errors in demo mode.
     } finally {
       queryClient.setQueryData(["auth", "me"], null);
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     }
   }, [logoutMutation, queryClient]);
 

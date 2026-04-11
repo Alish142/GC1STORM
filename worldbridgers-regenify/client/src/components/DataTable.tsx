@@ -13,7 +13,7 @@ import {
 
 export interface Column<T> {
   key: keyof T | string;
-  label: string;
+  label: React.ReactNode;
   sortable?: boolean;
   render?: (value: unknown, row: T) => React.ReactNode;
   className?: string;

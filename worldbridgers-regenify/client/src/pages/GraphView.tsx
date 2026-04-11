@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -182,9 +182,19 @@ export default function GraphView() {
   });
 
   const filteredNodes = data?.nodes ?? [];
+  const requestedNodeId =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("node") : null;
+  const querySelectedId =
+    requestedNodeId && filteredNodes.some((node) => node.id === requestedNodeId) ? requestedNodeId : null;
   const defaultSelectedId = selectedId && filteredNodes.some((node) => node.id === selectedId)
     ? selectedId
-    : filteredNodes[0]?.id ?? "";
+    : querySelectedId ?? filteredNodes[0]?.id ?? "";
+
+  useEffect(() => {
+    if (querySelectedId && querySelectedId !== selectedId) {
+      setSelectedId(querySelectedId);
+    }
+  }, [querySelectedId, selectedId]);
 
   const selectedNode = filteredNodes.find((node) => node.id === defaultSelectedId) ?? null;
 
