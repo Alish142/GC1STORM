@@ -80,7 +80,7 @@ function wrapCenterLabel(label: string) {
     lines.push(current);
   }
 
-  return lines.slice(0, 3);
+  return lines.slice(0, 2);
 }
 
 function centerImageForNode(node: GraphNode | null) {
@@ -261,10 +261,10 @@ export default function GraphView() {
   }, [data, hoveredId]);
 
   return (
-    <div className="min-h-screen bg-[#f6f5f1]">
+    <div className="h-screen overflow-hidden bg-[#f6f5f1]">
       <DashboardHeader />
-      <main className="mx-auto max-w-[1700px] px-4 pb-10 pt-6 sm:px-6">
-        <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <main className="mx-auto flex h-[calc(100vh-72px)] max-w-[1700px] flex-col px-4 pb-4 pt-4 sm:px-6">
+        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={() => navigate("/dashboard")}
@@ -296,35 +296,19 @@ export default function GraphView() {
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_430px]">
-          <section className="overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
-            <div className="flex flex-col gap-4 border-b border-[#eee9e1] px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-7">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Graph canvas</div>
-                <div className="mt-1 text-[1.35rem] font-semibold text-slate-900">Strategic Intelligence Map</div>
-                <div className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">
-                  Click a node to pull its direct neighbors into the inner ring. Hover to spotlight its active connection lines before committing to a selection.
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 self-start rounded-full bg-[#f7f6f2] px-4 py-2 text-sm text-slate-500">
-                <span>{data?.nodes.length ?? 0} nodes</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                <span>{data?.edges.length ?? 0} links</span>
-              </div>
-            </div>
-
-            <div className="bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-3 py-4 sm:px-5 sm:py-5">
+        <div className="min-h-0 flex-1 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_410px]">
+          <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
+            <div className="min-h-0 flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-2 py-2 sm:px-3 sm:py-3">
               {isLoading ? (
-                <div className="flex min-h-[720px] items-center justify-center">
+                <div className="flex h-full min-h-[520px] items-center justify-center">
                   <div className="flex flex-col items-center gap-3 text-slate-500">
                     <Loader2 className="h-8 w-8 animate-spin text-[#244cba]" />
                     <div className="text-sm">Loading graph view...</div>
                   </div>
                 </div>
               ) : graph ? (
-                <div className="overflow-auto">
-                  <svg viewBox="-360 -360 720 720" className="mx-auto h-[720px] w-full min-w-[640px]">
+                <div className="flex h-full items-center justify-center overflow-hidden">
+                  <svg viewBox="-360 -360 720 720" className="mx-auto h-full max-h-[calc(100vh-250px)] w-full max-w-[calc(100vh-250px)] min-w-[520px]">
                     <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
                     <circle cx="0" cy="0" r="225" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
 
@@ -426,17 +410,14 @@ export default function GraphView() {
                     })}
 
                     <g>
-                      <polygon points={hexPoints(74)} fill="url(#centerFill)" stroke="#cbd3f5" strokeWidth="3" />
-                      <polygon points={hexPoints(60)} fill={`url(#centerImagePattern)`} />
-                      <polygon points={hexPoints(60)} fill="rgba(28, 32, 40, 0.28)" />
-                      <circle cx="0" cy="0" r="88" fill="none" stroke="#c9d3f2" strokeWidth="2.5" />
-                      <circle cx="0" cy="0" r="103" fill="none" stroke="#dae1f5" strokeWidth="1.8" />
-                      <text x="0" y="-14" textAnchor="middle" fontSize="11" fill="white" style={{ fontWeight: 500, letterSpacing: "0.12em" }}>
+                      <polygon points={hexPoints(58)} fill={`url(#centerImagePattern)`} />
+                      <polygon points={hexPoints(58)} fill="rgba(28, 32, 40, 0.28)" />
+                      <text x="0" y="-12" textAnchor="middle" fontSize="9" fill="white" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                         {selectedNode?.type?.toUpperCase() || "NODE"}
                       </text>
-                      <text x="0" y="4" textAnchor="middle" fill="white" style={{ fontWeight: 700 }}>
+                      <text x="0" y="4" textAnchor="middle" fill="white" dominantBaseline="middle" style={{ fontWeight: 700 }}>
                         {centerLabelLines.map((line, index) => (
-                          <tspan key={line} x="0" dy={index === 0 ? 0 : 18} fontSize={index === 0 ? 16 : 14}>
+                          <tspan key={line} x="0" dy={index === 0 ? 0 : 14} fontSize={index === 0 ? 12 : 11}>
                             {line}
                           </tspan>
                         ))}
@@ -463,7 +444,7 @@ export default function GraphView() {
                   </svg>
                 </div>
               ) : (
-                <div className="flex min-h-[720px] items-center justify-center text-center text-slate-500">
+                <div className="flex h-full min-h-[520px] items-center justify-center text-center text-slate-500">
                   <div>
                     <Network className="mx-auto h-10 w-10 text-slate-300" />
                     <div className="mt-4 text-sm">No graph data available for this selection.</div>
@@ -473,18 +454,17 @@ export default function GraphView() {
             </div>
           </section>
 
-          <aside className="overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)] xl:sticky xl:top-24 xl:h-fit">
+          <aside className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
             {selectedNode ? (
               <>
                 <div
-                  className="px-6 pb-8 pt-24 text-white"
+                  className="shrink-0 px-6 pb-6 pt-20 text-white"
                   style={{
                     backgroundImage: `linear-gradient(rgba(18,24,38,0.42), rgba(18,24,38,0.68)), url(${centerImage})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                   }}
                 >
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/60">Information window</div>
                   <div className="mt-3 text-4xl font-semibold leading-tight">{selectedNode.label}</div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Badge className="rounded-full border-0 px-3 py-1 text-xs" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white" }}>
@@ -495,7 +475,7 @@ export default function GraphView() {
                   </div>
                 </div>
 
-                <div className="space-y-6 px-6 py-6">
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
                   <div>
                     <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Overview</div>
                     <p className="mt-3 text-base leading-8 text-slate-600">
@@ -574,7 +554,7 @@ export default function GraphView() {
                 </div>
               </>
             ) : (
-              <div className="flex h-full min-h-[720px] items-center justify-center px-8 text-center">
+              <div className="flex h-full min-h-[520px] items-center justify-center px-8 text-center">
                 <div>
                   <Network className="mx-auto h-10 w-10 text-slate-300" />
                   <div className="mt-4 text-lg font-medium text-slate-700">Select a node</div>
