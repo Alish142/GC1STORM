@@ -234,13 +234,13 @@ export default function Home() {
         className="relative overflow-hidden pt-28 text-white"
         style={{
           background:
-            "linear-gradient(120deg, #123765 0%, #1d5c9a 26%, #23839b 52%, #3aa176 76%, #7fbf63 100%)",
+            "linear-gradient(120deg, #3c6fa1 0%, #4a85bc 24%, #51a3c4 50%, #65bd9f 76%, #a0d584 100%)",
           backgroundSize: "180% 180%",
           animation: "gradientShift 18s ease-in-out infinite",
         }}
       >
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.16]"
+          className="absolute inset-0 pointer-events-none opacity-[0.09]"
           style={{
             backgroundImage:
               "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
@@ -248,12 +248,12 @@ export default function Home() {
             animation: "gridDrift 22s ease-in-out infinite",
           }}
         />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.18),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(74,222,128,0.22),transparent_30%),radial-gradient(circle_at_center_right,rgba(96,165,250,0.18),transparent_26%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.12),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(167,243,208,0.16),transparent_30%),radial-gradient(circle_at_center_right,rgba(186,230,253,0.14),transparent_26%),radial-gradient(circle_at_center_left,rgba(255,255,255,0.1),transparent_28%)]" />
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-12 top-28 h-48 w-48 rounded-full bg-emerald-300/14 blur-3xl [animation:float_16s_ease-in-out_infinite]" />
-          <div className="absolute right-24 top-36 h-56 w-56 rounded-full bg-sky-300/12 blur-3xl [animation:float_20s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-16 left-1/3 h-44 w-44 rounded-full bg-amber-200/12 blur-3xl [animation:float_18s_ease-in-out_infinite]" />
-          <div className="absolute inset-x-0 bottom-0 h-36 opacity-35">
+          <div className="absolute -left-12 top-28 h-48 w-48 rounded-full bg-emerald-100/10 blur-3xl [animation:float_16s_ease-in-out_infinite]" />
+          <div className="absolute right-24 top-36 h-56 w-56 rounded-full bg-sky-100/9 blur-3xl [animation:float_20s_ease-in-out_infinite_reverse]" />
+          <div className="absolute bottom-16 left-1/3 h-44 w-44 rounded-full bg-amber-50/8 blur-3xl [animation:float_18s_ease-in-out_infinite]" />
+          <div className="absolute inset-x-0 bottom-0 h-36 opacity-18">
             <div className="flex h-full items-end gap-3 px-12">
               {[28, 34, 31, 42, 48, 40, 58, 66, 60, 72, 76, 82].map((height, index) => (
                 <div
