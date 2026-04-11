@@ -63,8 +63,9 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (meQuery.isLoading) return;
     localStorage.setItem("regenify-user-info", JSON.stringify(meQuery.data ?? null));
-  }, [meQuery.data]);
+  }, [meQuery.data, meQuery.isLoading]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;

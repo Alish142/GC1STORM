@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from app.core.security import create_session_token, decode_session_token
 
 COOKIE_NAME = "app_session_id"
+DEMO_EMAIL = "demo@regenify.com"
+DEMO_PASSWORD = "demo1234"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,8 +44,8 @@ def demo_login(
     res: Response,
 ):
     valid = (
-        (input_data.email == "demo@regenify.com" and input_data.password == "demo1234")
-        or ("@" in input_data.email and len(input_data.password) >= 4)
+        input_data.email.strip().lower() == DEMO_EMAIL
+        and input_data.password == DEMO_PASSWORD
     )
     if not valid:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
@@ -56,7 +58,7 @@ def demo_login(
         {
             "id": user_id,
             "openId": "demo-regenify-user-9999",
-            "email": input_data.email,
+            "email": DEMO_EMAIL,
             "name": "Demo User",
             "role": "user",
         }
@@ -72,12 +74,12 @@ def demo_login(
         path="/",
     )
     return {
-        "success": True,
-        "user": {
-            "id": user_id,
-            "name": "Demo User",
-            "email": input_data.email,
-            "role": "user",
+            "success": True,
+            "user": {
+                "id": user_id,
+                "name": "Demo User",
+                "email": DEMO_EMAIL,
+                "role": "user",
         },
     }
 

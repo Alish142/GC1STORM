@@ -15,6 +15,9 @@ import {
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL ?? "http://localhost:8000";
 const LOCAL_USER_KEY = "regenify-user-info";
+const LOCAL_ACCOUNTS_KEY = "regenify-registered-accounts";
+const DEMO_EMAIL = "demo@regenify.com";
+const DEMO_PASSWORD = "demo1234";
 
 type AuthUser = {
   id: number;
@@ -22,6 +25,15 @@ type AuthUser = {
   email: string;
   name: string;
   role: string;
+};
+
+type RegisteredAccount = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  dateOfBirth: string;
+  createdAt: string;
 };
 
 type Paginated<T> = {
@@ -69,10 +81,46 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
+function readRegisteredAccounts(): RegisteredAccount[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const raw = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
+    if (!raw || raw === "null") {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as RegisteredAccount[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRegisteredAccounts(accounts: RegisteredAccount[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
 function buildDemoUser(email: string) {
   return {
     ...demoUser,
-    email,
+    email: DEMO_EMAIL,
+  };
+}
+
+function buildRegisteredUser(account: RegisteredAccount): AuthUser {
+  return {
+    id: Date.parse(account.createdAt) || Date.now(),
+    openId: `local-${account.email}`,
+    email: account.email,
+    name: `${account.firstName} ${account.lastName}`.trim(),
+    role: "user",
   };
 }
 
@@ -240,7 +288,8 @@ export const backendApi = {
   },
   me: async () => {
     try {
-      return await request<AuthUser | null>("/api/auth/me");
+      const user = await request<AuthUser | null>("/api/auth/me");
+      return user ?? readStoredUser();
     } catch (error) {
       if (isNetworkError(error)) {
         return readStoredUser();
@@ -260,8 +309,7 @@ export const backendApi = {
       }
 
       const validCredentials =
-        (email === "demo@regenify.com" && password === "demo1234") ||
-        (email.includes("@") && password.length >= 4);
+        email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD;
 
       if (!validCredentials) {
         throw new Error("Invalid email or password.");
@@ -269,9 +317,60 @@ export const backendApi = {
 
       return {
         success: true,
-        user: buildDemoUser(email),
+        user: buildDemoUser(DEMO_EMAIL),
       };
     }
+  },
+  registerLocalAccount: async ({
+    firstName,
+    lastName,
+    email,
+    password,
+    dateOfBirth,
+  }: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    dateOfBirth: string;
+  }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = readRegisteredAccounts();
+
+    if (existing.some((account) => account.email === normalizedEmail)) {
+      throw new Error("An account with this email already exists.");
+    }
+
+    const account: RegisteredAccount = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: normalizedEmail,
+      password,
+      dateOfBirth,
+      createdAt: new Date().toISOString(),
+    };
+
+    writeRegisteredAccounts([...existing, account]);
+
+    return {
+      success: true,
+      user: buildRegisteredUser(account),
+    };
+  },
+  loginLocalAccount: async (email: string, password: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const account = readRegisteredAccounts().find(
+      (item) => item.email === normalizedEmail && item.password === password
+    );
+
+    if (!account) {
+      throw new Error("Invalid email or password.");
+    }
+
+    return {
+      success: true,
+      user: buildRegisteredUser(account),
+    };
   },
   logout: async () => {
     try {
