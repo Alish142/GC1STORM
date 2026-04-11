@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.data.mock_data import GRAPH_DATA
 from app.db import get_db
+from app.db.neo4j import get_graph_view_data, verify_neo4j
 from app.models.document import Document
 from app.models.document_member_state import DocumentMemberState
 from app.models.issuer import Issuer
@@ -270,8 +271,9 @@ def graph_data(
     filter_regions: list[str] | None = Query(default=None),
     search: str | None = None,
 ):
-    nodes = [*GRAPH_DATA["nodes"]]
-    edges = [*GRAPH_DATA["edges"]]
+    graph_source = get_graph_view_data() if verify_neo4j() else GRAPH_DATA
+    nodes = [*graph_source["nodes"]]
+    edges = [*graph_source["edges"]]
 
     if filter_types:
         nodes = [n for n in nodes if n["type"] in filter_types]

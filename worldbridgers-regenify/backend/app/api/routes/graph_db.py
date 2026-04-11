@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.db import driver
-from app.db.neo4j import get_primary_themes, seed_primary_themes
+from app.db.neo4j import get_primary_themes, seed_mock_graph_entities, seed_primary_themes
 
 router = APIRouter(prefix="/graph-db", tags=["graph-db"])
 
@@ -21,6 +21,15 @@ def sample_graph_query():
 def seed_themes():
     try:
         stats = seed_primary_themes()
+        return {"status": "ok", **stats}
+    except Exception as error:
+        return {"status": "error", "detail": str(error)}
+
+
+@router.post("/seed-mock-graph")
+def seed_mock_graph():
+    try:
+        stats = seed_mock_graph_entities()
         return {"status": "ok", **stats}
     except Exception as error:
         return {"status": "error", "detail": str(error)}
