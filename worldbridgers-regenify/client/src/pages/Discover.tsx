@@ -85,24 +85,24 @@ export default function Discover() {
   const [, navigate] = useLocation();
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <PublicHeader />
+    <div className="min-h-screen bg-white text-slate-950">
+      <PublicHeader lightBackground />
 
       <main className="px-6 pb-16 pt-28 sm:px-8 lg:px-10">
         <div className="mx-auto max-w-[1460px]">
           <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Badge className="border-0 bg-white/10 text-white hover:bg-white/10">Worldbridgers Discover</Badge>
+              <Badge className="border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50">Worldbridgers Discover</Badge>
               <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
                 Explore the themes, markets, instruments, and climate intelligence shaping Regenify.
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-8 text-white/68">
+              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">
                 Each panel opens a focused story around the Worldbridgers ecosystem, from sustainable securities and
                 indices to relationship intelligence and market discovery.
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-white/70">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600">
               15 live discovery panels
             </div>
           </div>
@@ -125,8 +125,16 @@ export default function Discover() {
                 <div className="relative flex h-full flex-col justify-between p-5">
                   <div className="h-12 w-12 rounded-2xl bg-white/14 backdrop-blur-sm" />
                   <div>
-                    <div className="max-w-[180px] text-[1.65rem] font-semibold leading-[1.02] drop-shadow-[0_8px_18px_rgba(0,0,0,0.38)]">{topic.title}</div>
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-white/80 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div
+                      className="max-w-[180px] text-[1.65rem] font-semibold leading-[1.02] text-white"
+                      style={{ textShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+                    >
+                      {topic.title}
+                    </div>
+                    <div
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-medium opacity-0 transition-opacity group-hover:opacity-100"
+                      style={{ color: "rgba(255,255,255,0.82)", textShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+                    >
                       Open topic
                       <ArrowRight className="h-4 w-4" />
                     </div>
