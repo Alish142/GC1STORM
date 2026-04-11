@@ -86,7 +86,7 @@ export default function Discover() {
 
   return (
     <div className="min-h-screen bg-white text-slate-950">
-      <PublicHeader />
+      <PublicHeader lightBackground />
 
       <main className="px-6 pb-16 pt-28 sm:px-8 lg:px-10">
         <div className="mx-auto max-w-[1460px]">

@@ -31,7 +31,11 @@ function resolveAuthenticatedHref(href: string, isAuthenticated: boolean) {
   return href;
 }
 
-export default function PublicHeader() {
+interface PublicHeaderProps {
+  lightBackground?: boolean;
+}
+
+export default function PublicHeader({ lightBackground = false }: PublicHeaderProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -60,11 +64,13 @@ export default function PublicHeader() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const useLightStyle = lightBackground || scrolled;
+
   return (
     <header
       ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
+        useLightStyle
           ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-border"
           : "bg-transparent"
       }`}
@@ -77,10 +83,10 @@ export default function PublicHeader() {
               <Leaf className="h-4 w-4 text-white" />
             </div>
             <div className="leading-none">
-              <span className={`font-bold text-[17px] tracking-tight ${scrolled ? "text-foreground" : "text-white"}`}>
+              <span className={`font-bold text-[17px] tracking-tight ${useLightStyle ? "text-foreground" : "text-white"}`}>
                 Worldbridgers
               </span>
-              <span className={`block text-[11px] font-medium tracking-[0.28em] uppercase ${scrolled ? "text-primary" : "text-green-300"}`}>
+              <span className={`block text-[11px] font-medium tracking-[0.28em] uppercase ${useLightStyle ? "text-primary" : "text-green-300"}`}>
                 Regenify
               </span>
             </div>
@@ -97,10 +103,10 @@ export default function PublicHeader() {
                 <DropdownMenuTrigger asChild>
                   <button
                     className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors ${
-                      scrolled
+                      useLightStyle
                         ? "text-foreground/70 hover:text-foreground hover:bg-muted"
                         : "text-white/80 hover:text-white hover:bg-white/10"
-                    } ${activeMenu === group.label ? (scrolled ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
+                    } ${activeMenu === group.label ? (useLightStyle ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
                   >
                     <group.icon className="h-4 w-4" />
                     {group.label}
@@ -155,7 +161,7 @@ export default function PublicHeader() {
                 <button
                   onClick={() => setSearchOpen(true)}
                     className={`p-2.5 rounded-xl transition-colors ${
-                      scrolled ? "text-foreground/60 hover:text-foreground hover:bg-muted" : "text-white/70 hover:text-white hover:bg-white/10"
+                      useLightStyle ? "text-foreground/60 hover:text-foreground hover:bg-muted" : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
                   <Search className="w-4 h-4" />
@@ -167,7 +173,7 @@ export default function PublicHeader() {
               variant="ghost"
               size="sm"
               className={`hidden xl:flex text-sm font-medium ${
-                scrolled ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
+                useLightStyle ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
               }`}
               onClick={() => navigate("/discover")}
             >
@@ -177,15 +183,21 @@ export default function PublicHeader() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="hidden xl:flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 py-2 pl-2.5 pr-3.5 text-white backdrop-blur-sm transition-colors hover:bg-white/15">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-xs font-bold text-primary">
+                  <button className={`hidden xl:flex items-center gap-3 rounded-xl py-2 pl-2.5 pr-3.5 backdrop-blur-sm transition-colors ${
+                    useLightStyle
+                      ? "border border-border bg-white text-foreground hover:bg-muted"
+                      : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+                  }`}>
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                      useLightStyle ? "bg-primary/10 text-primary" : "bg-white/90 text-primary"
+                    }`}>
                       {initials}
                     </div>
                     <div className="text-left">
                       <div className="text-sm font-medium leading-none">{user.name || "Demo User"}</div>
-                      <div className="mt-0.5 text-[11px] text-white/68">{user.email || "demo@regenify.com"}</div>
+                      <div className={`mt-0.5 text-[11px] ${useLightStyle ? "text-muted-foreground" : "text-white/68"}`}>{user.email || "demo@regenify.com"}</div>
                     </div>
-                    <ChevronDown className="h-3 w-3 text-white/70" />
+                    <ChevronDown className={`h-3 w-3 ${useLightStyle ? "text-muted-foreground" : "text-white/70"}`} />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -215,7 +227,7 @@ export default function PublicHeader() {
                   variant="ghost"
                   size="sm"
                   className={`hidden xl:flex text-sm font-medium ${
-                    scrolled ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
+                    useLightStyle ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
                   }`}
                   onClick={() => {
                     window.location.href = "/login";
@@ -238,7 +250,7 @@ export default function PublicHeader() {
 
             {/* Mobile menu toggle */}
             <button
-              className={`xl:hidden p-2 rounded-lg ${scrolled ? "text-foreground" : "text-white"}`}
+              className={`xl:hidden p-2 rounded-lg ${useLightStyle ? "text-foreground" : "text-white"}`}
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
