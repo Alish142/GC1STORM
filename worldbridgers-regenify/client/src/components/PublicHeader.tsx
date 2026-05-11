@@ -102,13 +102,12 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               >
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors ${
+                    className={`rounded-xl px-3 py-2.5 text-base font-semibold transition-colors ${
                       useLightStyle
-                        ? "text-foreground/70 hover:text-foreground hover:bg-muted"
-                        : "text-white/80 hover:text-white hover:bg-white/10"
+                        ? "text-foreground/80 hover:text-foreground hover:bg-muted"
+                        : "text-white/90 hover:text-white hover:bg-white/10"
                     } ${activeMenu === group.label ? (useLightStyle ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
                   >
-                    <group.icon className="h-4 w-4" />
                     {group.label}
                     <ChevronDown
                       className={`w-3.5 h-3.5 transition-transform ${activeMenu === group.label ? "rotate-180" : ""}`}
@@ -287,13 +286,10 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
             {publicNavigation.map((item) => (
               <div key={item.label}>
                 <button
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-lg"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-base font-semibold text-foreground hover:bg-muted rounded-lg"
                   onClick={() => setActiveMenu(activeMenu === item.label ? null : item.label)}
                 >
-                  <span className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4 text-primary" />
-                    {item.label}
-                  </span>
+                  <span>{item.label}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${activeMenu === item.label ? "rotate-180" : ""}`} />
                 </button>
                 {activeMenu === item.label && (

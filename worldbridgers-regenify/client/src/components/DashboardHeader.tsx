@@ -45,10 +45,9 @@ export default function DashboardHeader() {
     : "DU";
 
   const submitSearch = () => {
-    const query = searchValue.trim().toLowerCase();
+    const query = searchValue.trim();
     if (!query) return;
-    const target = searchSuggestions.find((item) => item.match.some((term) => query.includes(term)));
-    navigate(target?.href ?? "/dashboard/issuers");
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
