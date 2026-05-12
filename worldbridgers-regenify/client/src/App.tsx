@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Discover from "./pages/Discover";
+import DiscoverTopicPage from "./pages/DiscoverTopicPage";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import GraphView from "./pages/GraphView";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/capabilities/:slug" component={PlatformFeaturePage} />
       <Route path="/discover" component={Discover} />
+      <Route path="/discover/:slug" component={DiscoverTopicPage} />
       <Route path="/login" component={Login} />
       <Route path="/logout" component={Logout} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />

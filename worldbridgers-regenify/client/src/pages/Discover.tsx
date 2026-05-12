@@ -1,85 +1,8 @@
 import PublicHeader from "@/components/PublicHeader";
 import { Badge } from "@/components/ui/badge";
+import { DISCOVER_TOPICS } from "@/lib/discoverTopics";
 import { ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
-
-const TOPICS = [
-  {
-    title: "Green Bonds",
-    graphNodeId: "issuer-eib",
-    image: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Transition Finance",
-    graphNodeId: "investor-us-climate",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Climate Issuers",
-    graphNodeId: "investor-us-climate",
-    image: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Impact Capital",
-    graphNodeId: "investor-impact-asia",
-    image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Sustainable Indices",
-    graphNodeId: "theme-3",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Biodiversity",
-    graphNodeId: "opportunity-carbon",
-    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Carbon Markets",
-    graphNodeId: "opportunity-carbon",
-    image: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Document Intelligence",
-    graphNodeId: "issuer-ngc",
-    image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Regen Finance",
-    graphNodeId: "theme-1",
-    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "APAC Markets",
-    graphNodeId: "market-apac",
-    image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Infrastructure",
-    graphNodeId: "issuer-eib",
-    image: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Social Bonds",
-    graphNodeId: "theme-2",
-    image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Water Security",
-    graphNodeId: "theme-3",
-    image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Energy Transition",
-    graphNodeId: "issuer-acf",
-    image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Nature Data",
-    graphNodeId: "opportunity-carbon",
-    image: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1200&q=80",
-  },
-];
 
 export default function Discover() {
   const [, navigate] = useLocation();
@@ -108,10 +31,10 @@ export default function Discover() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {TOPICS.map((topic) => (
+            {DISCOVER_TOPICS.map((topic) => (
               <button
                 key={topic.title}
-                onClick={() => navigate(`/dashboard/graph?node=${encodeURIComponent(topic.graphNodeId)}`)}
+                onClick={() => navigate(`/discover/${topic.slug}`)}
                 className="group relative min-h-[208px] overflow-hidden rounded-[26px] border border-white/10 text-left transition-transform duration-300 hover:-translate-y-1"
               >
                 <img
