@@ -13,6 +13,7 @@ import GraphView from "./pages/GraphView";
 import Logout from "./pages/Logout";
 import Account from "./pages/Account";
 import PlatformFeaturePage from "./pages/PlatformFeaturePage";
+import AboutPage from "./pages/AboutPage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -41,6 +42,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/capabilities/:slug" component={PlatformFeaturePage} />
       <Route path="/discover" component={Discover} />
       <Route path="/discover/:slug" component={DiscoverTopicPage} />

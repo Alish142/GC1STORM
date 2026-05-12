@@ -25,6 +25,7 @@ export type NavigationLink = {
 export type NavigationGroup = {
   label: string;
   icon: LucideIcon;
+  href?: string;
   items: NavigationLink[];
 };
 
@@ -32,22 +33,23 @@ export const publicNavigation: NavigationGroup[] = [
   {
     label: "About Us",
     icon: User,
+    href: "/about",
     items: [
       {
         label: "Vision",
-        href: "/login",
+        href: "/about",
         description: "Learn the long-term regenerative vision behind the Worldbridgers Regenify platform.",
         icon: Globe2,
       },
       {
         label: "Team Members",
-        href: "/login?mode=request-access",
+        href: "/about",
         description: "Meet the people guiding platform strategy, onboarding, and partnership support.",
         icon: User,
       },
       {
         label: "Themes",
-        href: "/login?next=/dashboard/graph",
+        href: "/about",
         description: "Explore the core regenerative and ESG themes connected across the platform.",
         icon: Network,
       },
