@@ -8,91 +8,76 @@ const TOPICS = [
     title: "Green Bonds",
     graphNodeId: "issuer-eib",
     image: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-emerald-500/78 via-emerald-400/22 to-slate-950/92",
   },
   {
     title: "Transition Finance",
     graphNodeId: "investor-us-climate",
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-sky-500/78 via-blue-400/22 to-slate-950/92",
   },
   {
     title: "Climate Issuers",
     graphNodeId: "investor-us-climate",
     image: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-amber-400/74 via-yellow-300/22 to-slate-950/92",
   },
   {
     title: "Impact Capital",
     graphNodeId: "investor-impact-asia",
     image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-emerald-500/72 via-sky-400/18 to-slate-950/92",
   },
   {
     title: "Sustainable Indices",
     graphNodeId: "theme-3",
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-sky-600/76 via-blue-400/22 to-slate-950/92",
   },
   {
     title: "Biodiversity",
     graphNodeId: "opportunity-carbon",
     image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-amber-400/70 via-emerald-300/22 to-slate-950/92",
   },
   {
     title: "Carbon Markets",
     graphNodeId: "opportunity-carbon",
     image: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-emerald-500/76 via-emerald-400/20 to-slate-950/92",
   },
   {
     title: "Document Intelligence",
     graphNodeId: "issuer-ngc",
     image: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-sky-500/78 via-blue-400/20 to-slate-950/92",
   },
   {
     title: "Regen Finance",
     graphNodeId: "theme-1",
     image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-amber-400/74 via-yellow-300/18 to-slate-950/92",
   },
   {
     title: "APAC Markets",
     graphNodeId: "market-apac",
     image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-emerald-500/72 via-sky-400/20 to-slate-950/92",
   },
   {
     title: "Infrastructure",
     graphNodeId: "issuer-eib",
     image: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-sky-600/76 via-blue-400/22 to-slate-950/92",
   },
   {
     title: "Social Bonds",
     graphNodeId: "theme-2",
     image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-amber-400/72 via-emerald-300/18 to-slate-950/92",
   },
   {
     title: "Water Security",
     graphNodeId: "theme-3",
     image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-emerald-500/72 via-emerald-300/18 to-slate-950/92",
   },
   {
     title: "Energy Transition",
     graphNodeId: "issuer-acf",
     image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-sky-500/78 via-blue-400/22 to-slate-950/92",
   },
   {
     title: "Nature Data",
     graphNodeId: "opportunity-carbon",
     image: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1200&q=80",
-    overlay: "from-amber-400/74 via-yellow-300/18 to-slate-950/92",
   },
 ];
 
@@ -134,11 +119,8 @@ export default function Discover() {
                   alt={topic.title}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-br ${topic.overlay}`} />
-                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_24%)]" />
+                <div className="absolute inset-0 bg-black/22" />
                 <div className="relative flex h-full flex-col justify-between p-5">
-                  <div className="h-12 w-12 rounded-2xl bg-white/14 backdrop-blur-sm" />
                   <div>
                     <div
                       className="max-w-[180px] text-[1.65rem] font-semibold leading-[1.02] text-white"
