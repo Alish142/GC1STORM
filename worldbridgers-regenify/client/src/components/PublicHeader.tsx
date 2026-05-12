@@ -242,10 +242,10 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                   size="sm"
                   className="hidden xl:flex whitespace-nowrap text-sm font-semibold bg-primary px-4 hover:bg-primary/90 text-white shadow-brand"
                   onClick={() => {
-                    window.location.href = "/login?mode=request-access";
+                    window.location.href = "/login?mode=create-account";
                   }}
                 >
-                  Request Access
+                  Sign Up
                 </Button>
               </>
             )}
@@ -334,8 +334,8 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               <Button variant="outline" className="w-full" onClick={() => navigate("/discover")}>Discover</Button>
               <Button variant="outline" className="w-full" onClick={() => navigate("/login")}>Log In</Button>
               <Button className="w-full bg-primary text-white" onClick={() => {
-                window.location.href = "/login?mode=request-access";
-              }}>Request Access</Button>
+                window.location.href = "/login?mode=create-account";
+              }}>Sign Up</Button>
             </div>
           </div>
         </div>

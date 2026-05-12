@@ -61,9 +61,9 @@ export default function AboutPage() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Button
                 className="h-12 rounded-xl bg-primary px-6 text-base font-semibold text-white shadow-brand hover:bg-primary/90"
-                onClick={() => navigate("/login?mode=request-access")}
+                onClick={() => navigate("/login?mode=create-account")}
               >
-                Request Access
+                Sign Up
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button

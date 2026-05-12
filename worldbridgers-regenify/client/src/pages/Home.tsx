@@ -264,10 +264,10 @@ export default function Home() {
                   variant="outline"
                   className="h-16 rounded-xl border-white/30 bg-white/5 px-11 text-[1.05rem] font-semibold text-white hover:border-white/50 hover:bg-white/10"
                   onClick={() => {
-                    window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=request-access";
+                    window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
                   }}
                 >
-                  Request Access
+                  Sign Up
                 </Button>
               </div>
 
@@ -562,7 +562,7 @@ export default function Home() {
                 variant="outline"
                 className="px-10 font-semibold"
                 onClick={() => {
-                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=request-access";
+                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
                 }}
               >
                 Schedule a Demo
@@ -603,7 +603,7 @@ export default function Home() {
 
             {[
               ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
-              ["Access", ["Log In", "Request Access", "Support", "Onboarding"]],
+              ["Access", ["Log In", "Sign Up", "Support", "Onboarding"]],
               ["About Us", ["Vision", "Team Members", "Themes", "Contact", "Privacy"]],
             ].map(([title, links]) => (
               <div key={title as string}>
@@ -614,8 +614,8 @@ export default function Home() {
                       key={link}
                       className="block text-sm transition-colors hover:text-white"
                       onClick={() => {
-                        if (link === "Request Access") {
-                          window.location.href = "/login?mode=request-access";
+                        if (link === "Sign Up") {
+                          window.location.href = "/login?mode=create-account";
                           return;
                         }
                         navigate("/login");
