@@ -182,17 +182,6 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               )}
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`hidden xl:flex text-sm font-medium ${
-                useLightStyle ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
-              }`}
-              onClick={() => navigate("/discover")}
-            >
-              Discover
-            </Button>
-
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
