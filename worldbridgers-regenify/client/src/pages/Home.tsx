@@ -159,6 +159,97 @@ const PREVIEW_RING_NODES = [
   { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa" },
 ];
 
+function createHeroSlideDataUri({
+  top,
+  bottom,
+  accent,
+  title,
+  subtitle,
+}: {
+  top: string;
+  bottom: string;
+  accent: string;
+  title: string;
+  subtitle: string;
+}) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${top}" />
+          <stop offset="100%" stop-color="${bottom}" />
+        </linearGradient>
+        <radialGradient id="glowA" cx="22%" cy="24%" r="40%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.48" />
+          <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="glowB" cx="80%" cy="72%" r="34%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="900" fill="url(#bg)" />
+      <rect width="1600" height="900" fill="url(#glowA)" />
+      <rect width="1600" height="900" fill="url(#glowB)" />
+      <g opacity="0.24" stroke="#ffffff" stroke-width="1">
+        <path d="M0 180 H1600" />
+        <path d="M0 360 H1600" />
+        <path d="M0 540 H1600" />
+        <path d="M0 720 H1600" />
+        <path d="M280 0 V900" />
+        <path d="M560 0 V900" />
+        <path d="M840 0 V900" />
+        <path d="M1120 0 V900" />
+        <path d="M1400 0 V900" />
+      </g>
+      <g opacity="0.72">
+        <circle cx="1220" cy="220" r="132" fill="${accent}" fill-opacity="0.2" />
+        <circle cx="1330" cy="340" r="84" fill="#ffffff" fill-opacity="0.13" />
+        <circle cx="300" cy="700" r="156" fill="#ffffff" fill-opacity="0.08" />
+      </g>
+      <g transform="translate(1060 180)">
+        <rect x="0" y="0" width="360" height="250" rx="30" fill="#ffffff" fill-opacity="0.9" />
+        <rect x="22" y="24" width="316" height="156" rx="18" fill="#f8fafc" />
+        <path d="M38 128 C78 96, 122 140, 158 114 S232 92, 278 112 S322 120, 330 92" fill="none" stroke="${accent}" stroke-width="8" stroke-linecap="round" />
+        <path d="M38 144 C82 164, 126 118, 164 136 S238 168, 330 148" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.82" />
+        <rect x="24" y="196" width="92" height="34" rx="12" fill="#ffffff" />
+        <rect x="134" y="196" width="92" height="34" rx="12" fill="#ffffff" />
+        <rect x="244" y="196" width="92" height="34" rx="12" fill="#ffffff" />
+      </g>
+      <g fill="#ffffff" opacity="0.9">
+        <text x="96" y="150" font-family="Arial, sans-serif" font-size="58" font-weight="700">${title}</text>
+        <text x="96" y="208" font-family="Arial, sans-serif" font-size="26" opacity="0.86">${subtitle}</text>
+      </g>
+    </svg>
+  `;
+
+  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+}
+
+const HERO_BACKGROUND_SLIDES = [
+  createHeroSlideDataUri({
+    top: "#2f6fa4",
+    bottom: "#7bc687",
+    accent: "#4ade80",
+    title: "Global Market Access",
+    subtitle: "Live sustainability data across regions and sectors",
+  }),
+  createHeroSlideDataUri({
+    top: "#215779",
+    bottom: "#3cb4a0",
+    accent: "#facc15",
+    title: "Regenerative Intelligence",
+    subtitle: "Themes, issuers, and capital connected in one system",
+  }),
+  createHeroSlideDataUri({
+    top: "#345c94",
+    bottom: "#95c96e",
+    accent: "#60a5fa",
+    title: "Verified ESG Opportunities",
+    subtitle: "Structured offerings supported by transparent workflows",
+  }),
+];
+
 function previewHexPoints(size: number) {
   return Array.from({ length: 6 }, (_, index) => {
     const angle = (Math.PI / 3) * index - Math.PI / 6;
@@ -170,6 +261,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const landingStatsQuery = useQuery<LandingStat[]>({
     queryKey: ["landing-stats"],
     queryFn: async () => {
@@ -191,70 +283,44 @@ export default function Home() {
   });
   const displayStats = landingStatsQuery.data ?? STATS;
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveHeroSlide((current) => (current + 1) % HERO_BACKGROUND_SLIDES.length);
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(0, -16px, 0) scale(1.04); }
-        }
-
-        @keyframes pulseBars {
-          0%, 100% { transform: scaleY(0.92); opacity: 0.35; }
-          50% { transform: scaleY(1.08); opacity: 0.72; }
-        }
-
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        @keyframes gridDrift {
-          0% { transform: translate3d(0, 0, 0); }
-          50% { transform: translate3d(-12px, 10px, 0); }
-          100% { transform: translate3d(0, 0, 0); }
+        @keyframes heroSlidePan {
+          0% { transform: scale(1.08) translateX(-3%); }
+          100% { transform: scale(1.08) translateX(3%); }
         }
       `}</style>
       <PublicHeader />
 
       <section
         className="relative overflow-hidden pt-28 text-white"
-        style={{
-          background:
-            "linear-gradient(120deg, #3c6fa1 0%, #4a85bc 24%, #51a3c4 50%, #65bd9f 76%, #a0d584 100%)",
-          backgroundSize: "180% 180%",
-          animation: "gradientShift 18s ease-in-out infinite",
-        }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.09]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-            animation: "gridDrift 22s ease-in-out infinite",
-          }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.12),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(167,243,208,0.16),transparent_30%),radial-gradient(circle_at_center_right,rgba(186,230,253,0.14),transparent_26%),radial-gradient(circle_at_center_left,rgba(255,255,255,0.1),transparent_28%)]" />
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-12 top-28 h-48 w-48 rounded-full bg-emerald-100/10 blur-3xl [animation:float_16s_ease-in-out_infinite]" />
-          <div className="absolute right-24 top-36 h-56 w-56 rounded-full bg-sky-100/9 blur-3xl [animation:float_20s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-16 left-1/3 h-44 w-44 rounded-full bg-amber-50/8 blur-3xl [animation:float_18s_ease-in-out_infinite]" />
-          <div className="absolute inset-x-0 bottom-0 h-36 opacity-18">
-            <div className="flex h-full items-end gap-3 px-12">
-              {[28, 34, 31, 42, 48, 40, 58, 66, 60, 72, 76, 82].map((height, index) => (
-                <div
-                  key={index}
-                  className="flex-1 rounded-t-[18px] bg-gradient-to-t from-white/10 via-sky-200/10 to-emerald-200/20"
-                  style={{
-                    height: `${height}%`,
-                    animation: `pulseBars ${6 + (index % 4)}s ease-in-out ${index * 0.2}s infinite`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="absolute inset-y-0 right-0 w-full md:w-[58%] overflow-hidden">
+          {HERO_BACKGROUND_SLIDES.map((backgroundImage, index) => (
+            <div
+              key={index}
+              className="absolute inset-0 transition-opacity duration-1000"
+              style={{
+                opacity: index === activeHeroSlide ? 1 : 0,
+                backgroundImage,
+                backgroundPosition: "center right",
+                backgroundSize: "cover",
+                animation: "heroSlidePan 8s ease-in-out infinite alternate",
+              }}
+            />
+          ))}
         </div>
+        <div className="absolute inset-y-0 left-0 w-full bg-black/50 md:w-[62%] md:bg-black/58 md:backdrop-blur-xl" />
+        <div className="absolute inset-y-0 left-0 w-full md:w-[70%] bg-[linear-gradient(90deg,rgba(0,0,0,0.84)_0%,rgba(0,0,0,0.74)_38%,rgba(0,0,0,0.38)_72%,rgba(0,0,0,0)_100%)]" />
 
         <div className="container relative z-10 pb-20">
           <div className="grid gap-8">
