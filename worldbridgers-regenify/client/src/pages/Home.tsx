@@ -18,7 +18,6 @@ import {
   Mail,
   Network,
   ShieldCheck,
-  TrendingDown,
   TrendingUp,
   Twitter,
   Linkedin,
@@ -167,55 +166,6 @@ function previewHexPoints(size: number) {
   }).join(" ");
 }
 
-function buildHeroSeries(changePercent: number, seriesIndex = 0) {
-  const target = changePercent;
-  const presets = [
-    [0.4, 0.9, 0.7, 1.2, -0.4, 1.35, -3.5, 1.1, -4.8, -2.1, -1.3, -0.9, -1.1, -0.4, -0.8, -0.2, -0.7, 0],
-    [0.15, -0.15, -0.55, -1.3, -1.1, -1.7, -2.5, -4.1, -5.5, -7.1, -6.4, -6.0, -5.1, -4.5, -5.2, -3.7, -5.8, 0],
-    [-0.4, -1.0, -1.7, -3.5, -4.1, -4.7, -3.2, -2.9, -5.0, -4.7, -7.4, -9.2, -11.7, -13.1, -8.6, -7.5, -10.9, 0],
-  ];
-
-  const preset = presets[seriesIndex % presets.length];
-  const start = seriesIndex === 0 ? -3.8 : seriesIndex === 1 ? -6.6 : -10.8;
-  const span = target - start;
-
-  return preset.map((offset, index) => {
-    if (index === preset.length - 1) {
-      return target;
-    }
-
-    const progress = index / (preset.length - 1);
-    const baseline = start + span * progress;
-    const taper = 1 - progress * 0.14;
-    return baseline + offset * taper;
-  });
-}
-
-function linePath(values: number[], width: number, height: number, min: number, max: number) {
-  if (!values.length) {
-    return "";
-  }
-
-  const usableWidth = width - 36;
-  const usableHeight = height - 28;
-  const range = Math.max(max - min, 1);
-  const points = values.map((value, index) => {
-    const x = 18 + (usableWidth * index) / Math.max(values.length - 1, 1);
-    const y = 12 + usableHeight - ((value - min) / range) * usableHeight;
-    return { x, y };
-  });
-
-  return points
-    .map((point, index) => {
-      if (index === 0) {
-        return `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-      }
-
-      return `L ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-    })
-    .join(" ");
-}
-
 export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
@@ -240,23 +190,6 @@ export default function Home() {
     staleTime: 60_000,
   });
   const displayStats = landingStatsQuery.data ?? STATS;
-  const heroIndicesQuery = useQuery({
-    queryKey: ["landing-hero-indices"],
-    queryFn: () => backendApi.indices(new URLSearchParams({ page: "1", page_size: "3" })),
-    staleTime: 60_000,
-  });
-  const heroIndices = heroIndicesQuery.data?.data ?? [];
-  const heroSeries = heroIndices.map((item) => ({
-    ...item,
-    series: buildHeroSeries(
-      item.changePercent,
-      heroIndices.findIndex((candidate) => candidate.id === item.id)
-    ),
-  }));
-  const allHeroValues = heroSeries.flatMap((item) => item.series);
-  const chartMin = allHeroValues.length ? Math.min(-20, Math.min(...allHeroValues) - 1.5) : -20;
-  const chartMax = allHeroValues.length ? Math.max(5, Math.max(...allHeroValues) + 1.5) : 5;
-  const leadIndex = heroIndices[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -324,7 +257,7 @@ export default function Home() {
         </div>
 
         <div className="container relative z-10 pb-20">
-          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+          <div className="grid gap-8">
             <div className="max-w-[780px] pt-6">
               <h1 className="max-w-[760px] text-[3.7rem] font-bold leading-[0.98] md:text-[4.7rem] lg:text-[5.55rem]">
                 Connecting Capital to{" "}
@@ -371,140 +304,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative lg:pl-2">
-              <div className="absolute inset-x-10 top-12 h-52 rounded-full bg-emerald-400/20 blur-3xl" />
-              <div className="relative mx-auto max-w-[560px] overflow-hidden rounded-[30px] border border-white/18 bg-white/95 p-4 text-slate-900 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-                <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                  <div className="rounded-[22px] border border-slate-200 bg-slate-50/90 p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Lead index</p>
-                        <div className="mt-1 truncate text-lg font-semibold text-slate-950">
-                          {leadIndex?.name ?? "Loading index feed"}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Latest</div>
-                        <div className="mt-1 text-lg font-semibold text-slate-950">
-                          {leadIndex ? `${leadIndex.currency} ${leadIndex.last.toFixed(2)}` : "—"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="mb-4 flex flex-wrap gap-4 text-xs font-medium text-slate-600">
-                        {heroSeries.map((item, index) => (
-                          <div key={item.id} className="inline-flex items-center gap-2">
-                            <span
-                              className={`h-2.5 w-2.5 rounded-full ${
-                                index === 0 ? "bg-blue-500" : index === 1 ? "bg-rose-500" : "bg-emerald-500"
-                              }`}
-                            />
-                            {item.name}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-3">
-                        <div className="flex h-[162px] flex-col justify-between pb-6 pt-1 text-[11px] font-medium text-slate-500">
-                          {[1, 0.5, 0, -0.5, -1, -1.5].map((tick) => (
-                            <div key={tick}>{tick}%</div>
-                          ))}
-                        </div>
-
-                        <div>
-                          <svg viewBox="0 0 470 162" className="h-[162px] w-full">
-                            {[0, 1, 2, 3, 4, 5].map((row) => (
-                              <line
-                                key={row}
-                                x1="18"
-                                x2="454"
-                                y1={12 + row * 27}
-                                y2={12 + row * 27}
-                                stroke={row === 1 ? "rgba(148,163,184,0.35)" : "rgba(148,163,184,0.18)"}
-                                strokeWidth="1"
-                              />
-                            ))}
-
-                            {[0, 1, 2].map((col) => (
-                              <line
-                                key={col}
-                                x1={18 + col * 145}
-                                x2={18 + col * 145}
-                                y1="12"
-                                y2="147"
-                                stroke="rgba(148,163,184,0.12)"
-                                strokeWidth="1"
-                              />
-                            ))}
-
-                            {heroSeries.map((item, index) => (
-                              <path
-                                key={item.id}
-                                d={linePath(item.series, 470, 162, chartMin, chartMax)}
-                                fill="none"
-                                stroke={index === 0 ? "#2563eb" : index === 1 ? "#ef4444" : "#34d399"}
-                                strokeWidth="3.25"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            ))}
-
-                            {heroSeries.map((item, index) => {
-                              const last = item.series[item.series.length - 1];
-                              const x = 451;
-                              const y = 12 + 123 - ((last - chartMin) / Math.max(chartMax - chartMin, 1)) * 123;
-                              const stroke = index === 0 ? "#2563eb" : index === 1 ? "#ef4444" : "#34d399";
-                              return (
-                                <g key={`${item.id}-marker`}>
-                                  <circle cx={x} cy={y} r="4.5" fill={stroke} />
-                                  <rect
-                                    x={x - 6}
-                                    y={y - 22}
-                                    rx="7"
-                                    width="54"
-                                    height="18"
-                                    fill={stroke}
-                                    opacity="0.92"
-                                  />
-                                  <text x={x + 21} y={y - 9} textAnchor="middle" fontSize="10" fill="#ffffff" style={{ fontWeight: 700 }}>
-                                    {item.changePercent.toFixed(2)}%
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </svg>
-
-                          <div className="mt-2 flex items-center justify-between px-2 text-[11px] font-medium text-slate-500">
-                            <span>Jan 24</span>
-                            <span>Feb 24</span>
-                            <span>Mar 24</span>
-                            <span>Apr 24</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      {heroSeries.map((item) => {
-                        const positive = item.changePercent >= 0;
-                        return (
-                          <div key={`${item.id}-summary`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <div className="text-xs text-slate-500">Performance</div>
-                            <div className="mt-1 truncate text-sm font-semibold text-slate-900">{item.name}</div>
-                            <div className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${positive ? "text-emerald-600" : "text-rose-600"}`}>
-                              {positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                              {positive ? "+" : ""}
-                              {item.changePercent.toFixed(2)}%
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
