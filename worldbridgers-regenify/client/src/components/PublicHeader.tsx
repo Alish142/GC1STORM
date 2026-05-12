@@ -102,7 +102,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               >
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors ${
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
                       useLightStyle
                         ? "text-foreground/70 hover:text-foreground hover:bg-muted"
                         : "text-white/80 hover:text-white hover:bg-white/10"
@@ -286,7 +286,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
             {publicNavigation.map((item) => (
               <div key={item.label}>
                 <button
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-lg"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-[15px] font-medium text-foreground hover:bg-muted rounded-lg"
                   onClick={() => setActiveMenu(activeMenu === item.label ? null : item.label)}
                 >
                   <span>{item.label}</span>
