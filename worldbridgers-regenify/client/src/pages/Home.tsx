@@ -148,15 +148,15 @@ const PLATFORM_FEATURES = [
 ];
 
 const PREVIEW_RING_NODES = [
-  { label: "Entrepreneurship", ring: "inner" as const, angle: -90, color: "#f8fafc" },
-  { label: "Future of Work", ring: "inner" as const, angle: 28, color: "#f8fafc" },
-  { label: "Social Justice", ring: "inner" as const, angle: 148, color: "#f8fafc" },
-  { label: "EIB", ring: "outer" as const, angle: -34, color: "#4ade80" },
-  { label: "NGC", ring: "outer" as const, angle: 18, color: "#4ade80" },
-  { label: "Impact Asia", ring: "outer" as const, angle: 92, color: "#60a5fa" },
-  { label: "US Climate", ring: "outer" as const, angle: 156, color: "#60a5fa" },
-  { label: "Carbon", ring: "outer" as const, angle: 222, color: "#fbbf24" },
-  { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa" },
+  { label: "Enterprise", ring: "inner" as const, angle: -90, color: "#f8fafc", labelDx: 14, labelDy: 0, textAnchor: "start" as const },
+  { label: "Future Work", ring: "inner" as const, angle: 28, color: "#f8fafc", labelDx: 0, labelDy: 18, textAnchor: "middle" as const },
+  { label: "Social", ring: "inner" as const, angle: 148, color: "#f8fafc", labelDx: -14, labelDy: 2, textAnchor: "end" as const },
+  { label: "EIB", ring: "outer" as const, angle: -34, color: "#4ade80", labelDx: 10, labelDy: 22, textAnchor: "start" as const },
+  { label: "NGC", ring: "outer" as const, angle: 18, color: "#4ade80", labelDx: 10, labelDy: 20, textAnchor: "start" as const },
+  { label: "Impact", ring: "outer" as const, angle: 92, color: "#60a5fa", labelDx: 0, labelDy: 24, textAnchor: "middle" as const },
+  { label: "US Climate", ring: "outer" as const, angle: 156, color: "#60a5fa", labelDx: -10, labelDy: 24, textAnchor: "end" as const },
+  { label: "Carbon", ring: "outer" as const, angle: 222, color: "#fbbf24", labelDx: -6, labelDy: -20, textAnchor: "end" as const },
+  { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa", labelDx: -10, labelDy: -20, textAnchor: "end" as const },
 ];
 
 const HERO_BACKGROUND_SLIDES = [
@@ -458,6 +458,15 @@ export default function Home() {
                     const rad = (node.angle * Math.PI) / 180;
                     const x = 200 + Math.cos(rad) * radius;
                     const y = 200 + Math.sin(rad) * radius;
+                    const horizontalDirection = Math.cos(rad) >= 0 ? 1 : -1;
+                    const labelX = x + (node.labelDx ?? horizontalDirection * (node.ring === "inner" ? 24 : 10));
+                    const labelY =
+                      y +
+                      (node.labelDy ??
+                        (node.ring === "inner"
+                          ? Math.sin(rad) > 0.35 ? 10 : Math.sin(rad) < -0.35 ? -10 : 0
+                          : Math.sin(rad) > 0.35 ? 28 : Math.sin(rad) < -0.35 ? -18 : 24));
+                    const textAnchor = node.textAnchor ?? (horizontalDirection > 0 ? "start" : "end");
 
                     return (
                       <g key={`node-${index}`}>
@@ -465,22 +474,22 @@ export default function Home() {
                         <circle cx={x} cy={y} r={8.5} fill="rgba(255,255,255,0.95)" stroke={node.color} strokeWidth="2" />
                         {node.ring === "inner" ? (
                           <text
-                            x={x + (x >= 200 ? 15 : -15)}
-                            y={y}
-                            textAnchor={x >= 200 ? "start" : "end"}
+                            x={labelX}
+                            y={labelY}
+                            textAnchor={textAnchor}
                             dominantBaseline="middle"
-                            fontSize="9"
+                            fontSize="10.5"
                             fill="rgba(255,255,255,0.82)"
                           >
                             {node.label}
                           </text>
                         ) : (
                           <text
-                            x={x}
-                            y={y + 24}
-                            textAnchor="middle"
+                            x={labelX}
+                            y={labelY}
+                            textAnchor={textAnchor}
                             dominantBaseline="middle"
-                            fontSize="8.5"
+                            fontSize="9.5"
                             fill="rgba(255,255,255,0.76)"
                           >
                             {node.label}
