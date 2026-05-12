@@ -30,6 +30,30 @@ export type NavigationGroup = {
 
 export const publicNavigation: NavigationGroup[] = [
   {
+    label: "About Us",
+    icon: User,
+    items: [
+      {
+        label: "Vision",
+        href: "/login",
+        description: "Learn the long-term regenerative vision behind the Worldbridgers Regenify platform.",
+        icon: Globe2,
+      },
+      {
+        label: "Team Members",
+        href: "/login?mode=request-access",
+        description: "Meet the people guiding platform strategy, onboarding, and partnership support.",
+        icon: User,
+      },
+      {
+        label: "Themes",
+        href: "/login?next=/dashboard/graph",
+        description: "Explore the core regenerative and ESG themes connected across the platform.",
+        icon: Network,
+      },
+    ],
+  },
+  {
     label: "Systems Overview",
     icon: LayoutDashboard,
     items: [
@@ -194,30 +218,6 @@ export const publicNavigation: NavigationGroup[] = [
         href: "/login?next=/dashboard/graph",
         description: "Navigate the exchange through intelligent network relationships.",
         icon: Network,
-      },
-    ],
-  },
-  {
-    label: "Specialists",
-    icon: LifeBuoy,
-    items: [
-      {
-        label: "Log In",
-        href: "/login",
-        description: "Sign in with your existing account.",
-        icon: User,
-      },
-      {
-        label: "Request Access",
-        href: "/login?mode=request-access",
-        description: "Send an access request for onboarding and workspace access.",
-        icon: ShieldCheck,
-      },
-      {
-        label: "Contact Support",
-        href: "/login?mode=request-access",
-        description: "Reach the team for setup, onboarding, or specialist guidance.",
-        icon: LifeBuoy,
       },
     ],
   },
