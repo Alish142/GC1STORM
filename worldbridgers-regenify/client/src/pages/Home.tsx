@@ -506,9 +506,9 @@ export default function Home() {
 
                     <defs>
                       <radialGradient id="centerGlow" cx="50%" cy="50%" r="65%">
-                        <stop offset="0%" stopColor="#fb923c" />
-                        <stop offset="58%" stopColor="#f59e0b" />
-                        <stop offset="100%" stopColor="#ea580c" />
+                        <stop offset="0%" stopColor="#86efac" />
+                        <stop offset="58%" stopColor="#22c55e" />
+                        <stop offset="100%" stopColor="#15803d" />
                       </radialGradient>
                     </defs>
                 </svg>
