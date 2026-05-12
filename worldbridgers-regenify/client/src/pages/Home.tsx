@@ -159,92 +159,9 @@ const PREVIEW_RING_NODES = [
   { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa" },
 ];
 
-function createHeroSlideDataUri({
-  top,
-  bottom,
-  accent,
-  accentTwo,
-  title,
-  subtitle,
-}: {
-  top: string;
-  bottom: string;
-  accent: string;
-  accentTwo: string;
-  title: string;
-  subtitle: string;
-}) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${top}" />
-          <stop offset="100%" stop-color="${bottom}" />
-        </linearGradient>
-        <radialGradient id="glowA" cx="22%" cy="24%" r="40%">
-          <stop offset="0%" stop-color="${accent}" stop-opacity="0.48" />
-          <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
-        </radialGradient>
-        <radialGradient id="glowB" cx="80%" cy="72%" r="34%">
-          <stop offset="0%" stop-color="${accentTwo}" stop-opacity="0.28" />
-          <stop offset="100%" stop-color="${accentTwo}" stop-opacity="0" />
-        </radialGradient>
-      </defs>
-      <rect width="1600" height="900" fill="url(#bg)" />
-      <rect width="1600" height="900" fill="url(#glowA)" />
-      <rect width="1600" height="900" fill="url(#glowB)" />
-      <g opacity="0.7">
-        <ellipse cx="1180" cy="220" rx="220" ry="160" fill="${accent}" fill-opacity="0.18" />
-        <ellipse cx="1360" cy="740" rx="260" ry="220" fill="${accentTwo}" fill-opacity="0.16" />
-        <ellipse cx="900" cy="520" rx="190" ry="150" fill="#ffffff" fill-opacity="0.05" />
-      </g>
-      <g transform="translate(980 110)">
-        <rect x="0" y="0" width="500" height="680" rx="44" fill="#ffffff" fill-opacity="0.1" />
-        <rect x="36" y="42" width="428" height="596" rx="34" fill="#ffffff" fill-opacity="0.1" />
-        <path d="M88 470 C160 372, 244 300, 350 244 C408 214, 452 182, 486 108" fill="none" stroke="${accent}" stroke-width="34" stroke-linecap="round" opacity="0.72" />
-        <path d="M96 548 C194 458, 280 404, 388 352 C458 318, 520 262, 542 184" fill="none" stroke="${accentTwo}" stroke-width="28" stroke-linecap="round" opacity="0.6" />
-        <circle cx="150" cy="170" r="34" fill="${accent}" fill-opacity="0.65" />
-        <circle cx="408" cy="164" r="22" fill="${accentTwo}" fill-opacity="0.78" />
-        <circle cx="344" cy="534" r="20" fill="#ffffff" fill-opacity="0.28" />
-        <rect x="92" y="584" width="116" height="18" rx="9" fill="#ffffff" fill-opacity="0.34" />
-        <rect x="228" y="584" width="156" height="18" rx="9" fill="#ffffff" fill-opacity="0.22" />
-        <rect x="92" y="620" width="248" height="16" rx="8" fill="#ffffff" fill-opacity="0.14" />
-      </g>
-      <g fill="#ffffff" opacity="0.9">
-        <text x="96" y="150" font-family="Arial, sans-serif" font-size="58" font-weight="700">${title}</text>
-        <text x="96" y="208" font-family="Arial, sans-serif" font-size="26" opacity="0.86">${subtitle}</text>
-      </g>
-    </svg>
-  `;
-
-  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-}
-
 const HERO_BACKGROUND_SLIDES = [
-  createHeroSlideDataUri({
-    top: "#17384f",
-    bottom: "#4fa391",
-    accent: "#7ddf64",
-    accentTwo: "#f4d35e",
-    title: "Capital Meets Regeneration",
-    subtitle: "A calmer, more organic market canvas",
-  }),
-  createHeroSlideDataUri({
-    top: "#1a4960",
-    bottom: "#5db9b1",
-    accent: "#5ec7ff",
-    accentTwo: "#8ef0c2",
-    title: "Connected Opportunity Flows",
-    subtitle: "Themes, issuers, and markets in motion",
-  }),
-  createHeroSlideDataUri({
-    top: "#254968",
-    bottom: "#88c983",
-    accent: "#6ab3ff",
-    accentTwo: "#ffffff",
-    title: "Verified ESG Access",
-    subtitle: "Softer visuals with a more editorial feel",
-  }),
+  "/hero-bg-1.jpg",
+  "/her0-bg-2.png",
 ];
 
 function previewHexPoints(size: number) {
@@ -308,7 +225,7 @@ export default function Home() {
               className="absolute inset-0 transition-opacity duration-1000"
               style={{
                 opacity: index === activeHeroSlide ? 1 : 0,
-                backgroundImage,
+                backgroundImage: `url(${backgroundImage})`,
                 backgroundPosition: "center",
                 backgroundSize: "cover",
                 animation: "heroSlidePan 8s ease-in-out infinite alternate",
