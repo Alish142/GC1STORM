@@ -416,7 +416,7 @@ export default function Home() {
 
             <Button
               className="mt-8 h-12 rounded-xl bg-emerald-400 px-7 text-base font-semibold text-slate-950 shadow-brand hover:bg-emerald-300"
-              onClick={() => navigate(isAuthenticated ? "/dashboard/graph" : "/login?next=/dashboard/graph")}
+              onClick={() => navigate("/capabilities/graph-relationship-engine")}
             >
               Explore Graph View
               <ArrowRight className="h-4 w-4" />
@@ -426,7 +426,7 @@ export default function Home() {
           <div className="relative">
             <div className="mx-auto max-w-[560px] rounded-[32px] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
               <button
-                onClick={() => navigate("/dashboard/graph")}
+                onClick={() => navigate("/capabilities/graph-relationship-engine")}
                 className="relative w-full text-left transition-transform hover:scale-[1.01]"
               >
                 <div className="rounded-[26px] border border-white/10 bg-slate-900/80 p-4">
