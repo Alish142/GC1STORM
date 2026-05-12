@@ -200,19 +200,13 @@ export default function Home() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveHeroSlide((current) => (current + 1) % HERO_BACKGROUND_SLIDES.length);
-    }, 5200);
+    }, 6200);
 
     return () => window.clearInterval(timer);
   }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <style>{`
-        @keyframes heroSlidePan {
-          0% { transform: scale(1.08) translateX(-3%); }
-          100% { transform: scale(1.08) translateX(3%); }
-        }
-      `}</style>
       <PublicHeader />
 
       <section
@@ -221,14 +215,16 @@ export default function Home() {
         <div className="absolute inset-0 overflow-hidden">
           {HERO_BACKGROUND_SLIDES.map((backgroundImage, index) => (
             <div
-              key={`${index}-${index === activeHeroSlide ? "active" : "idle"}`}
-              className="absolute inset-0 transition-opacity duration-1000"
+              key={index}
+              className="absolute inset-0 transition-[opacity,background-position,transform] duration-[2600ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               style={{
                 opacity: index === activeHeroSlide ? 1 : 0,
                 backgroundImage: `url(${backgroundImage})`,
-                backgroundPosition: "center",
+                backgroundPosition: index === activeHeroSlide ? "58% center" : "42% center",
                 backgroundSize: "cover",
-                animation: index === activeHeroSlide ? "heroSlidePan 5.2s linear forwards" : "none",
+                transform: index === activeHeroSlide ? "scale(1.08)" : "scale(1.04)",
+                willChange: "opacity, transform",
+                transitionDuration: index === activeHeroSlide ? "2600ms, 6200ms, 2600ms" : "2600ms, 0ms, 2600ms",
               }}
             />
           ))}
