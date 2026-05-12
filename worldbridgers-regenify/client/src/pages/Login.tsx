@@ -25,8 +25,8 @@ type PageMode = "login" | "request-access" | "create-account";
 function readPageMode(search: string): PageMode {
   const params = new URLSearchParams(search);
   const mode = params.get("mode");
-  if (mode === "request-access" || mode === "create-account") {
-    return mode;
+  if (mode === "create-account" || mode === "request-access") {
+    return "create-account";
   }
   return "login";
 }
@@ -281,12 +281,12 @@ export default function Login() {
                     Log In
                   </button>
                   <button
-                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "request-access" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
+                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "create-account" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
-                      window.location.href = "/login?mode=request-access";
+                      window.location.href = "/login?mode=create-account";
                     }}
                   >
-                    Request Access
+                    Sign Up
                   </button>
                 </div>
               </div>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { publicHighlights, publicNavigation } from "@/lib/navigation";
-import { Search, ChevronDown, Menu, X, Leaf, User, Wallet, Settings, HelpCircle, LogOut } from "lucide-react";
+import { ChevronDown, Menu, X, Leaf, User, Wallet, Settings, HelpCircle, LogOut } from "lucide-react";
 
 function resolveAuthenticatedHref(href: string, isAuthenticated: boolean) {
   if (!isAuthenticated) {
@@ -39,7 +38,6 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [, navigate] = useLocation();
   const { user } = useAuth();
@@ -52,16 +50,6 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const useLightStyle = lightBackground || scrolled;
@@ -95,90 +83,72 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
           {/* Desktop Nav */}
           <nav className="hidden min-w-0 flex-1 items-center justify-start gap-1 px-2 xl:flex">
             {publicNavigation.map((group) => (
-              <DropdownMenu
-                key={group.label}
-                open={activeMenu === group.label}
-                onOpenChange={(open) => setActiveMenu(open ? group.label : null)}
-              >
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
-                      useLightStyle
-                        ? "text-foreground/70 hover:text-foreground hover:bg-muted"
-                        : "text-white/80 hover:text-white hover:bg-white/10"
-                    } ${activeMenu === group.label ? (useLightStyle ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
-                  >
-                    {group.label}
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform ${activeMenu === group.label ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 rounded-2xl border-border p-2">
-                  <DropdownMenuLabel className="px-3 pt-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                    {group.label}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {group.items.map((item) => (
-                    <DropdownMenuItem
-                      key={item.label}
-                      className="rounded-xl px-3 py-3"
-                      onClick={() => navigate(resolveAuthenticatedHref(item.href, isAuthenticated))}
+              group.href ? (
+                <button
+                  key={group.label}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
+                    useLightStyle
+                      ? "text-foreground/70 hover:text-foreground hover:bg-muted"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  }`}
+                  onClick={() => navigate(group.href!)}
+                >
+                  {group.label}
+                </button>
+              ) : (
+                <DropdownMenu
+                  key={group.label}
+                  open={activeMenu === group.label}
+                  onOpenChange={(open) => setActiveMenu(open ? group.label : null)}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors ${
+                        useLightStyle
+                          ? "text-foreground/70 hover:text-foreground hover:bg-muted"
+                          : "text-white/80 hover:text-white hover:bg-white/10"
+                      } ${activeMenu === group.label ? (useLightStyle ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
                     >
-                      <div className="flex items-start gap-3">
-                        {item.icon ? (
-                          <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <item.icon className="h-4 w-4" />
-                          </div>
-                        ) : null}
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium text-foreground">{item.label}</div>
-                          {item.description ? (
-                            <p className="text-xs leading-5 text-muted-foreground">{item.description}</p>
+                      {group.label}
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${activeMenu === group.label ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-80 rounded-2xl border-border p-2">
+                    <DropdownMenuLabel className="px-3 pt-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                      {group.label}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {group.items.map((item) => (
+                      <DropdownMenuItem
+                        key={item.label}
+                        className="rounded-xl px-3 py-3"
+                        onClick={() => navigate(resolveAuthenticatedHref(item.href, isAuthenticated))}
+                      >
+                        <div className="flex items-start gap-3">
+                          {item.icon ? (
+                            <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                              <item.icon className="h-4 w-4" />
+                            </div>
                           ) : null}
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-foreground">{item.label}</div>
+                            {item.description ? (
+                              <p className="text-xs leading-5 text-muted-foreground">{item.description}</p>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )
             ))}
           </nav>
 
           {/* Right actions */}
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* Search */}
-            <div className="relative hidden lg:flex items-center">
-              {searchOpen ? (
-                <Input
-                  autoFocus
-                  placeholder="Search platform..."
-                  className="h-10 w-44 rounded-xl border-white/15 bg-white/90 text-sm 2xl:w-56"
-                  onBlur={() => setSearchOpen(false)}
-                />
-              ) : (
-                <button
-                  onClick={() => setSearchOpen(true)}
-                    className={`p-2.5 rounded-xl transition-colors ${
-                      useLightStyle ? "text-foreground/60 hover:text-foreground hover:bg-muted" : "text-white/70 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                  <Search className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`hidden xl:flex text-sm font-medium ${
-                useLightStyle ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
-              }`}
-              onClick={() => navigate("/discover")}
-            >
-              Discover
-            </Button>
-
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -239,10 +209,10 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                   size="sm"
                   className="hidden xl:flex whitespace-nowrap text-sm font-semibold bg-primary px-4 hover:bg-primary/90 text-white shadow-brand"
                   onClick={() => {
-                    window.location.href = "/login?mode=request-access";
+                    window.location.href = "/login?mode=create-account";
                   }}
                 >
-                  Request Access
+                  Sign Up
                 </Button>
               </>
             )}
@@ -285,31 +255,45 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
 
             {publicNavigation.map((item) => (
               <div key={item.label}>
-                <button
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-[15px] font-medium text-foreground hover:bg-muted rounded-lg"
-                  onClick={() => setActiveMenu(activeMenu === item.label ? null : item.label)}
-                >
-                  <span>{item.label}</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${activeMenu === item.label ? "rotate-180" : ""}`} />
-                </button>
-                {activeMenu === item.label && (
-                  <div className="ml-4 mt-1 space-y-0.5">
-                    {item.items.map((sub) => (
-                      <button
-                        key={sub.label}
-                        className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
-                        onClick={() => {
-                          setMobileOpen(false);
-                          navigate(resolveAuthenticatedHref(sub.href, isAuthenticated));
-                        }}
-                      >
-                        <div className="font-medium text-foreground">{sub.label}</div>
-                        {sub.description ? (
-                          <div className="mt-0.5 text-xs leading-5 text-muted-foreground">{sub.description}</div>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
+                {item.href ? (
+                  <button
+                    className="w-full px-3 py-2.5 text-left text-[15px] font-medium text-foreground hover:bg-muted rounded-lg"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      navigate(item.href!);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-[15px] font-medium text-foreground hover:bg-muted rounded-lg"
+                      onClick={() => setActiveMenu(activeMenu === item.label ? null : item.label)}
+                    >
+                      <span>{item.label}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${activeMenu === item.label ? "rotate-180" : ""}`} />
+                    </button>
+                    {activeMenu === item.label && (
+                      <div className="ml-4 mt-1 space-y-0.5">
+                        {item.items.map((sub) => (
+                          <button
+                            key={sub.label}
+                            className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg"
+                            onClick={() => {
+                              setMobileOpen(false);
+                              navigate(resolveAuthenticatedHref(sub.href, isAuthenticated));
+                            }}
+                          >
+                            <div className="font-medium text-foreground">{sub.label}</div>
+                            {sub.description ? (
+                              <div className="mt-0.5 text-xs leading-5 text-muted-foreground">{sub.description}</div>
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}
@@ -317,8 +301,8 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               <Button variant="outline" className="w-full" onClick={() => navigate("/discover")}>Discover</Button>
               <Button variant="outline" className="w-full" onClick={() => navigate("/login")}>Log In</Button>
               <Button className="w-full bg-primary text-white" onClick={() => {
-                window.location.href = "/login?mode=request-access";
-              }}>Request Access</Button>
+                window.location.href = "/login?mode=create-account";
+              }}>Sign Up</Button>
             </div>
           </div>
         </div>

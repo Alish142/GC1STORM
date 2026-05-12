@@ -35,8 +35,8 @@ export default function DiscoverTopicPage({ params }: DiscoverTopicPageProps) {
             <h1 className="mt-6 text-4xl font-bold leading-tight md:text-6xl">{topic.title}</h1>
             <p className="mt-6 max-w-[640px] text-lg leading-8 text-white/78">{topic.summary}</p>
             <div className="mt-10 flex flex-wrap gap-4">
-              <Button className="h-12 rounded-xl bg-primary px-6 text-base font-semibold text-white shadow-brand hover:bg-primary/90" onClick={() => navigate("/login?mode=request-access")}>
-                Request Access
+              <Button className="h-12 rounded-xl bg-primary px-6 text-base font-semibold text-white shadow-brand hover:bg-primary/90" onClick={() => navigate("/login?mode=create-account")}>
+                Sign Up
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button variant="outline" className="h-12 rounded-xl border-white/20 bg-white/5 px-6 text-base font-semibold text-white hover:bg-white/10" onClick={() => navigate("/discover")}>
