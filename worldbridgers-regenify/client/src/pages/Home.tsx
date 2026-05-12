@@ -163,12 +163,14 @@ function createHeroSlideDataUri({
   top,
   bottom,
   accent,
+  accentTwo,
   title,
   subtitle,
 }: {
   top: string;
   bottom: string;
   accent: string;
+  accentTwo: string;
   title: string;
   subtitle: string;
 }) {
@@ -184,37 +186,29 @@ function createHeroSlideDataUri({
           <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
         </radialGradient>
         <radialGradient id="glowB" cx="80%" cy="72%" r="34%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+          <stop offset="0%" stop-color="${accentTwo}" stop-opacity="0.28" />
+          <stop offset="100%" stop-color="${accentTwo}" stop-opacity="0" />
         </radialGradient>
       </defs>
       <rect width="1600" height="900" fill="url(#bg)" />
       <rect width="1600" height="900" fill="url(#glowA)" />
       <rect width="1600" height="900" fill="url(#glowB)" />
-      <g opacity="0.24" stroke="#ffffff" stroke-width="1">
-        <path d="M0 180 H1600" />
-        <path d="M0 360 H1600" />
-        <path d="M0 540 H1600" />
-        <path d="M0 720 H1600" />
-        <path d="M280 0 V900" />
-        <path d="M560 0 V900" />
-        <path d="M840 0 V900" />
-        <path d="M1120 0 V900" />
-        <path d="M1400 0 V900" />
+      <g opacity="0.7">
+        <ellipse cx="1180" cy="220" rx="220" ry="160" fill="${accent}" fill-opacity="0.18" />
+        <ellipse cx="1360" cy="740" rx="260" ry="220" fill="${accentTwo}" fill-opacity="0.16" />
+        <ellipse cx="900" cy="520" rx="190" ry="150" fill="#ffffff" fill-opacity="0.05" />
       </g>
-      <g opacity="0.72">
-        <circle cx="1220" cy="220" r="132" fill="${accent}" fill-opacity="0.2" />
-        <circle cx="1330" cy="340" r="84" fill="#ffffff" fill-opacity="0.13" />
-        <circle cx="300" cy="700" r="156" fill="#ffffff" fill-opacity="0.08" />
-      </g>
-      <g transform="translate(1060 180)">
-        <rect x="0" y="0" width="360" height="250" rx="30" fill="#ffffff" fill-opacity="0.9" />
-        <rect x="22" y="24" width="316" height="156" rx="18" fill="#f8fafc" />
-        <path d="M38 128 C78 96, 122 140, 158 114 S232 92, 278 112 S322 120, 330 92" fill="none" stroke="${accent}" stroke-width="8" stroke-linecap="round" />
-        <path d="M38 144 C82 164, 126 118, 164 136 S238 168, 330 148" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.82" />
-        <rect x="24" y="196" width="92" height="34" rx="12" fill="#ffffff" />
-        <rect x="134" y="196" width="92" height="34" rx="12" fill="#ffffff" />
-        <rect x="244" y="196" width="92" height="34" rx="12" fill="#ffffff" />
+      <g transform="translate(980 110)">
+        <rect x="0" y="0" width="500" height="680" rx="44" fill="#ffffff" fill-opacity="0.1" />
+        <rect x="36" y="42" width="428" height="596" rx="34" fill="#ffffff" fill-opacity="0.1" />
+        <path d="M88 470 C160 372, 244 300, 350 244 C408 214, 452 182, 486 108" fill="none" stroke="${accent}" stroke-width="34" stroke-linecap="round" opacity="0.72" />
+        <path d="M96 548 C194 458, 280 404, 388 352 C458 318, 520 262, 542 184" fill="none" stroke="${accentTwo}" stroke-width="28" stroke-linecap="round" opacity="0.6" />
+        <circle cx="150" cy="170" r="34" fill="${accent}" fill-opacity="0.65" />
+        <circle cx="408" cy="164" r="22" fill="${accentTwo}" fill-opacity="0.78" />
+        <circle cx="344" cy="534" r="20" fill="#ffffff" fill-opacity="0.28" />
+        <rect x="92" y="584" width="116" height="18" rx="9" fill="#ffffff" fill-opacity="0.34" />
+        <rect x="228" y="584" width="156" height="18" rx="9" fill="#ffffff" fill-opacity="0.22" />
+        <rect x="92" y="620" width="248" height="16" rx="8" fill="#ffffff" fill-opacity="0.14" />
       </g>
       <g fill="#ffffff" opacity="0.9">
         <text x="96" y="150" font-family="Arial, sans-serif" font-size="58" font-weight="700">${title}</text>
@@ -228,25 +222,28 @@ function createHeroSlideDataUri({
 
 const HERO_BACKGROUND_SLIDES = [
   createHeroSlideDataUri({
-    top: "#2f6fa4",
-    bottom: "#7bc687",
-    accent: "#4ade80",
-    title: "Global Market Access",
-    subtitle: "Live sustainability data across regions and sectors",
+    top: "#17384f",
+    bottom: "#4fa391",
+    accent: "#7ddf64",
+    accentTwo: "#f4d35e",
+    title: "Capital Meets Regeneration",
+    subtitle: "A calmer, more organic market canvas",
   }),
   createHeroSlideDataUri({
-    top: "#215779",
-    bottom: "#3cb4a0",
-    accent: "#facc15",
-    title: "Regenerative Intelligence",
-    subtitle: "Themes, issuers, and capital connected in one system",
+    top: "#1a4960",
+    bottom: "#5db9b1",
+    accent: "#5ec7ff",
+    accentTwo: "#8ef0c2",
+    title: "Connected Opportunity Flows",
+    subtitle: "Themes, issuers, and markets in motion",
   }),
   createHeroSlideDataUri({
-    top: "#345c94",
-    bottom: "#95c96e",
-    accent: "#60a5fa",
-    title: "Verified ESG Opportunities",
-    subtitle: "Structured offerings supported by transparent workflows",
+    top: "#254968",
+    bottom: "#88c983",
+    accent: "#6ab3ff",
+    accentTwo: "#ffffff",
+    title: "Verified ESG Access",
+    subtitle: "Softer visuals with a more editorial feel",
   }),
 ];
 
@@ -304,7 +301,7 @@ export default function Home() {
       <section
         className="relative overflow-hidden pt-28 text-white"
       >
-        <div className="absolute inset-y-0 right-0 w-full md:w-[58%] overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
           {HERO_BACKGROUND_SLIDES.map((backgroundImage, index) => (
             <div
               key={index}
@@ -312,15 +309,16 @@ export default function Home() {
               style={{
                 opacity: index === activeHeroSlide ? 1 : 0,
                 backgroundImage,
-                backgroundPosition: "center right",
+                backgroundPosition: "center",
                 backgroundSize: "cover",
                 animation: "heroSlidePan 8s ease-in-out infinite alternate",
               }}
             />
           ))}
         </div>
-        <div className="absolute inset-y-0 left-0 w-full bg-black/50 md:w-[62%] md:bg-black/58 md:backdrop-blur-xl" />
-        <div className="absolute inset-y-0 left-0 w-full md:w-[70%] bg-[linear-gradient(90deg,rgba(0,0,0,0.84)_0%,rgba(0,0,0,0.74)_38%,rgba(0,0,0,0.38)_72%,rgba(0,0,0,0)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.84)_16%,rgba(0,0,0,0.74)_30%,rgba(0,0,0,0.6)_42%,rgba(0,0,0,0.44)_54%,rgba(0,0,0,0.28)_66%,rgba(0,0,0,0.16)_78%,rgba(0,0,0,0.07)_88%,rgba(0,0,0,0.02)_95%,rgba(0,0,0,0)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_50%,rgba(0,0,0,0.28),transparent_34%)] blur-[80px]" />
+        <div className="absolute inset-y-0 left-[28%] hidden w-[42%] bg-[linear-gradient(90deg,rgba(8,16,20,0.42)_0%,rgba(8,16,20,0.24)_34%,rgba(8,16,20,0.1)_62%,rgba(8,16,20,0.03)_82%,rgba(8,16,20,0)_100%)] blur-[140px] md:block" />
 
         <div className="container relative z-10 pb-20">
           <div className="grid gap-8">
