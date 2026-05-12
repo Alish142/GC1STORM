@@ -200,7 +200,7 @@ export default function Home() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveHeroSlide((current) => (current + 1) % HERO_BACKGROUND_SLIDES.length);
-    }, 4200);
+    }, 5200);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -221,14 +221,14 @@ export default function Home() {
         <div className="absolute inset-0 overflow-hidden">
           {HERO_BACKGROUND_SLIDES.map((backgroundImage, index) => (
             <div
-              key={index}
+              key={`${index}-${index === activeHeroSlide ? "active" : "idle"}`}
               className="absolute inset-0 transition-opacity duration-1000"
               style={{
                 opacity: index === activeHeroSlide ? 1 : 0,
                 backgroundImage: `url(${backgroundImage})`,
                 backgroundPosition: "center",
                 backgroundSize: "cover",
-                animation: "heroSlidePan 8s ease-in-out infinite alternate",
+                animation: index === activeHeroSlide ? "heroSlidePan 5.2s linear forwards" : "none",
               }}
             />
           ))}
