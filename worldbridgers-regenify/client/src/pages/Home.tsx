@@ -254,7 +254,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   className="h-16 rounded-xl bg-[#4ade80] px-12 text-[1.05rem] font-bold text-slate-950 shadow-brand hover:bg-[#86efac]"
-                  onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login")}
+                  onClick={() => navigate("/discover")}
                 >
                   Explore Platform
                   <ArrowRight className="h-4 w-4" />
