@@ -824,7 +824,7 @@ export default function Home() {
             {[
               ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
               ["Access", ["Log In", "Request Access", "Support", "Onboarding"]],
-              ["Company", ["About", "Specialists", "Contact", "Privacy"]],
+              ["About Us", ["Vision", "Team Members", "Themes", "Contact", "Privacy"]],
             ].map(([title, links]) => (
               <div key={title as string}>
                 <h4 className="mb-4 text-sm font-semibold text-white">{title as string}</h4>
