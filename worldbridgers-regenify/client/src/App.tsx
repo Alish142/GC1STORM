@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import GraphView from "./pages/GraphView";
 import Logout from "./pages/Logout";
 import Account from "./pages/Account";
+import PlatformFeaturePage from "./pages/PlatformFeaturePage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -39,6 +40,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/capabilities/:slug" component={PlatformFeaturePage} />
       <Route path="/discover" component={Discover} />
       <Route path="/login" component={Login} />
       <Route path="/logout" component={Logout} />

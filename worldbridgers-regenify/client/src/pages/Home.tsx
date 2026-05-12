@@ -103,7 +103,7 @@ const PLATFORM_FEATURES = [
     description: "Visualize complex relationships between issuers, offerings, investors, and markets through an interactive intelligence layer.",
     badge: "Core",
     color: "bg-primary/10 text-primary",
-    href: "/dashboard/graph",
+    href: "/capabilities/graph-relationship-engine",
   },
   {
     icon: ShieldCheck,
@@ -111,7 +111,7 @@ const PLATFORM_FEATURES = [
     description: "Every offering is mapped against EU Taxonomy and ESG classification frameworks, ensuring full regulatory alignment.",
     badge: "Compliance",
     color: "bg-blue-500/10 text-blue-600",
-    href: "/dashboard/documents",
+    href: "/capabilities/eu-taxonomy-compliance",
   },
   {
     icon: TrendingUp,
@@ -119,7 +119,7 @@ const PLATFORM_FEATURES = [
     description: "Live indices, price feeds, and performance metrics across asset classes and regions with mission-focused precision.",
     badge: "Live",
     color: "bg-amber-500/10 text-amber-600",
-    href: "/dashboard/indices",
+    href: "/capabilities/real-time-market-data",
   },
   {
     icon: Globe2,
@@ -127,7 +127,7 @@ const PLATFORM_FEATURES = [
     description: "Access issuers and opportunities across Europe, Asia-Pacific, Americas, Africa, and the Middle East in one unified platform.",
     badge: "Global",
     color: "bg-violet-500/10 text-violet-600",
-    href: "/discover",
+    href: "/capabilities/global-coverage",
   },
   {
     icon: Leaf,
@@ -135,7 +135,7 @@ const PLATFORM_FEATURES = [
     description: "Purpose-built for impact investing by connecting capital to projects that restore ecosystems, communities, and economies.",
     badge: "Impact",
     color: "bg-emerald-500/10 text-emerald-600",
-    href: "/dashboard/offerings",
+    href: "/capabilities/regenerative-finance",
   },
   {
     icon: Zap,
@@ -143,7 +143,7 @@ const PLATFORM_FEATURES = [
     description: "Seamless access to the Worldbridgers Exchange for direct listing, trading, and settlement of regenerative instruments.",
     badge: "Exchange",
     color: "bg-rose-500/10 text-rose-600",
-    href: "/dashboard/account?view=portfolio",
+    href: "/capabilities/wbx-exchange-integration",
   },
 ];
 
@@ -347,16 +347,11 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {PLATFORM_FEATURES.map((feature) => {
               const Icon = feature.icon;
-              const href = feature.href;
-              const targetHref =
-                isAuthenticated || href === "/discover"
-                  ? href
-                  : `/login?next=${encodeURIComponent(href)}`;
               return (
                 <button
                   key={feature.title}
                   type="button"
-                  onClick={() => navigate(targetHref)}
+                  onClick={() => navigate(feature.href)}
                   className="flex min-h-[248px] flex-col rounded-[28px] border border-border bg-card p-7 text-left shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                 >
                   <div className="flex items-start justify-between">
