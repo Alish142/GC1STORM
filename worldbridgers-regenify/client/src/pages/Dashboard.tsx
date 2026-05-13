@@ -167,6 +167,31 @@ function HeaderDot({ color }: { color: string }) {
   return <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />;
 }
 
+function rowDotColor(seed: string) {
+  const palette = [
+    "bg-emerald-500",
+    "bg-sky-500",
+    "bg-amber-500",
+    "bg-violet-500",
+    "bg-rose-500",
+    "bg-teal-500",
+  ];
+  const total = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return palette[total % palette.length];
+}
+
+function numericAssets(value: string) {
+  const match = value.match(/^([A-Z]{3})\s+([\d,.]+)([BM])$/i);
+  if (!match) {
+    return value === "—" ? "—" : value;
+  }
+  const [, currency, amountText, suffix] = match;
+  const amount = Number(amountText.replace(/,/g, ""));
+  const multiplier = suffix.toUpperCase() === "B" ? 1_000_000_000 : 1_000_000;
+  const expanded = amount * multiplier;
+  return `${currency} ${expanded.toLocaleString()}`;
+}
+
 // ── Dashboard Home ────────────────────────────────────────────────────────────
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
@@ -404,14 +429,15 @@ function IssuersTab() {
   const columns: Column<Record<string, unknown>>[] = [
     {
       key: "name",
-      label: (
-        <>
-          <HeaderDot color="bg-emerald-500" />
-          <span>Issuer Name</span>
-        </>
-      ),
+      label: "Issuer Name",
       sortable: true,
       className: "min-w-[200px]",
+      render: (v) => (
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <span className="font-medium text-foreground">{String(v)}</span>
+        </div>
+      ),
     },
     { key: "country", label: "Country", sortable: true },
     { key: "classification", label: "Classification", sortable: true,
@@ -419,15 +445,11 @@ function IssuersTab() {
         <Badge variant="secondary" className="text-xs font-medium">{String(v)}</Badge>
       )
     },
-    { key: "wbxLabel", label: (
-        <>
-          <HeaderDot color="bg-sky-500" />
-          <span>WBX Label</span>
-        </>
-      ),
+    { key: "wbxLabel", label: "WBX Label",
       render: (v) => v ? (
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-          <ShieldCheck className="w-3 h-3" /> WBX
+        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-sky-50 to-emerald-50 px-2.5 py-1 text-xs font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(14,165,233,0.16)]">
+          <span className="h-2 w-2 rounded-full bg-sky-500" />
+          WBX
         </span>
       ) : <span className="text-muted-foreground text-xs">—</span>
     },
@@ -438,7 +460,13 @@ function IssuersTab() {
         </span>
       ) : <span className="text-muted-foreground text-xs">—</span>
     },
-    { key: "assets", label: "Assets", className: "text-right" },
+    { key: "assets", label: "Assets", className: "text-right whitespace-nowrap" },
+    {
+      key: "assetsNumeric",
+      label: "Numerical",
+      className: "text-right min-w-[170px] whitespace-nowrap",
+      render: (_, row) => numericAssets(String(row.assets)),
+    },
   ];
 
   return (
@@ -502,21 +530,17 @@ function OfferingsTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: (
-        <>
-          <HeaderDot color="bg-amber-500" />
-          <span>Type</span>
-        </>
-      ), sortable: true,
-      render: (v) => <Badge variant="outline" className="text-xs">{String(v)}</Badge>
+    { key: "type", label: "Type", sortable: true,
+      render: (v) => <Badge variant="outline" className="gap-1 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-xs text-amber-800"><span className="h-2 w-2 rounded-full bg-amber-500" />{String(v)}</Badge>
     },
     { key: "segment", label: "Segment / Market", sortable: true },
-    { key: "issuer", label: (
-        <>
-          <HeaderDot color="bg-emerald-500" />
-          <span>Issuer</span>
-        </>
-      ), sortable: true, className: "min-w-[160px]" },
+    { key: "issuer", label: "Issuer", sortable: true, className: "min-w-[160px]",
+      render: (v) => (
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <span className="font-medium text-foreground">{String(v)}</span>
+        </div>
+      ) },
     { key: "isin", label: "ISIN", className: "font-mono text-xs" },
     { key: "name", label: "Name", className: "min-w-[200px]" },
     { key: "issuedAmount", label: "Issued Amount", className: "text-right",
@@ -596,13 +620,8 @@ function IndicesTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: (
-        <>
-          <HeaderDot color="bg-violet-500" />
-          <span>Type</span>
-        </>
-      ), sortable: true,
-      render: (v) => <span className="text-xs font-medium text-muted-foreground">{String(v)}</span>
+    { key: "type", label: "Type", sortable: true,
+      render: (v) => <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 text-xs font-medium text-violet-700 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.12)]"><span className="h-2 w-2 rounded-full bg-violet-500" />{String(v)}</span>
     },
     { key: "name", label: "Name", sortable: true, className: "min-w-[220px] font-medium" },
     { key: "currency", label: "Currency" },
@@ -680,24 +699,20 @@ function DocumentsTab() {
   const totalActive = Object.values(filters).flat().length;
 
   const columns: Column<Record<string, unknown>>[] = [
-    { key: "type", label: (
-        <>
-          <HeaderDot color="bg-rose-500" />
-          <span>Type</span>
-        </>
-      ),
-      render: (v) => <Badge variant="secondary" className="text-xs">{String(v)}</Badge>
+    { key: "type", label: "Type",
+      render: (v) => <Badge variant="secondary" className="gap-1 border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-xs text-rose-800 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)]"><span className="h-2 w-2 rounded-full bg-rose-500" />{String(v)}</Badge>
     },
     { key: "subType", label: "Sub Type",
       render: (v) => <span className="text-xs text-muted-foreground">{String(v)}</span>
     },
     { key: "name", label: "Name", className: "min-w-[260px] font-medium" },
-    { key: "issuer", label: (
-        <>
-          <HeaderDot color="bg-emerald-500" />
-          <span>Issuer</span>
-        </>
-      ), className: "min-w-[160px]" },
+    { key: "issuer", label: "Issuer", className: "min-w-[160px]",
+      render: (v) => (
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <span className="font-medium text-foreground">{String(v)}</span>
+        </div>
+      ) },
     { key: "memberStates", label: "Member States",
       render: (v) => (
         <div className="flex flex-wrap gap-1">

@@ -18,6 +18,8 @@ import {
   RefreshCw,
   Search,
   Users,
+  ChevronDown,
+  Palette,
 } from "lucide-react";
 
 interface GraphNode {
@@ -123,9 +125,13 @@ function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId:
     .filter((node) => !relatedIds.has(node.id))
     .sort((left, right) => left.label.localeCompare(right.label));
 
+  // Improved alignment: distribute nodes more evenly
   const center = { ...selected, x: 0, y: 0, ring: "center" as const, angle: 0 };
+  
   const innerNodes = inner.map((node, index) => {
-    const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(inner.length, 1);
+    const angleStep = (Math.PI * 2) / Math.max(inner.length, 1);
+    const startAngle = -Math.PI / 2 - (angleStep * (inner.length - 1)) / 2; // Center the distribution
+    const angle = startAngle + (index * angleStep);
     return {
       ...node,
       x: Math.cos(angle) * 120,
@@ -136,11 +142,14 @@ function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId:
   });
 
   const outerNodes = outer.map((node, index) => {
-    const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(outer.length, 1);
+    const angleStep = (Math.PI * 2) / Math.max(outer.length, 1);
+    const startAngle = -Math.PI / 2 - (angleStep * (outer.length - 1)) / 2; // Center the distribution
+    const angle = startAngle + (index * angleStep);
     return {
       ...node,
-      x: Math.cos(angle) * 225,
-      y: Math.sin(angle) * 225,
+      // Match the node centers to the rendered outer orbit so the circles sit on the line.
+      x: Math.cos(angle) * 245,
+      y: Math.sin(angle) * 245,
       ring: "outer" as const,
       angle,
     };
@@ -169,6 +178,8 @@ export default function GraphView() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [expandedDetails, setExpandedDetails] = useState(false);
+  const [selectedLineColor, setSelectedLineColor] = useState("#2f57c8");
 
   const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
     queryKey: ["graph-view", search],
@@ -290,6 +301,17 @@ export default function GraphView() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 rounded-full border border-[#dfd8cb] bg-white px-3 py-2">
+              <Palette className="h-4 w-4 text-slate-500" />
+              <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Line</span>
+              <input
+                type="color"
+                value={selectedLineColor}
+                onChange={(event) => setSelectedLineColor(event.target.value)}
+                className="h-7 w-10 cursor-pointer rounded border-0 bg-transparent p-0"
+                aria-label="Select graph line color"
+              />
+            </div>
             <div className="relative min-w-[260px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -306,7 +328,7 @@ export default function GraphView() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_410px]">
+        <div className="min-h-0 flex-1 grid gap-5 xl:grid-cols-[minmax(0,1.32fr)_560px]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
             <div className="min-h-0 flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-2 py-2 sm:px-3 sm:py-3">
               {isLoading ? (
@@ -318,9 +340,9 @@ export default function GraphView() {
                 </div>
               ) : graph ? (
                 <div className="flex h-full items-center justify-center overflow-hidden">
-                  <svg viewBox="-360 -360 720 720" className="mx-auto h-full max-h-[calc(100vh-250px)] w-full max-w-[calc(100vh-250px)] min-w-[520px]">
+                  <svg viewBox="-390 -390 780 780" className="mx-auto h-full max-h-[calc(100vh-220px)] w-full max-w-[calc(100vh-220px)] min-w-[560px]">
                     <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
-                    <circle cx="0" cy="0" r="225" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
+                    <circle cx="0" cy="0" r="245" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
 
                     {visibleEdges.map((edge) => {
                       const source = visibleNodeMap.get(edge.source);
@@ -339,7 +361,7 @@ export default function GraphView() {
                           key={edge.id}
                           d={`M ${source.x} ${source.y} Q ${cx} ${cy} ${target.x} ${target.y}`}
                           fill="none"
-                          stroke={isHoveredConnection ? "#153e75" : isSelectedConnection ? "#4159c7" : "#8f9db6"}
+                          stroke={isHoveredConnection ? "#153e75" : isSelectedConnection ? selectedLineColor : "#8f9db6"}
                           strokeWidth={isHoveredConnection ? "3" : isSelectedConnection ? "2.3" : "1.4"}
                           opacity={isHoveredConnection ? "1" : isSelectedConnection ? "0.96" : "0.48"}
                           style={{ transition: "stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease" }}
@@ -352,7 +374,8 @@ export default function GraphView() {
                       const isRelated = selectedConnections.has(node.id);
                       if (node.ring === "outer") {
                         const angle = node.angle * 180 / Math.PI;
-                        const labelDistance = 53;
+                        // Keep outer labels visually tied to the orbit instead of floating too far away.
+                        const labelDistance = 24;
                         const labelX = Math.cos(node.angle) * labelDistance;
                         const labelY = Math.sin(node.angle) * labelDistance;
                         const rotate = angle > 90 || angle < -90 ? angle + 180 : angle;
@@ -377,7 +400,7 @@ export default function GraphView() {
                               textAnchor={anchor}
                               dominantBaseline="middle"
                               transform={`rotate(${rotate} ${labelX} ${labelY})`}
-                              fontSize="11"
+                              fontSize="12"
                               fill={isActive ? "#1c2d80" : "#222631"}
                               style={{ fontWeight: isActive || isRelated ? 700 : 500 }}
                             >
@@ -399,7 +422,7 @@ export default function GraphView() {
                           <circle
                             cx="0"
                             cy="0"
-                            r={isActive ? 14 : 12.5}
+                            r={isActive ? 15 : 13}
                             fill={isActive ? NODE_CONFIG[node.type].color : "white"}
                             stroke={NODE_CONFIG[node.type].color}
                             strokeWidth={isActive ? 3 : hoveredConnections.has(node.id) ? 3 : isRelated ? 2.5 : 2.1}
@@ -409,7 +432,7 @@ export default function GraphView() {
                             y="0"
                             textAnchor={node.x >= 0 ? "start" : "end"}
                             dominantBaseline="middle"
-                            fontSize="12"
+                            fontSize="13"
                             fill={isActive ? "#1c2d80" : "#1f2430"}
                             style={{ fontWeight: isActive || isRelated ? 700 : 600 }}
                           >
@@ -485,30 +508,43 @@ export default function GraphView() {
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-6">
                   <div>
                     <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Overview</div>
-                    <p className="mt-3 text-base leading-8 text-slate-600">
-                      {selectedNode.description || "This node is connected to the broader market intelligence network."}
+                    <p className={`mt-3 text-slate-600 transition-all ${expandedDetails ? "text-[1.05rem] leading-9" : "text-[1.02rem] leading-8"}`}>
+                      {selectedNode.description || "This node is connected to the broader market intelligence network. "}
+                      {expandedDetails && "The graph visualization shows how entities, themes, and opportunities interconnect across the regenerative finance ecosystem. Each node represents a key player or concept, while edges illustrate relationships, investments, and thematic connections. This interconnected view enables users to discover hidden patterns, identify investment clusters, and understand the broader context of sustainable finance activities. "}
+                      {expandedDetails && "Users can leverage this intelligence to make more informed decisions, identify synergies between different market participants, and navigate the complex landscape of regenerative investing with greater clarity and confidence."}
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedDetails((current) => !current)}
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[#244cba] transition-colors hover:text-[#17357d]"
+                    >
+                      {expandedDetails ? "Read less" : "Read more"}
+                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedDetails ? "rotate-180" : ""}`} />
+                    </button>
                   </div>
 
-                  <div className="rounded-[24px] bg-[#f7f6f2] px-5 py-5">
+                  <div className={`rounded-[24px] bg-[#f7f6f2] px-5 py-6 transition-all ${expandedDetails ? "min-h-[250px]" : ""}`}>
                     <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Interpretation</div>
-                    <div className="mt-3 text-sm leading-7 text-slate-600">
-                      {selectedNode.type === "Issuer" && "This issuer can be reviewed through offerings, disclosures, and relationship links across the Worldbridgers market ecosystem."}
-                      {selectedNode.type === "Investor" && "This investor node shows how capital relationships connect with issuers, themes, and regional opportunity clusters."}
-                      {selectedNode.type === "Market" && "This market node anchors the selected company within a wider region or thematic trading environment."}
-                      {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic."}
-                      {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas."}
-                      {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes."}
+                    <div className={`mt-3 text-slate-600 transition-all ${expandedDetails ? "text-[1rem] leading-9" : "text-[0.98rem] leading-8"}`}>
+                      {selectedNode.type === "Issuer" && "This issuer can be reviewed through offerings, disclosures, and relationship links across the Worldbridgers market ecosystem. "}
+                      {selectedNode.type === "Investor" && "This investor node shows how capital relationships connect with issuers, themes, and regional opportunity clusters. "}
+                      {selectedNode.type === "Market" && "This market node anchors the selected company within a wider region or thematic trading environment. "}
+                      {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic. "}
+                      {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas. "}
+                      {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes. "}
+                      {expandedDetails && " Users can use this reading pane to compare the selected node against nearby relationships, understand why it appears in the network, and follow the connected context shown in the graph map. "}
+                      {expandedDetails && "The expanded view provides deeper insights into how this entity contributes to the broader regenerative finance landscape, its strategic importance, and potential pathways for engagement or investment. "}
+                      {expandedDetails && "This comprehensive understanding enables more strategic decision-making and better navigation of the interconnected sustainable finance ecosystem."}
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between">
                       <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Related nodes</div>
-                      <div className="text-xs text-slate-400">Move inward on select</div>
+                      <div className="text-xs text-slate-400">Connected context</div>
                     </div>
                     <div className="mt-3 space-y-2">
                       {relatedNodes.length ? relatedNodes.map((node) => (

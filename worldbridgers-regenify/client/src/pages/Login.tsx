@@ -231,14 +231,24 @@ export default function Login() {
 
             <div className="mt-[56px] w-full max-w-[548px]">
               <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm text-white/80">
-                {loginStats.map((item) => (
+                {loginStats.map((item, index) => (
                   <div
                     key={item.label}
-                    className="relative min-h-[72px] overflow-hidden rounded-[16px] border border-white/10 bg-white/[0.04] px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm"
+                    className="relative min-h-[72px] overflow-hidden rounded-[16px] border border-white/10 px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm"
+                    style={{
+                      background:
+                        index === 0
+                          ? "linear-gradient(135deg, rgba(74, 222, 128, 0.18), rgba(255,255,255,0.06))"
+                          : index === 1
+                            ? "linear-gradient(135deg, rgba(96, 165, 250, 0.22), rgba(255,255,255,0.05))"
+                            : index === 2
+                              ? "linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(255,255,255,0.04))"
+                              : "linear-gradient(135deg, rgba(45, 212, 191, 0.18), rgba(255,255,255,0.05))",
+                    }}
                   >
                     <div className="relative">
                       <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
-                      <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
+                      <div className="mt-1.5 text-[0.76rem] text-white/78">{item.label}</div>
                     </div>
                   </div>
                 ))}
