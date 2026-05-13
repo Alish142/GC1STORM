@@ -1,0 +1,82 @@
+graph LR
+  subgraph "Frontend Layer"
+    Browser["Browser / User Agent"]
+    ReactSPA["React SPA (client/src/App.tsx)"]
+    AppShell["App Shell (App.tsx)"]
+    UIProviders["UI Providers (ThemeProvider, TooltipProvider, Toaster)"]
+    WouterRouter["Wouter Router"]
+    RouteComponents["Route Components (Home, Discover, Dashboard, etc.)"]
+    CommonUI["Common UI Components (DataTable, DashboardHeader, SidebarFilters, HeroCanvas, AIChatBox, Map)"]
+
+    Browser --> ReactSPA
+    ReactSPA --> AppShell
+    AppShell --> UIProviders
+    AppShell --> WouterRouter
+    WouterRouter --> RouteComponents
+    RouteComponents --> CommonUI
+  end
+
+  subgraph "Main Backend Layer"
+    ExpressServer["Express HTTP Server (server/_core/index.ts)"]
+    ViteMiddleware["Vite Dev Middleware / Static Serve (server/_core/vite.ts)"]
+    TRPCAPI["tRPC API (/api/trpc)"]
+    OAuthCallback["OAuth Callback (/api/oauth/callback) (server/_core/oauth.ts)"]
+    RequestContext["Request Context (server/_core/context.ts)"]
+    AppRouter["appRouter (server/routers.ts)"]
+    SystemRouter["systemRouter (server/_core/systemRouter.ts)"]
+    AuthRouter["auth router"]
+    IssuersRouter["issuers router"]
+    OfferingsRouter["offerings router"]
+    IndicesRouter["indices router"]
+    DocumentsRouter["documents router"]
+    GraphRouter["graph router"]
+    SDKModule["SDK Module (server/_core/sdk.ts) - OAuth, JWT, Session"]
+    CookieManagement["Session Cookie Management"]
+    DBUpsert["db.upsertUser (server/db.ts)"]
+
+    ReactSPA -->|API calls| TRPCAPI
+    ExpressServer --> ViteMiddleware
+    ExpressServer --> TRPCAPI
+    ExpressServer --> OAuthCallback
+    TRPCAPI --> AppRouter
+    AppRouter --> SystemRouter
+    AppRouter --> AuthRouter
+    AppRouter --> IssuersRouter
+    AppRouter --> OfferingsRouter
+    AppRouter --> IndicesRouter
+    AppRouter --> DocumentsRouter
+    AppRouter --> GraphRouter
+    OAuthCallback --> SDKModule
+    TRPCAPI -->|auth context| RequestContext
+    RequestContext --> SDKModule
+    AuthRouter --> CookieManagement
+    AuthRouter --> SDKModule
+    SDKModule --> DBUpsert
+  end
+
+  subgraph "Shared Modules"
+    SharedConst["@shared/const.ts"]
+    SharedTypes["@shared/types.ts"]
+    DrizzleSchema["drizzle/schema.ts, relations.ts"]
+  end
+
+  subgraph "Secondary Backend Layer"
+    FastAPIService["FastAPI Backend Service (backend/app/main.py)"]
+    PostgreSQL["PostgreSQL (via docker-compose.yml)"]
+    Neo4j["Neo4j (via docker-compose.yml)"]
+    DataEndpoints["Data Endpoints (/api/data/*, /api/graph-db/*, /api/integration/*)"]
+    AuthEndpoints["Auth Endpoints (/api/auth/*)"]
+    FastAPIService --> DataEndpoints
+    FastAPIService --> AuthEndpoints
+    PostgreSQL --> FastAPIService
+    Neo4j --> FastAPIService
+    DBUpsert -->|optional shared data| PostgreSQL
+  end
+
+  OAuthCallback -->|session cookie set| Browser
+  Browser -->|requests assets| ViteMiddleware
+  Browser -->|calls REST/tRPC| ExpressServer
+  Browser -->|calls REST| FastAPIService
+  SharedConst --> AppRouter
+  SharedTypes --> AppRouter
+  DrizzleSchema --> FastAPIService

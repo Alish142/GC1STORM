@@ -18,7 +18,6 @@ import {
   Mail,
   Network,
   ShieldCheck,
-  TrendingDown,
   TrendingUp,
   Twitter,
   Linkedin,
@@ -104,7 +103,7 @@ const PLATFORM_FEATURES = [
     description: "Visualize complex relationships between issuers, offerings, investors, and markets through an interactive intelligence layer.",
     badge: "Core",
     color: "bg-primary/10 text-primary",
-    href: "/dashboard/graph",
+    href: "/capabilities/graph-relationship-engine",
   },
   {
     icon: ShieldCheck,
@@ -112,7 +111,7 @@ const PLATFORM_FEATURES = [
     description: "Every offering is mapped against EU Taxonomy and ESG classification frameworks, ensuring full regulatory alignment.",
     badge: "Compliance",
     color: "bg-blue-500/10 text-blue-600",
-    href: "/dashboard/documents",
+    href: "/capabilities/eu-taxonomy-compliance",
   },
   {
     icon: TrendingUp,
@@ -120,7 +119,7 @@ const PLATFORM_FEATURES = [
     description: "Live indices, price feeds, and performance metrics across asset classes and regions with mission-focused precision.",
     badge: "Live",
     color: "bg-amber-500/10 text-amber-600",
-    href: "/dashboard/indices",
+    href: "/capabilities/real-time-market-data",
   },
   {
     icon: Globe2,
@@ -128,7 +127,7 @@ const PLATFORM_FEATURES = [
     description: "Access issuers and opportunities across Europe, Asia-Pacific, Americas, Africa, and the Middle East in one unified platform.",
     badge: "Global",
     color: "bg-violet-500/10 text-violet-600",
-    href: "/discover",
+    href: "/capabilities/global-coverage",
   },
   {
     icon: Leaf,
@@ -136,7 +135,7 @@ const PLATFORM_FEATURES = [
     description: "Purpose-built for impact investing by connecting capital to projects that restore ecosystems, communities, and economies.",
     badge: "Impact",
     color: "bg-emerald-500/10 text-emerald-600",
-    href: "/dashboard/offerings",
+    href: "/capabilities/regenerative-finance",
   },
   {
     icon: Zap,
@@ -144,20 +143,25 @@ const PLATFORM_FEATURES = [
     description: "Seamless access to the Worldbridgers Exchange for direct listing, trading, and settlement of regenerative instruments.",
     badge: "Exchange",
     color: "bg-rose-500/10 text-rose-600",
-    href: "/dashboard/account?view=portfolio",
+    href: "/capabilities/wbx-exchange-integration",
   },
 ];
 
 const PREVIEW_RING_NODES = [
-  { label: "Entrepreneurship", ring: "inner" as const, angle: -90, color: "#f8fafc" },
-  { label: "Future of Work", ring: "inner" as const, angle: 28, color: "#f8fafc" },
-  { label: "Social Justice", ring: "inner" as const, angle: 148, color: "#f8fafc" },
-  { label: "EIB", ring: "outer" as const, angle: -34, color: "#4ade80" },
-  { label: "NGC", ring: "outer" as const, angle: 18, color: "#4ade80" },
-  { label: "Impact Asia", ring: "outer" as const, angle: 92, color: "#60a5fa" },
-  { label: "US Climate", ring: "outer" as const, angle: 156, color: "#60a5fa" },
-  { label: "Carbon", ring: "outer" as const, angle: 222, color: "#fbbf24" },
-  { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa" },
+  { label: "Enterprise", ring: "inner" as const, angle: -90, color: "#f8fafc", labelDx: 14, labelDy: 0, textAnchor: "start" as const },
+  { label: "Future Work", ring: "inner" as const, angle: 28, color: "#f8fafc", labelDx: 0, labelDy: 18, textAnchor: "middle" as const },
+  { label: "Social", ring: "inner" as const, angle: 148, color: "#f8fafc", labelDx: -14, labelDy: 2, textAnchor: "end" as const },
+  { label: "EIB", ring: "outer" as const, angle: -34, color: "#4ade80", labelDx: 10, labelDy: 22, textAnchor: "start" as const },
+  { label: "NGC", ring: "outer" as const, angle: 18, color: "#4ade80", labelDx: 10, labelDy: 20, textAnchor: "start" as const },
+  { label: "Impact", ring: "outer" as const, angle: 92, color: "#60a5fa", labelDx: 0, labelDy: 24, textAnchor: "middle" as const },
+  { label: "US Climate", ring: "outer" as const, angle: 156, color: "#60a5fa", labelDx: -10, labelDy: 24, textAnchor: "end" as const },
+  { label: "Carbon", ring: "outer" as const, angle: 222, color: "#fbbf24", labelDx: -6, labelDy: -20, textAnchor: "end" as const },
+  { label: "APAC Market", ring: "outer" as const, angle: -126, color: "#a78bfa", labelDx: -10, labelDy: -20, textAnchor: "end" as const },
+];
+
+const HERO_BACKGROUND_SLIDES = [
+  "/hero-bg-1.jpg",
+  "/her0-bg-2.png",
 ];
 
 function previewHexPoints(size: number) {
@@ -167,59 +171,11 @@ function previewHexPoints(size: number) {
   }).join(" ");
 }
 
-function buildHeroSeries(changePercent: number, seriesIndex = 0) {
-  const target = changePercent;
-  const presets = [
-    [0.4, 0.9, 0.7, 1.2, -0.4, 1.35, -3.5, 1.1, -4.8, -2.1, -1.3, -0.9, -1.1, -0.4, -0.8, -0.2, -0.7, 0],
-    [0.15, -0.15, -0.55, -1.3, -1.1, -1.7, -2.5, -4.1, -5.5, -7.1, -6.4, -6.0, -5.1, -4.5, -5.2, -3.7, -5.8, 0],
-    [-0.4, -1.0, -1.7, -3.5, -4.1, -4.7, -3.2, -2.9, -5.0, -4.7, -7.4, -9.2, -11.7, -13.1, -8.6, -7.5, -10.9, 0],
-  ];
-
-  const preset = presets[seriesIndex % presets.length];
-  const start = seriesIndex === 0 ? -3.8 : seriesIndex === 1 ? -6.6 : -10.8;
-  const span = target - start;
-
-  return preset.map((offset, index) => {
-    if (index === preset.length - 1) {
-      return target;
-    }
-
-    const progress = index / (preset.length - 1);
-    const baseline = start + span * progress;
-    const taper = 1 - progress * 0.14;
-    return baseline + offset * taper;
-  });
-}
-
-function linePath(values: number[], width: number, height: number, min: number, max: number) {
-  if (!values.length) {
-    return "";
-  }
-
-  const usableWidth = width - 36;
-  const usableHeight = height - 28;
-  const range = Math.max(max - min, 1);
-  const points = values.map((value, index) => {
-    const x = 18 + (usableWidth * index) / Math.max(values.length - 1, 1);
-    const y = 12 + usableHeight - ((value - min) / range) * usableHeight;
-    return { x, y };
-  });
-
-  return points
-    .map((point, index) => {
-      if (index === 0) {
-        return `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-      }
-
-      return `L ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-    })
-    .join(" ");
-}
-
 export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const isAuthenticated = Boolean(user);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const landingStatsQuery = useQuery<LandingStat[]>({
     queryKey: ["landing-stats"],
     queryFn: async () => {
@@ -240,91 +196,45 @@ export default function Home() {
     staleTime: 60_000,
   });
   const displayStats = landingStatsQuery.data ?? STATS;
-  const heroIndicesQuery = useQuery({
-    queryKey: ["landing-hero-indices"],
-    queryFn: () => backendApi.indices(new URLSearchParams({ page: "1", page_size: "3" })),
-    staleTime: 60_000,
-  });
-  const heroIndices = heroIndicesQuery.data?.data ?? [];
-  const heroSeries = heroIndices.map((item) => ({
-    ...item,
-    series: buildHeroSeries(
-      item.changePercent,
-      heroIndices.findIndex((candidate) => candidate.id === item.id)
-    ),
-  }));
-  const allHeroValues = heroSeries.flatMap((item) => item.series);
-  const chartMin = allHeroValues.length ? Math.min(-20, Math.min(...allHeroValues) - 1.5) : -20;
-  const chartMax = allHeroValues.length ? Math.max(5, Math.max(...allHeroValues) + 1.5) : 5;
-  const leadIndex = heroIndices[0];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveHeroSlide((current) => (current + 1) % HERO_BACKGROUND_SLIDES.length);
+    }, 6200);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(0, -16px, 0) scale(1.04); }
-        }
-
-        @keyframes pulseBars {
-          0%, 100% { transform: scaleY(0.92); opacity: 0.35; }
-          50% { transform: scaleY(1.08); opacity: 0.72; }
-        }
-
-        @keyframes gradientShift {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        @keyframes gridDrift {
-          0% { transform: translate3d(0, 0, 0); }
-          50% { transform: translate3d(-12px, 10px, 0); }
-          100% { transform: translate3d(0, 0, 0); }
-        }
-      `}</style>
       <PublicHeader />
 
       <section
         className="relative overflow-hidden pt-28 text-white"
-        style={{
-          background:
-            "linear-gradient(120deg, #3c6fa1 0%, #4a85bc 24%, #51a3c4 50%, #65bd9f 76%, #a0d584 100%)",
-          backgroundSize: "180% 180%",
-          animation: "gradientShift 18s ease-in-out infinite",
-        }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.09]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-            animation: "gridDrift 22s ease-in-out infinite",
-          }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(250,204,21,0.12),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(167,243,208,0.16),transparent_30%),radial-gradient(circle_at_center_right,rgba(186,230,253,0.14),transparent_26%),radial-gradient(circle_at_center_left,rgba(255,255,255,0.1),transparent_28%)]" />
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-12 top-28 h-48 w-48 rounded-full bg-emerald-100/10 blur-3xl [animation:float_16s_ease-in-out_infinite]" />
-          <div className="absolute right-24 top-36 h-56 w-56 rounded-full bg-sky-100/9 blur-3xl [animation:float_20s_ease-in-out_infinite_reverse]" />
-          <div className="absolute bottom-16 left-1/3 h-44 w-44 rounded-full bg-amber-50/8 blur-3xl [animation:float_18s_ease-in-out_infinite]" />
-          <div className="absolute inset-x-0 bottom-0 h-36 opacity-18">
-            <div className="flex h-full items-end gap-3 px-12">
-              {[28, 34, 31, 42, 48, 40, 58, 66, 60, 72, 76, 82].map((height, index) => (
-                <div
-                  key={index}
-                  className="flex-1 rounded-t-[18px] bg-gradient-to-t from-white/10 via-sky-200/10 to-emerald-200/20"
-                  style={{
-                    height: `${height}%`,
-                    animation: `pulseBars ${6 + (index % 4)}s ease-in-out ${index * 0.2}s infinite`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="absolute inset-0 overflow-hidden">
+          {HERO_BACKGROUND_SLIDES.map((backgroundImage, index) => (
+            <div
+              key={index}
+              className="absolute inset-0 transition-[opacity,background-position,transform] duration-[2600ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{
+                opacity: index === activeHeroSlide ? 1 : 0,
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundPosition: index === activeHeroSlide ? "58% center" : "42% center",
+                backgroundSize: "cover",
+                transform: index === activeHeroSlide ? "scale(1.08)" : "scale(1.04)",
+                willChange: "opacity, transform",
+                transitionDuration: index === activeHeroSlide ? "2600ms, 6200ms, 2600ms" : "2600ms, 0ms, 2600ms",
+              }}
+            />
+          ))}
         </div>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.9)_0%,rgba(0,0,0,0.84)_16%,rgba(0,0,0,0.74)_30%,rgba(0,0,0,0.6)_42%,rgba(0,0,0,0.44)_54%,rgba(0,0,0,0.28)_66%,rgba(0,0,0,0.16)_78%,rgba(0,0,0,0.07)_88%,rgba(0,0,0,0.02)_95%,rgba(0,0,0,0)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_50%,rgba(0,0,0,0.28),transparent_34%)] blur-[80px]" />
+        <div className="absolute inset-y-0 left-[28%] hidden w-[42%] bg-[linear-gradient(90deg,rgba(8,16,20,0.42)_0%,rgba(8,16,20,0.24)_34%,rgba(8,16,20,0.1)_62%,rgba(8,16,20,0.03)_82%,rgba(8,16,20,0)_100%)] blur-[140px] md:block" />
 
         <div className="container relative z-10 pb-20">
-          <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+          <div className="grid gap-8">
             <div className="max-w-[780px] pt-6">
               <h1 className="max-w-[760px] text-[3.7rem] font-bold leading-[0.98] md:text-[4.7rem] lg:text-[5.55rem]">
                 Connecting Capital to{" "}
@@ -344,7 +254,7 @@ export default function Home() {
                 <Button
                   size="lg"
                   className="h-16 rounded-xl bg-[#4ade80] px-12 text-[1.05rem] font-bold text-slate-950 shadow-brand hover:bg-[#86efac]"
-                  onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login")}
+                  onClick={() => navigate("/discover")}
                 >
                   Explore Platform
                   <ArrowRight className="h-4 w-4" />
@@ -354,10 +264,10 @@ export default function Home() {
                   variant="outline"
                   className="h-16 rounded-xl border-white/30 bg-white/5 px-11 text-[1.05rem] font-semibold text-white hover:border-white/50 hover:bg-white/10"
                   onClick={() => {
-                    window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=request-access";
+                    window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
                   }}
                 >
-                  Request Access
+                  Sign Up
                 </Button>
               </div>
 
@@ -371,140 +281,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative lg:pl-2">
-              <div className="absolute inset-x-10 top-12 h-52 rounded-full bg-emerald-400/20 blur-3xl" />
-              <div className="relative mx-auto max-w-[560px] overflow-hidden rounded-[30px] border border-white/18 bg-white/95 p-4 text-slate-900 shadow-[0_30px_100px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-                <div className="rounded-[24px] border border-slate-200 bg-white p-4">
-                  <div className="rounded-[22px] border border-slate-200 bg-slate-50/90 p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Lead index</p>
-                        <div className="mt-1 truncate text-lg font-semibold text-slate-950">
-                          {leadIndex?.name ?? "Loading index feed"}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
-                        <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Latest</div>
-                        <div className="mt-1 text-lg font-semibold text-slate-950">
-                          {leadIndex ? `${leadIndex.currency} ${leadIndex.last.toFixed(2)}` : "—"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-[18px] border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="mb-4 flex flex-wrap gap-4 text-xs font-medium text-slate-600">
-                        {heroSeries.map((item, index) => (
-                          <div key={item.id} className="inline-flex items-center gap-2">
-                            <span
-                              className={`h-2.5 w-2.5 rounded-full ${
-                                index === 0 ? "bg-blue-500" : index === 1 ? "bg-rose-500" : "bg-emerald-500"
-                              }`}
-                            />
-                            {item.name}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-3">
-                        <div className="flex h-[162px] flex-col justify-between pb-6 pt-1 text-[11px] font-medium text-slate-500">
-                          {[1, 0.5, 0, -0.5, -1, -1.5].map((tick) => (
-                            <div key={tick}>{tick}%</div>
-                          ))}
-                        </div>
-
-                        <div>
-                          <svg viewBox="0 0 470 162" className="h-[162px] w-full">
-                            {[0, 1, 2, 3, 4, 5].map((row) => (
-                              <line
-                                key={row}
-                                x1="18"
-                                x2="454"
-                                y1={12 + row * 27}
-                                y2={12 + row * 27}
-                                stroke={row === 1 ? "rgba(148,163,184,0.35)" : "rgba(148,163,184,0.18)"}
-                                strokeWidth="1"
-                              />
-                            ))}
-
-                            {[0, 1, 2].map((col) => (
-                              <line
-                                key={col}
-                                x1={18 + col * 145}
-                                x2={18 + col * 145}
-                                y1="12"
-                                y2="147"
-                                stroke="rgba(148,163,184,0.12)"
-                                strokeWidth="1"
-                              />
-                            ))}
-
-                            {heroSeries.map((item, index) => (
-                              <path
-                                key={item.id}
-                                d={linePath(item.series, 470, 162, chartMin, chartMax)}
-                                fill="none"
-                                stroke={index === 0 ? "#2563eb" : index === 1 ? "#ef4444" : "#34d399"}
-                                strokeWidth="3.25"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            ))}
-
-                            {heroSeries.map((item, index) => {
-                              const last = item.series[item.series.length - 1];
-                              const x = 451;
-                              const y = 12 + 123 - ((last - chartMin) / Math.max(chartMax - chartMin, 1)) * 123;
-                              const stroke = index === 0 ? "#2563eb" : index === 1 ? "#ef4444" : "#34d399";
-                              return (
-                                <g key={`${item.id}-marker`}>
-                                  <circle cx={x} cy={y} r="4.5" fill={stroke} />
-                                  <rect
-                                    x={x - 6}
-                                    y={y - 22}
-                                    rx="7"
-                                    width="54"
-                                    height="18"
-                                    fill={stroke}
-                                    opacity="0.92"
-                                  />
-                                  <text x={x + 21} y={y - 9} textAnchor="middle" fontSize="10" fill="#ffffff" style={{ fontWeight: 700 }}>
-                                    {item.changePercent.toFixed(2)}%
-                                  </text>
-                                </g>
-                              );
-                            })}
-                          </svg>
-
-                          <div className="mt-2 flex items-center justify-between px-2 text-[11px] font-medium text-slate-500">
-                            <span>Jan 24</span>
-                            <span>Feb 24</span>
-                            <span>Mar 24</span>
-                            <span>Apr 24</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      {heroSeries.map((item) => {
-                        const positive = item.changePercent >= 0;
-                        return (
-                          <div key={`${item.id}-summary`} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <div className="text-xs text-slate-500">Performance</div>
-                            <div className="mt-1 truncate text-sm font-semibold text-slate-900">{item.name}</div>
-                            <div className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${positive ? "text-emerald-600" : "text-rose-600"}`}>
-                              {positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                              {positive ? "+" : ""}
-                              {item.changePercent.toFixed(2)}%
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -571,16 +347,11 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {PLATFORM_FEATURES.map((feature) => {
               const Icon = feature.icon;
-              const href = feature.href;
-              const targetHref =
-                isAuthenticated || href === "/discover"
-                  ? href
-                  : `/login?next=${encodeURIComponent(href)}`;
               return (
                 <button
                   key={feature.title}
                   type="button"
-                  onClick={() => navigate(targetHref)}
+                  onClick={() => navigate(feature.href)}
                   className="flex min-h-[248px] flex-col rounded-[28px] border border-border bg-card p-7 text-left shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
                 >
                   <div className="flex items-start justify-between">
@@ -645,7 +416,7 @@ export default function Home() {
 
             <Button
               className="mt-8 h-12 rounded-xl bg-emerald-400 px-7 text-base font-semibold text-slate-950 shadow-brand hover:bg-emerald-300"
-              onClick={() => navigate(isAuthenticated ? "/dashboard/graph" : "/login?next=/dashboard/graph")}
+              onClick={() => navigate("/capabilities/graph-relationship-engine")}
             >
               Explore Graph View
               <ArrowRight className="h-4 w-4" />
@@ -655,7 +426,7 @@ export default function Home() {
           <div className="relative">
             <div className="mx-auto max-w-[560px] rounded-[32px] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
               <button
-                onClick={() => navigate("/dashboard/graph")}
+                onClick={() => navigate("/capabilities/graph-relationship-engine")}
                 className="relative w-full text-left transition-transform hover:scale-[1.01]"
               >
                 <div className="rounded-[26px] border border-white/10 bg-slate-900/80 p-4">
@@ -687,6 +458,15 @@ export default function Home() {
                     const rad = (node.angle * Math.PI) / 180;
                     const x = 200 + Math.cos(rad) * radius;
                     const y = 200 + Math.sin(rad) * radius;
+                    const horizontalDirection = Math.cos(rad) >= 0 ? 1 : -1;
+                    const labelX = x + (node.labelDx ?? horizontalDirection * (node.ring === "inner" ? 24 : 10));
+                    const labelY =
+                      y +
+                      (node.labelDy ??
+                        (node.ring === "inner"
+                          ? Math.sin(rad) > 0.35 ? 10 : Math.sin(rad) < -0.35 ? -10 : 0
+                          : Math.sin(rad) > 0.35 ? 28 : Math.sin(rad) < -0.35 ? -18 : 24));
+                    const textAnchor = node.textAnchor ?? (horizontalDirection > 0 ? "start" : "end");
 
                     return (
                       <g key={`node-${index}`}>
@@ -694,22 +474,22 @@ export default function Home() {
                         <circle cx={x} cy={y} r={8.5} fill="rgba(255,255,255,0.95)" stroke={node.color} strokeWidth="2" />
                         {node.ring === "inner" ? (
                           <text
-                            x={x + (x >= 200 ? 15 : -15)}
-                            y={y}
-                            textAnchor={x >= 200 ? "start" : "end"}
+                            x={labelX}
+                            y={labelY}
+                            textAnchor={textAnchor}
                             dominantBaseline="middle"
-                            fontSize="9"
+                            fontSize="10.5"
                             fill="rgba(255,255,255,0.82)"
                           >
                             {node.label}
                           </text>
                         ) : (
                           <text
-                            x={x}
-                            y={y + 24}
-                            textAnchor="middle"
+                            x={labelX}
+                            y={labelY}
+                            textAnchor={textAnchor}
                             dominantBaseline="middle"
-                            fontSize="8.5"
+                            fontSize="9.5"
                             fill="rgba(255,255,255,0.76)"
                           >
                             {node.label}
@@ -726,9 +506,9 @@ export default function Home() {
 
                     <defs>
                       <radialGradient id="centerGlow" cx="50%" cy="50%" r="65%">
-                        <stop offset="0%" stopColor="#fb923c" />
-                        <stop offset="58%" stopColor="#f59e0b" />
-                        <stop offset="100%" stopColor="#ea580c" />
+                        <stop offset="0%" stopColor="#86efac" />
+                        <stop offset="58%" stopColor="#22c55e" />
+                        <stop offset="100%" stopColor="#15803d" />
                       </radialGradient>
                     </defs>
                 </svg>
@@ -782,7 +562,7 @@ export default function Home() {
                 variant="outline"
                 className="px-10 font-semibold"
                 onClick={() => {
-                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=request-access";
+                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
                 }}
               >
                 Schedule a Demo
@@ -823,8 +603,8 @@ export default function Home() {
 
             {[
               ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
-              ["Access", ["Log In", "Request Access", "Support", "Onboarding"]],
-              ["Company", ["About", "Contact", "Privacy"]],
+              ["Access", ["Log In", "Sign Up", "Support", "Onboarding"]],
+              ["About Us", ["Vision", "Team Members", "Themes", "Contact", "Privacy"]],
             ].map(([title, links]) => (
               <div key={title as string}>
                 <h4 className="mb-4 text-sm font-semibold text-white">{title as string}</h4>
@@ -834,8 +614,8 @@ export default function Home() {
                       key={link}
                       className="block text-sm transition-colors hover:text-white"
                       onClick={() => {
-                        if (link === "Request Access") {
-                          window.location.href = "/login?mode=request-access";
+                        if (link === "Sign Up") {
+                          window.location.href = "/login?mode=create-account";
                           return;
                         }
                         navigate("/login");

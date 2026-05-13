@@ -25,102 +25,80 @@ export type NavigationLink = {
 export type NavigationGroup = {
   label: string;
   icon: LucideIcon;
+  href?: string;
   items: NavigationLink[];
 };
 
 export const publicNavigation: NavigationGroup[] = [
   {
-    label: "Systems Overview",
-    icon: LayoutDashboard,
+    label: "About Us",
+    icon: User,
+    href: "/about",
     items: [
       {
-        label: "Platform Overview",
-        href: "/login?next=/dashboard",
-        description: "Understand the Worldbridgers Regenify platform and its main market workflows.",
-        icon: LayoutDashboard,
-      },
-      {
-        label: "Relationship Graph",
-        href: "/login?next=/dashboard/graph",
-        description: "Explore connected issuers, themes, and markets.",
-        icon: Network,
-      },
-      {
-        label: "Market Indices",
-        href: "/login?next=/dashboard/indices",
-        description: "Review live sustainable index performance.",
-        icon: BarChart3,
-      },
-    ],
-  },
-  {
-    label: "List Your Offering",
-    icon: Layers,
-    items: [
-      {
-        label: "Active Offerings",
-        href: "/login?next=/dashboard/offerings",
-        description: "Access active offerings and structured products.",
-        icon: Layers,
-      },
-      {
-        label: "Issuer Profiles",
-        href: "/login?next=/dashboard/issuers",
-        description: "Browse verified issuer profiles and labelled instruments.",
-        icon: Building2,
-      },
-      {
-        label: "Supporting Documents",
-        href: "/login?next=/dashboard/documents",
-        description: "Open filing packs, notices, supplements, and disclosures.",
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    label: "Systems Finance",
-    icon: ShieldCheck,
-    items: [
-      {
-        label: "Sustainable Indices",
-        href: "/login?next=/dashboard/indices",
-        description: "Review live sustainable index performance and benchmark movement.",
-        icon: BarChart3,
-      },
-      {
-        label: "Market Signals",
-        href: "/login?next=/dashboard",
-        description: "See live platform signals, readiness indicators, and regional activity.",
+        label: "Vision",
+        href: "/about",
+        description: "Learn the long-term regenerative vision behind the Worldbridgers Regenify platform.",
         icon: Globe2,
       },
       {
-        label: "Compliance Signals",
-        href: "/login?next=/dashboard/documents",
-        description: "Keep taxonomy, SFDR, and document-backed trust cues visible.",
-        icon: ShieldCheck,
+        label: "Team Members",
+        href: "/about",
+        description: "Meet the people guiding platform strategy, onboarding, and partnership support.",
+        icon: User,
+      },
+      {
+        label: "Themes",
+        href: "/about",
+        description: "Explore the core regenerative and ESG themes connected across the platform.",
+        icon: Network,
       },
     ],
   },
   {
-    label: "Our Offerings",
-    icon: FileText,
+    label: "Platform",
+    icon: LayoutDashboard,
     items: [
       {
-        label: "Issuers",
-        href: "/login?next=/dashboard/issuers",
-        description: "Browse verified issuer profiles and labels.",
-        icon: Building2,
+        label: "Graph Relationship Engine",
+        href: "/capabilities/graph-relationship-engine",
+        description: "Explore how issuers, themes, and markets connect through public graph intelligence.",
+        icon: LayoutDashboard,
       },
       {
-        label: "Offerings",
-        href: "/login?next=/dashboard/offerings",
-        description: "Access active offerings and structured products.",
+        label: "EU Taxonomy Compliance",
+        href: "/capabilities/eu-taxonomy-compliance",
+        description: "Understand the public compliance and trust framework behind sustainable offerings.",
+        icon: ShieldCheck,
+      },
+      {
+        label: "Real-time Market Data",
+        href: "/capabilities/real-time-market-data",
+        description: "See how live benchmark and market context supports the public platform story.",
+        icon: BarChart3,
+      },
+    ],
+  },
+  {
+    label: "Offerings",
+    icon: Layers,
+    items: [
+      {
+        label: "Green Bonds",
+        href: "/discover/green-bonds",
+        description: "Explore public information on green-labelled instruments and climate-aligned financing.",
         icon: Layers,
       },
       {
-        label: "Documents",
-        href: "/login?next=/dashboard/documents",
-        description: "Open filings, notices, and supplements.",
+        label: "Transition Finance",
+        href: "/discover/transition-finance",
+        description: "Understand how transition pathways are presented to public visitors.",
+        icon: Building2,
+      },
+      {
+        label: "Impact Capital",
+        href: "/discover/impact-capital",
+        description: "See how capital is aligned with measurable regenerative and social outcomes.",
         icon: FileText,
       },
     ],
@@ -130,96 +108,30 @@ export const publicNavigation: NavigationGroup[] = [
     icon: Globe2,
     items: [
       {
-        label: "Europe",
-        href: "/login?next=/dashboard/indices",
-        description: "Explore European market data, issuers, and benchmark activity.",
+        label: "APAC Markets",
+        href: "/discover/apac-markets",
+        description: "Explore regional opportunity context and market activity across APAC.",
         icon: Globe2,
       },
       {
-        label: "APAC",
-        href: "/login?next=/dashboard/offerings",
-        description: "Follow APAC offering velocity, thematic issuers, and growth segments.",
-        icon: Globe2,
-      },
-      {
-        label: "Americas",
-        href: "/login?next=/dashboard/graph",
-        description: "See market relationships, investors, and opportunity clusters across the Americas.",
-        icon: Globe2,
-      },
-    ],
-  },
-  {
-    label: "Live Data",
-    icon: BarChart3,
-    items: [
-      {
-        label: "Indices Dashboard",
-        href: "/login?next=/dashboard/indices",
-        description: "Review benchmark movement and live sustainable index data.",
+        label: "Sustainable Indices",
+        href: "/discover/sustainable-indices",
+        description: "Understand benchmark context and public-facing market analytics themes.",
         icon: BarChart3,
       },
       {
-        label: "Documents Feed",
-        href: "/login?next=/dashboard/documents",
-        description: "Track newly available filings and structured disclosure documents.",
-        icon: FileText,
-      },
-      {
-        label: "Graph Intelligence",
-        href: "/login?next=/dashboard/graph",
-        description: "Move into the relationship map with connected entities and themes.",
-        icon: Network,
+        label: "Carbon Markets",
+        href: "/discover/carbon-markets",
+        description: "Learn how carbon-linked opportunities fit into the wider public market picture.",
+        icon: ShieldCheck,
       },
     ],
   },
   {
-    label: "WBX Exchange",
-    icon: Wallet,
-    items: [
-      {
-        label: "Exchange Dashboard",
-        href: "/login?next=/dashboard",
-        description: "Enter the Worldbridgers exchange workspace and high-level overview.",
-        icon: Wallet,
-      },
-      {
-        label: "My WBX Portfolio",
-        href: "/login?next=/dashboard/account?view=portfolio",
-        description: "Open saved holdings, watched entities, and tracked market items.",
-        icon: Wallet,
-      },
-      {
-        label: "Relationship Explorer",
-        href: "/login?next=/dashboard/graph",
-        description: "Navigate the exchange through intelligent network relationships.",
-        icon: Network,
-      },
-    ],
-  },
-  {
-    label: "About Us",
-    icon: HelpCircle,
-    items: [
-      {
-        label: "Our Vision",
-        href: "/login",
-        description: "Learn about our mission to connect capital to regenerative impact.",
-        icon: Globe2,
-      },
-      {
-        label: "Team Members",
-        href: "/login?next=/about/team",
-        description: "Meet our talented team of experts and specialists.",
-        icon: User,
-      },
-      {
-        label: "Themes",
-        href: "/login?next=/about/themes",
-        description: "Explore the key themes and focus areas we champion.",
-        icon: Layers,
-      },
-    ],
+    label: "Discover",
+    icon: Network,
+    href: "/discover",
+    items: [],
   },
 ];
 

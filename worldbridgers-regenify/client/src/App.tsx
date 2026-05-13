@@ -6,12 +6,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Discover from "./pages/Discover";
+import DiscoverTopicPage from "./pages/DiscoverTopicPage";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import GraphView from "./pages/GraphView";
 import Logout from "./pages/Logout";
 import Account from "./pages/Account";
-import Search from "./pages/Search";
+import PlatformFeaturePage from "./pages/PlatformFeaturePage";
+import AboutPage from "./pages/AboutPage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -40,8 +42,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/capabilities/:slug" component={PlatformFeaturePage} />
       <Route path="/discover" component={Discover} />
-      <Route path="/search" component={() => <ProtectedRoute component={Search} />} />
+      <Route path="/discover/:slug" component={DiscoverTopicPage} />
       <Route path="/login" component={Login} />
       <Route path="/logout" component={Logout} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
