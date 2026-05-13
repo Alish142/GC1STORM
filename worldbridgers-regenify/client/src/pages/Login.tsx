@@ -231,17 +231,34 @@ export default function Login() {
 
             <div className="mt-[56px] w-full max-w-[548px]">
               <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm text-white/80">
-                {loginStats.map((item) => (
-                  <div
-                    key={item.label}
-                    className="relative min-h-[72px] overflow-hidden rounded-[16px] border border-white/10 bg-white/[0.04] px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm"
-                  >
-                    <div className="relative">
-                      <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
-                      <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
+                {loginStats.map((item) => {
+                  const getGradient = (label: string) => {
+                    switch (label) {
+                      case "Verified Issuers":
+                        return "bg-gradient-to-br from-emerald-500/30 to-emerald-900/20 border-emerald-400/30";
+                      case "Active Offerings":
+                        return "bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-blue-400/30";
+                      case "ESG Indices":
+                        return "bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-purple-400/30";
+                      case "Documents":
+                        return "bg-gradient-to-br from-amber-500/30 to-amber-900/20 border-amber-400/30";
+                      default:
+                        return "bg-white/[0.04] border-white/10";
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={item.label}
+                      className={`relative min-h-[72px] overflow-hidden rounded-[16px] border px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm ${getGradient(item.label)}`}
+                    >
+                      <div className="relative">
+                        <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
+                        <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

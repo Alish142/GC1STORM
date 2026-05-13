@@ -618,6 +618,22 @@ export default function Home() {
                           window.location.href = "/login?mode=create-account";
                           return;
                         }
+                        if (title === "Platform") {
+                          navigate("/learn-more");
+                          return;
+                        }
+                        if (link === "Support") {
+                          navigate("/support");
+                          return;
+                        }
+                        if (link === "Contact") {
+                          navigate("/contact");
+                          return;
+                        }
+                        if (link === "Privacy") {
+                          navigate("/privacy");
+                          return;
+                        }
                         navigate("/login");
                       }}
                     >
