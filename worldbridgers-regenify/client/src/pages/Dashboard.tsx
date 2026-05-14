@@ -862,13 +862,13 @@ export default function Dashboard() {
             <div className="flex items-center gap-1 overflow-x-auto py-1.5">
               <button
                 onClick={() => navigate("/dashboard")}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
                   activeTab === "home"
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="hidden h-4 w-4 sm:block" />
                 Overview
               </button>
               {TABS.map((tab) => {
@@ -877,26 +877,26 @@ export default function Dashboard() {
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
                       activeTab === tab.key
                         ? "bg-white text-[#1f2e3b]"
                         : "text-white/72 hover:bg-white/8 hover:text-white"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="hidden h-4 w-4 sm:block" />
                     {tab.label}
                   </button>
                 );
               })}
               <Link
                 href="/dashboard/graph"
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
                   location.includes("/dashboard/graph")
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
-                <Network className="w-4 h-4" />
+                <Network className="hidden h-4 w-4 sm:block" />
                 Graph View
               </Link>
             </div>
