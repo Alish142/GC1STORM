@@ -253,7 +253,7 @@ export default function Login() {
                       className={`relative min-h-[72px] overflow-hidden rounded-[16px] border px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm ${getGradient(item.label)}`}
                     >
                       <div className="relative">
-                        <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
+                        <div className="tabular-nums text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
                         <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
                       </div>
                     </div>
