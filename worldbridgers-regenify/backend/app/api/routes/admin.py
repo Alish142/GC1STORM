@@ -11,6 +11,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 class VisualConfigUpdate(BaseModel):
+    table_dots: dict[str, str] = Field(default_factory=dict, alias="tableDots")
     hover_line_color: str | None = Field(default=None, alias="hoverLineColor")
 
     model_config = {
@@ -49,5 +50,6 @@ def patch_visual_config(
 ):
     return update_visual_config(
         db,
+        table_dots=payload.table_dots,
         hover_line_color=payload.hover_line_color,
     )

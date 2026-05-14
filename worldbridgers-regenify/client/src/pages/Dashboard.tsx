@@ -168,6 +168,17 @@ function HeaderDot({ color }: { color: string }) {
   return <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />;
 }
 
+function DotLabel({ color, text }: { color: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-[0.32rem] shrink-0">
+        <HeaderDot color={color} />
+      </span>
+      <span className="font-medium leading-6 text-foreground">{text}</span>
+    </div>
+  );
+}
+
 function numericAssets(value: string) {
   const match = value.match(/^([A-Z]{3})\s+([\d,.]+)([BM])$/i);
   if (!match) {
@@ -600,10 +611,7 @@ function OfferingsTab() {
     { key: "segment", label: "Segment / Market", sortable: true },
     { key: "issuer", label: "Issuer", sortable: true, className: "min-w-[160px]",
       render: (v, row) => (
-        <div className="flex items-center gap-2">
-          <HeaderDot color={String(row.issuerDotColor ?? "#3b82f6")} />
-          <span className="font-medium text-foreground">{String(v)}</span>
-        </div>
+        <DotLabel color={String(row.issuerDotColor ?? "#3b82f6")} text={String(v)} />
       ) },
     { key: "isin", label: "ISIN", className: "font-mono text-xs" },
     { key: "name", label: "Name", className: "min-w-[200px]" },
@@ -944,10 +952,7 @@ function DocumentsTab() {
     { key: "name", label: "Name", className: "min-w-[260px] font-medium" },
     { key: "issuer", label: "Issuer", className: "min-w-[160px]",
       render: (v, row) => (
-        <div className="flex items-center gap-2">
-          <HeaderDot color={String(row.issuerDotColor ?? "#3b82f6")} />
-          <span className="font-medium text-foreground">{String(v)}</span>
-        </div>
+        <DotLabel color={String(row.issuerDotColor ?? "#3b82f6")} text={String(v)} />
       ) },
     { key: "memberStates", label: "Member States",
       render: (v) => (

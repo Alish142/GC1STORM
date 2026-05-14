@@ -77,6 +77,7 @@ export type GraphEdge = {
 };
 
 export type VisualConfig = {
+  tableDots: Record<string, string>;
   hoverLineColor: string;
 };
 

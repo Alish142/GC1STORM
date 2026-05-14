@@ -57,6 +57,15 @@ type GraphResponse = {
 };
 
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
+  tableDots: {
+    issuerName: "#22c55e",
+    wbxLabel: "#f59e0b",
+    offeringIssuer: "#3b82f6",
+    documentIssuer: "#3b82f6",
+    offeringType: "#f59e0b",
+    indexType: "#8b5cf6",
+    documentType: "#f43f5e",
+  },
   hoverLineColor: "#111111",
 };
 
@@ -214,8 +223,8 @@ function filterIssuers(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          issuerNameDotColor: "#22c55e",
-          wbxLabelDotColor: "#f59e0b",
+          issuerNameDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuerName,
+          wbxLabelDotColor: DEFAULT_VISUAL_CONFIG.tableDots.wbxLabel,
         })),
         sortBy,
         sortDir
@@ -251,8 +260,8 @@ function filterOfferings(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          issuerDotColor: "#3b82f6",
-          typeDotColor: "#f59e0b",
+          issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.offeringIssuer,
+          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.offeringType,
         })),
         sortBy,
         sortDir
@@ -288,7 +297,7 @@ function filterIndices(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          typeDotColor: "#8b5cf6",
+          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.indexType,
         })),
         sortBy,
         sortDir
@@ -321,8 +330,8 @@ function filterDocuments(params: URLSearchParams) {
     ...paginate(
       rows.map((row) => ({
         ...row,
-        issuerDotColor: "#3b82f6",
-        typeDotColor: "#f43f5e",
+        issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.documentIssuer,
+        typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.documentType,
       })),
       params
     ),
@@ -518,7 +527,7 @@ export const backendApi = {
     }
   },
   adminVisualConfig: async () => request<VisualConfig>("/api/admin/visual-config"),
-  updateVisualConfig: async (payload: { hoverLineColor?: string }) =>
+  updateVisualConfig: async (payload: { tableDots?: Record<string, string>; hoverLineColor?: string }) =>
     request<VisualConfig>("/api/admin/visual-config", {
       method: "PATCH",
       body: JSON.stringify(payload),
