@@ -474,7 +474,7 @@ export default function GraphView() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(420px,0.78fr)] 2xl:grid-cols-[minmax(0,1.8fr)_minmax(460px,0.82fr)]">
+        <div className="min-h-0 flex-1 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(490px,0.94fr)] 2xl:grid-cols-[minmax(0,1.68fr)_minmax(560px,1fr)]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
             <div className="min-h-[62vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3 xl:px-4 xl:py-4">
               {isLoading ? (
