@@ -1124,10 +1124,10 @@ export default function Dashboard() {
         {/* Tab navigation */}
         <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
           <div className="container">
-            <div className="flex items-center gap-1 overflow-x-auto py-1.5">
+            <div className="grid grid-cols-3 gap-1.5 py-2 md:flex md:items-center md:gap-1 md:overflow-x-auto md:py-1.5">
               <button
                 onClick={() => navigate("/dashboard")}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                   activeTab === "home"
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
@@ -1142,7 +1142,7 @@ export default function Dashboard() {
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
+                    className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                       activeTab === tab.key
                         ? "bg-white text-[#1f2e3b]"
                         : "text-white/72 hover:bg-white/8 hover:text-white"
@@ -1155,14 +1155,15 @@ export default function Dashboard() {
               })}
               <Link
                 href="/dashboard/graph"
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm ${
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                   location.includes("/dashboard/graph")
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 <Network className="hidden h-4 w-4 sm:block" />
-                Graph View
+                <span className="sm:hidden">Graph</span>
+                <span className="hidden sm:inline">Graph View</span>
               </Link>
             </div>
           </div>
