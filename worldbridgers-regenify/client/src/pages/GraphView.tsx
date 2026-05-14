@@ -37,6 +37,7 @@ interface GraphEdge {
   target: string;
   label: string;
   weight?: number;
+  color?: string;
 }
 
 const NODE_CONFIG: Record<GraphNode["type"], { color: string; fill: string; icon: React.ElementType }> = {
@@ -512,7 +513,7 @@ export default function GraphView() {
                           key={edge.id}
                           d={`M ${source.x} ${source.y} Q ${cx} ${cy} ${target.x} ${target.y}`}
                           fill="none"
-                          stroke={isHoveredConnection ? "#153e75" : isSelectedConnection ? "#4159c7" : "#8f9db6"}
+                          stroke={edge.color ?? "#8f9db6"}
                           strokeWidth={isHoveredConnection ? "3" : isSelectedConnection ? "2.3" : "1.4"}
                           opacity={isHoveredConnection ? "1" : isSelectedConnection ? "0.96" : "0.48"}
                           style={{ transition: "stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease" }}

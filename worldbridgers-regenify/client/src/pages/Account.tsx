@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
+import { backendApi } from "@/lib/backendApi";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   CheckCircle2,
@@ -54,6 +56,34 @@ const ACCOUNT_TABS: {
   },
 ];
 
+type VisualConfig = {
+  tableDots: Record<string, string>;
+  graphEdges: Record<string, string>;
+};
+
+const TABLE_DOT_FIELDS = [
+  { key: "issuerName", label: "Issuer name dot" },
+  { key: "wbxLabel", label: "WBX label dot" },
+  { key: "issuer", label: "Issuer dot" },
+  { key: "offeringType", label: "Offering type dot" },
+  { key: "indexType", label: "Index type dot" },
+  { key: "documentType", label: "Document type dot" },
+] as const;
+
+const GRAPH_EDGE_FIELDS = [
+  { key: "FUNDS", label: "Funds" },
+  { key: "DEVELOPS", label: "Develops" },
+  { key: "MANAGES", label: "Manages" },
+  { key: "INVESTS_IN", label: "Invests in" },
+  { key: "INCLUDES", label: "Includes" },
+  { key: "LISTED_ON", label: "Listed on" },
+  { key: "INFLUENCES", label: "Influences" },
+  { key: "RELATED_ISSUER", label: "Related issuer" },
+  { key: "RELATED_INVESTOR", label: "Related investor" },
+  { key: "LISTS", label: "Lists" },
+  { key: "FUNDED_BY", label: "Funded by" },
+] as const;
+
 function getView(search: string): AccountView {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
@@ -66,6 +96,7 @@ function getView(search: string): AccountView {
 export default function Account() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<AccountView>(() =>
     getView(typeof window !== "undefined" ? window.location.search : "")
   );
@@ -78,7 +109,33 @@ export default function Account() {
     preferredTime: "",
     notes: "",
   });
+  const [visualDraft, setVisualDraft] = useState<VisualConfig | null>(null);
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
+  const isAdmin = user?.role === "admin";
+
+  const visualConfigQuery = useQuery<VisualConfig>({
+    queryKey: ["admin", "visual-config"],
+    queryFn: () => backendApi.adminVisualConfig(),
+    enabled: isAdmin && view === "settings",
+    staleTime: 60_000,
+  });
+
+  const visualConfigMutation = useMutation({
+    mutationFn: (payload: VisualConfig) => backendApi.updateVisualConfig(payload),
+    onSuccess: (nextConfig) => {
+      setVisualDraft(nextConfig);
+      queryClient.setQueryData(["admin", "visual-config"], nextConfig);
+      void queryClient.invalidateQueries({ queryKey: ["issuers"] });
+      void queryClient.invalidateQueries({ queryKey: ["offerings"] });
+      void queryClient.invalidateQueries({ queryKey: ["indices"] });
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["graph-view"] });
+      toast.success("Visual settings updated.");
+    },
+    onError: () => {
+      toast.error("Could not save visual settings.");
+    },
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -92,11 +149,34 @@ export default function Account() {
     return () => window.removeEventListener("popstate", syncView);
   }, []);
 
+  useEffect(() => {
+    if (!visualConfigQuery.data) {
+      return;
+    }
+    setVisualDraft(visualConfigQuery.data);
+  }, [visualConfigQuery.data]);
+
   const openView = (nextView: AccountView) => {
     setView(nextView);
     if (typeof window !== "undefined") {
       window.history.pushState({}, "", `/dashboard/account?view=${nextView}`);
     }
+  };
+
+  const updateVisualField = (scope: "tableDots" | "graphEdges", key: string, value: string) => {
+    setVisualDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [scope]: {
+          ...current[scope],
+          [key]: value,
+        },
+      };
+    });
   };
 
   return (
@@ -239,6 +319,107 @@ export default function Account() {
                       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
                     </div>
                   ))}
+
+                  {isAdmin ? (
+                    <div className="rounded-3xl border border-border bg-card p-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <h2 className="text-lg font-semibold">Visual configuration</h2>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Set hex colors for table dots and graph connection lines. These update the protected user dashboard and graph view.
+                          </p>
+                        </div>
+                        <Button
+                          className="bg-primary text-white hover:bg-primary/90"
+                          disabled={!visualDraft || visualConfigMutation.isPending}
+                          onClick={() => {
+                            if (!visualDraft) {
+                              return;
+                            }
+                            visualConfigMutation.mutate(visualDraft);
+                          }}
+                        >
+                          Save colors
+                        </Button>
+                      </div>
+
+                      {visualConfigQuery.isLoading ? (
+                        <div className="mt-6 text-sm text-muted-foreground">Loading visual settings...</div>
+                      ) : visualDraft ? (
+                        <div className="mt-6 space-y-6">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              Table dots
+                            </div>
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              {TABLE_DOT_FIELDS.map((field) => (
+                                <div key={field.key} className="rounded-2xl border border-border bg-muted/30 p-4">
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className="h-3.5 w-3.5 rounded-full border border-white shadow-sm"
+                                      style={{ backgroundColor: visualDraft.tableDots[field.key] ?? "#94a3b8" }}
+                                    />
+                                    <div className="text-sm font-medium text-foreground">{field.label}</div>
+                                  </div>
+                                  <div className="mt-3 flex gap-3">
+                                    <Input
+                                      type="color"
+                                      value={visualDraft.tableDots[field.key] ?? "#94a3b8"}
+                                      onChange={(event) => updateVisualField("tableDots", field.key, event.target.value)}
+                                      className="h-11 w-16 p-1"
+                                    />
+                                    <Input
+                                      value={visualDraft.tableDots[field.key] ?? ""}
+                                      onChange={(event) => updateVisualField("tableDots", field.key, event.target.value)}
+                                      placeholder="#22c55e"
+                                      className="font-mono"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              Graph connection lines
+                            </div>
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              {GRAPH_EDGE_FIELDS.map((field) => (
+                                <div key={field.key} className="rounded-2xl border border-border bg-muted/30 p-4">
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className="h-1.5 w-10 rounded-full"
+                                      style={{ backgroundColor: visualDraft.graphEdges[field.key] ?? "#94a3b8" }}
+                                    />
+                                    <div className="text-sm font-medium text-foreground">{field.label}</div>
+                                  </div>
+                                  <div className="mt-3 flex gap-3">
+                                    <Input
+                                      type="color"
+                                      value={visualDraft.graphEdges[field.key] ?? "#94a3b8"}
+                                      onChange={(event) => updateVisualField("graphEdges", field.key, event.target.value)}
+                                      className="h-11 w-16 p-1"
+                                    />
+                                    <Input
+                                      value={visualDraft.graphEdges[field.key] ?? ""}
+                                      onChange={(event) => updateVisualField("graphEdges", field.key, event.target.value)}
+                                      placeholder="#3b82f6"
+                                      className="font-mono"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-6 text-sm text-muted-foreground">
+                          No visual settings available yet.
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               )}
 

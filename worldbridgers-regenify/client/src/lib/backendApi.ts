@@ -11,6 +11,7 @@ import {
   type Issuer,
   type MarketIndex,
   type Offering,
+  type VisualConfig,
 } from "@/lib/frontendFallbackData";
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL ?? "http://localhost:8000";
@@ -41,6 +42,40 @@ type Paginated<T> = {
   total: number;
   page: number;
   pageSize: number;
+};
+
+type PaginatedWithVisualConfig<T> = Paginated<T> & {
+  visualConfig: VisualConfig;
+};
+
+type GraphResponse = {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  visualConfig: VisualConfig;
+};
+
+const DEFAULT_VISUAL_CONFIG: VisualConfig = {
+  tableDots: {
+    issuerName: "#22c55e",
+    wbxLabel: "#f59e0b",
+    issuer: "#3b82f6",
+    offeringType: "#f59e0b",
+    indexType: "#8b5cf6",
+    documentType: "#f43f5e",
+  },
+  graphEdges: {
+    FUNDS: "#22c55e",
+    DEVELOPS: "#3b82f6",
+    MANAGES: "#8b5cf6",
+    INVESTS_IN: "#f59e0b",
+    INCLUDES: "#14b8a6",
+    LISTED_ON: "#f43f5e",
+    INFLUENCES: "#30384a",
+    RELATED_ISSUER: "#22c55e",
+    RELATED_INVESTOR: "#4668d8",
+    LISTS: "#14b8a6",
+    FUNDED_BY: "#c88a1a",
+  },
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -180,7 +215,21 @@ function filterIssuers(params: URLSearchParams) {
     rows = rows.filter((row) => row.euTaxonomy);
   }
 
-  return paginate(sortData(rows, sortBy, sortDir), params);
+  return {
+    ...paginate(
+      sortData(
+        rows.map((row) => ({
+          ...row,
+          issuerNameDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuerName,
+          wbxLabelDotColor: DEFAULT_VISUAL_CONFIG.tableDots.wbxLabel,
+        })),
+        sortBy,
+        sortDir
+      ),
+      params
+    ),
+    visualConfig: DEFAULT_VISUAL_CONFIG,
+  };
 }
 
 function filterOfferings(params: URLSearchParams) {
@@ -203,7 +252,21 @@ function filterOfferings(params: URLSearchParams) {
     rows = rows.filter((row) => types.includes(row.type));
   }
 
-  return paginate(sortData(rows, sortBy, sortDir), params);
+  return {
+    ...paginate(
+      sortData(
+        rows.map((row) => ({
+          ...row,
+          issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuer,
+          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.offeringType,
+        })),
+        sortBy,
+        sortDir
+      ),
+      params
+    ),
+    visualConfig: DEFAULT_VISUAL_CONFIG,
+  };
 }
 
 function filterIndices(params: URLSearchParams) {
@@ -226,7 +289,20 @@ function filterIndices(params: URLSearchParams) {
     rows = rows.filter((row) => currencies.includes(row.currency));
   }
 
-  return paginate(sortData(rows, sortBy, sortDir), params);
+  return {
+    ...paginate(
+      sortData(
+        rows.map((row) => ({
+          ...row,
+          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.indexType,
+        })),
+        sortBy,
+        sortDir
+      ),
+      params
+    ),
+    visualConfig: DEFAULT_VISUAL_CONFIG,
+  };
 }
 
 function filterDocuments(params: URLSearchParams) {
@@ -247,10 +323,20 @@ function filterDocuments(params: URLSearchParams) {
     rows = rows.filter((row) => subTypes.includes(row.subType));
   }
 
-  return paginate(rows, params);
+  return {
+    ...paginate(
+      rows.map((row) => ({
+        ...row,
+        issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuer,
+        typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.documentType,
+      })),
+      params
+    ),
+    visualConfig: DEFAULT_VISUAL_CONFIG,
+  };
 }
 
-function filterGraph(params: URLSearchParams): { nodes: GraphNode[]; edges: GraphEdge[] } {
+function filterGraph(params: URLSearchParams): GraphResponse {
   const search = params.get("search")?.toLowerCase() ?? "";
   const filterTypes = params.getAll("filter_types");
   const filterRegions = params.getAll("filter_regions");
@@ -275,7 +361,14 @@ function filterGraph(params: URLSearchParams): { nodes: GraphNode[]; edges: Grap
   const validNodeIds = new Set(nodes.map((node) => node.id));
   edges = edges.filter((edge) => validNodeIds.has(edge.source) && validNodeIds.has(edge.target));
 
-  return { nodes, edges };
+  return {
+    nodes,
+    edges: edges.map((edge) => ({
+      ...edge,
+      color: DEFAULT_VISUAL_CONFIG.graphEdges[edge.label] ?? "#94a3b8",
+    })),
+    visualConfig: DEFAULT_VISUAL_CONFIG,
+  };
 }
 
 export const backendApi = {
@@ -384,7 +477,7 @@ export const backendApi = {
   },
   issuers: async (params: URLSearchParams) => {
     try {
-      return await request<Paginated<Issuer>>(`/api/data/issuers?${params.toString()}`);
+      return await request<PaginatedWithVisualConfig<Issuer>>(`/api/data/issuers?${params.toString()}`);
     } catch (error) {
       if (isNetworkError(error)) {
         return filterIssuers(params);
@@ -394,7 +487,7 @@ export const backendApi = {
   },
   offerings: async (params: URLSearchParams) => {
     try {
-      return await request<Paginated<Offering>>(`/api/data/offerings?${params.toString()}`);
+      return await request<PaginatedWithVisualConfig<Offering>>(`/api/data/offerings?${params.toString()}`);
     } catch (error) {
       if (isNetworkError(error)) {
         return filterOfferings(params);
@@ -404,7 +497,7 @@ export const backendApi = {
   },
   indices: async (params: URLSearchParams) => {
     try {
-      return await request<Paginated<MarketIndex>>(`/api/data/indices?${params.toString()}`);
+      return await request<PaginatedWithVisualConfig<MarketIndex>>(`/api/data/indices?${params.toString()}`);
     } catch (error) {
       if (isNetworkError(error)) {
         return filterIndices(params);
@@ -414,7 +507,7 @@ export const backendApi = {
   },
   documents: async (params: URLSearchParams) => {
     try {
-      return await request<Paginated<DocumentRecord>>(`/api/data/documents?${params.toString()}`);
+      return await request<PaginatedWithVisualConfig<DocumentRecord>>(`/api/data/documents?${params.toString()}`);
     } catch (error) {
       if (isNetworkError(error)) {
         return filterDocuments(params);
@@ -424,7 +517,7 @@ export const backendApi = {
   },
   graph: async (params: URLSearchParams) => {
     try {
-      return await request<{ nodes: GraphNode[]; edges: GraphEdge[] }>(`/api/data/graph?${params.toString()}`);
+      return await request<GraphResponse>(`/api/data/graph?${params.toString()}`);
     } catch (error) {
       if (isNetworkError(error)) {
         return filterGraph(params);
@@ -432,4 +525,10 @@ export const backendApi = {
       throw error;
     }
   },
+  adminVisualConfig: async () => request<VisualConfig>("/api/admin/visual-config"),
+  updateVisualConfig: async (payload: { tableDots?: Record<string, string>; graphEdges?: Record<string, string> }) =>
+    request<VisualConfig>("/api/admin/visual-config", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
 };

@@ -9,6 +9,9 @@ DEFAULT_TABLE_DOT_COLORS: dict[str, str] = {
     "issuerName": "#22c55e",
     "wbxLabel": "#f59e0b",
     "issuer": "#3b82f6",
+    "offeringType": "#f59e0b",
+    "indexType": "#8b5cf6",
+    "documentType": "#f43f5e",
 }
 
 DEFAULT_GRAPH_EDGE_COLORS: dict[str, str] = {
@@ -18,6 +21,11 @@ DEFAULT_GRAPH_EDGE_COLORS: dict[str, str] = {
     "INVESTS_IN": "#f59e0b",
     "INCLUDES": "#14b8a6",
     "LISTED_ON": "#f43f5e",
+    "INFLUENCES": "#30384a",
+    "RELATED_ISSUER": "#22c55e",
+    "RELATED_INVESTOR": "#4668d8",
+    "LISTS": "#14b8a6",
+    "FUNDED_BY": "#c88a1a",
 }
 
 

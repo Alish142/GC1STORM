@@ -169,6 +169,7 @@ def offerings(
             "coupon": float(offering.coupon) if offering.coupon is not None else None,
             "lastPrice": float(offering.last_price) if offering.last_price is not None else 0,
             "issuerDotColor": table_dot_colors["issuer"],
+            "typeDotColor": table_dot_colors["offeringType"],
         }
         for offering, issuer_name in rows
     ]
@@ -189,6 +190,8 @@ def indices(
     sort_by: str | None = None,
     sort_dir: str = "asc",
 ):
+    visual_config = get_visual_config(db)
+    table_dot_colors = visual_config["tableDots"]
     query = select(MarketIndex)
     if search:
         q = search.lower()
@@ -219,10 +222,14 @@ def indices(
             "monthLow": float(row.month_low) if row.month_low is not None else 0,
             "yearHigh": float(row.year_high) if row.year_high is not None else 0,
             "yearLow": float(row.year_low) if row.year_low is not None else 0,
+            "typeDotColor": table_dot_colors["indexType"],
         }
         for row in rows
     ]
-    return _paginate(data, total, page, page_size)
+    return {
+        **_paginate(data, total, page, page_size),
+        "visualConfig": visual_config,
+    }
 
 
 @router.get("/documents")
@@ -281,6 +288,7 @@ def documents(
             "date": document.document_date.isoformat() if document.document_date else "",
             "fileSize": _file_size_display(document.file_size_bytes),
             "issuerDotColor": table_dot_colors["issuer"],
+            "typeDotColor": table_dot_colors["documentType"],
         }
         for document, issuer_name, member_state_list in rows
     ]
@@ -292,6 +300,7 @@ def documents(
 
 @router.get("/graph")
 def graph_data(
+    db: Session = Depends(get_db),
     filter_types: list[str] | None = Query(default=None),
     filter_regions: list[str] | None = Query(default=None),
     search: str | None = None,

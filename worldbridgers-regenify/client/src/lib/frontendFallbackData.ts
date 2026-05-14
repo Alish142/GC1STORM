@@ -7,6 +7,8 @@ export type Issuer = {
   wbxLabel: boolean;
   euTaxonomy: boolean;
   assets: string;
+  issuerNameDotColor?: string;
+  wbxLabelDotColor?: string;
 };
 
 export type Offering = {
@@ -23,6 +25,8 @@ export type Offering = {
   coupon: number | null;
   lastPrice: number;
   delisted: boolean;
+  issuerDotColor?: string;
+  typeDotColor?: string;
 };
 
 export type MarketIndex = {
@@ -37,6 +41,7 @@ export type MarketIndex = {
   yearHigh: number;
   yearLow: number;
   currency: string;
+  typeDotColor?: string;
 };
 
 export type DocumentRecord = {
@@ -48,6 +53,8 @@ export type DocumentRecord = {
   memberStates: string[];
   date: string;
   fileSize: string;
+  issuerDotColor?: string;
+  typeDotColor?: string;
 };
 
 export type GraphNode = {
@@ -66,6 +73,12 @@ export type GraphEdge = {
   target: string;
   label: string;
   weight?: number;
+  color?: string;
+};
+
+export type VisualConfig = {
+  tableDots: Record<string, string>;
+  graphEdges: Record<string, string>;
 };
 
 export const demoUser = {
