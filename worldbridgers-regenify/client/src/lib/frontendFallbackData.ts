@@ -77,8 +77,7 @@ export type GraphEdge = {
 };
 
 export type VisualConfig = {
-  tableDots: Record<string, string>;
-  graphEdges: Record<string, string>;
+  hoverLineColor: string;
 };
 
 export const demoUser = {

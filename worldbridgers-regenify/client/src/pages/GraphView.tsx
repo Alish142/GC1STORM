@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import DashboardHeader from "@/components/DashboardHeader";
 import { backendApi } from "@/lib/backendApi";
+import type { VisualConfig } from "@/lib/frontendFallbackData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -37,7 +38,6 @@ interface GraphEdge {
   target: string;
   label: string;
   weight?: number;
-  color?: string;
 }
 
 const NODE_CONFIG: Record<GraphNode["type"], { color: string; fill: string; icon: React.ElementType }> = {
@@ -194,14 +194,14 @@ export default function GraphView() {
     return () => mediaQuery.removeEventListener("change", syncMobile);
   }, []);
 
-  const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
+  const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig: VisualConfig }>({
     queryKey: ["graph-view", search],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) {
         params.set("search", search);
       }
-      return backendApi.graph(params) as Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }>;
+      return backendApi.graph(params) as Promise<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig: VisualConfig }>;
     },
   });
 
@@ -289,6 +289,7 @@ export default function GraphView() {
   const centerImageSize = isMobile ? 170 : 156;
   const graphOffsetX = isMobile ? 0 : 8;
   const graphOffsetY = isMobile ? -56 : -88;
+  const hoverLineColor = data?.visualConfig.hoverLineColor ?? "#111111";
 
   const selectedConnections = useMemo(() => {
     if (!selectedNode || !data) {
@@ -513,7 +514,7 @@ export default function GraphView() {
                           key={edge.id}
                           d={`M ${source.x} ${source.y} Q ${cx} ${cy} ${target.x} ${target.y}`}
                           fill="none"
-                          stroke={edge.color ?? "#8f9db6"}
+                          stroke={isHoveredConnection ? hoverLineColor : isSelectedConnection ? "#4159c7" : "#8f9db6"}
                           strokeWidth={isHoveredConnection ? "3" : isSelectedConnection ? "2.3" : "1.4"}
                           opacity={isHoveredConnection ? "1" : isSelectedConnection ? "0.96" : "0.48"}
                           style={{ transition: "stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease" }}

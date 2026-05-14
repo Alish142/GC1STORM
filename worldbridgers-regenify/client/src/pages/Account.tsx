@@ -57,32 +57,8 @@ const ACCOUNT_TABS: {
 ];
 
 type VisualConfig = {
-  tableDots: Record<string, string>;
-  graphEdges: Record<string, string>;
+  hoverLineColor: string;
 };
-
-const TABLE_DOT_FIELDS = [
-  { key: "issuerName", label: "Issuer name dot" },
-  { key: "wbxLabel", label: "WBX label dot" },
-  { key: "issuer", label: "Issuer dot" },
-  { key: "offeringType", label: "Offering type dot" },
-  { key: "indexType", label: "Index type dot" },
-  { key: "documentType", label: "Document type dot" },
-] as const;
-
-const GRAPH_EDGE_FIELDS = [
-  { key: "FUNDS", label: "Funds" },
-  { key: "DEVELOPS", label: "Develops" },
-  { key: "MANAGES", label: "Manages" },
-  { key: "INVESTS_IN", label: "Invests in" },
-  { key: "INCLUDES", label: "Includes" },
-  { key: "LISTED_ON", label: "Listed on" },
-  { key: "INFLUENCES", label: "Influences" },
-  { key: "RELATED_ISSUER", label: "Related issuer" },
-  { key: "RELATED_INVESTOR", label: "Related investor" },
-  { key: "LISTS", label: "Lists" },
-  { key: "FUNDED_BY", label: "Funded by" },
-] as const;
 
 function getView(search: string): AccountView {
   const params = new URLSearchParams(search);
@@ -163,7 +139,7 @@ export default function Account() {
     }
   };
 
-  const updateVisualField = (scope: "tableDots" | "graphEdges", key: string, value: string) => {
+  const updateHoverLineColor = (value: string) => {
     setVisualDraft((current) => {
       if (!current) {
         return current;
@@ -171,10 +147,7 @@ export default function Account() {
 
       return {
         ...current,
-        [scope]: {
-          ...current[scope],
-          [key]: value,
-        },
+        hoverLineColor: value,
       };
     });
   };
@@ -326,7 +299,7 @@ export default function Account() {
                         <div>
                           <h2 className="text-lg font-semibold">Visual configuration</h2>
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Set hex colors for table dots and graph connection lines. These update the protected user dashboard and graph view.
+                            Set the hover-highlight color for graph connection lines. This is the only admin visual setting now.
                           </p>
                         </div>
                         <Button
@@ -346,71 +319,27 @@ export default function Account() {
                       {visualConfigQuery.isLoading ? (
                         <div className="mt-6 text-sm text-muted-foreground">Loading visual settings...</div>
                       ) : visualDraft ? (
-                        <div className="mt-6 space-y-6">
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                              Table dots
-                            </div>
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-                              {TABLE_DOT_FIELDS.map((field) => (
-                                <div key={field.key} className="rounded-2xl border border-border bg-muted/30 p-4">
-                                  <div className="flex items-center gap-3">
-                                    <span
-                                      className="h-3.5 w-3.5 rounded-full border border-white shadow-sm"
-                                      style={{ backgroundColor: visualDraft.tableDots[field.key] ?? "#94a3b8" }}
-                                    />
-                                    <div className="text-sm font-medium text-foreground">{field.label}</div>
-                                  </div>
-                                  <div className="mt-3 flex gap-3">
-                                    <Input
-                                      type="color"
-                                      value={visualDraft.tableDots[field.key] ?? "#94a3b8"}
-                                      onChange={(event) => updateVisualField("tableDots", field.key, event.target.value)}
-                                      className="h-11 w-16 p-1"
-                                    />
-                                    <Input
-                                      value={visualDraft.tableDots[field.key] ?? ""}
-                                      onChange={(event) => updateVisualField("tableDots", field.key, event.target.value)}
-                                      placeholder="#22c55e"
-                                      className="font-mono"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                        <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-4">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="h-1.5 w-12 rounded-full"
+                              style={{ backgroundColor: visualDraft.hoverLineColor || "#111111" }}
+                            />
+                            <div className="text-sm font-medium text-foreground">Hovered graph connection line</div>
                           </div>
-
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                              Graph connection lines
-                            </div>
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-                              {GRAPH_EDGE_FIELDS.map((field) => (
-                                <div key={field.key} className="rounded-2xl border border-border bg-muted/30 p-4">
-                                  <div className="flex items-center gap-3">
-                                    <span
-                                      className="h-1.5 w-10 rounded-full"
-                                      style={{ backgroundColor: visualDraft.graphEdges[field.key] ?? "#94a3b8" }}
-                                    />
-                                    <div className="text-sm font-medium text-foreground">{field.label}</div>
-                                  </div>
-                                  <div className="mt-3 flex gap-3">
-                                    <Input
-                                      type="color"
-                                      value={visualDraft.graphEdges[field.key] ?? "#94a3b8"}
-                                      onChange={(event) => updateVisualField("graphEdges", field.key, event.target.value)}
-                                      className="h-11 w-16 p-1"
-                                    />
-                                    <Input
-                                      value={visualDraft.graphEdges[field.key] ?? ""}
-                                      onChange={(event) => updateVisualField("graphEdges", field.key, event.target.value)}
-                                      placeholder="#3b82f6"
-                                      className="font-mono"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="mt-3 flex gap-3">
+                            <Input
+                              type="color"
+                              value={visualDraft.hoverLineColor || "#111111"}
+                              onChange={(event) => updateHoverLineColor(event.target.value)}
+                              className="h-11 w-16 p-1"
+                            />
+                            <Input
+                              value={visualDraft.hoverLineColor || ""}
+                              onChange={(event) => updateHoverLineColor(event.target.value)}
+                              placeholder="#111111"
+                              className="font-mono"
+                            />
                           </div>
                         </div>
                       ) : (

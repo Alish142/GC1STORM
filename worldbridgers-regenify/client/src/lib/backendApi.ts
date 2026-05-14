@@ -57,27 +57,7 @@ type GraphResponse = {
 };
 
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
-  tableDots: {
-    issuerName: "#22c55e",
-    wbxLabel: "#f59e0b",
-    issuer: "#3b82f6",
-    offeringType: "#f59e0b",
-    indexType: "#8b5cf6",
-    documentType: "#f43f5e",
-  },
-  graphEdges: {
-    FUNDS: "#22c55e",
-    DEVELOPS: "#3b82f6",
-    MANAGES: "#8b5cf6",
-    INVESTS_IN: "#f59e0b",
-    INCLUDES: "#14b8a6",
-    LISTED_ON: "#f43f5e",
-    INFLUENCES: "#30384a",
-    RELATED_ISSUER: "#22c55e",
-    RELATED_INVESTOR: "#4668d8",
-    LISTS: "#14b8a6",
-    FUNDED_BY: "#c88a1a",
-  },
+  hoverLineColor: "#111111",
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -234,8 +214,8 @@ function filterIssuers(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          issuerNameDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuerName,
-          wbxLabelDotColor: DEFAULT_VISUAL_CONFIG.tableDots.wbxLabel,
+          issuerNameDotColor: "#22c55e",
+          wbxLabelDotColor: "#f59e0b",
         })),
         sortBy,
         sortDir
@@ -271,8 +251,8 @@ function filterOfferings(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuer,
-          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.offeringType,
+          issuerDotColor: "#3b82f6",
+          typeDotColor: "#f59e0b",
         })),
         sortBy,
         sortDir
@@ -308,7 +288,7 @@ function filterIndices(params: URLSearchParams) {
       sortData(
         rows.map((row) => ({
           ...row,
-          typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.indexType,
+          typeDotColor: "#8b5cf6",
         })),
         sortBy,
         sortDir
@@ -341,8 +321,8 @@ function filterDocuments(params: URLSearchParams) {
     ...paginate(
       rows.map((row) => ({
         ...row,
-        issuerDotColor: DEFAULT_VISUAL_CONFIG.tableDots.issuer,
-        typeDotColor: DEFAULT_VISUAL_CONFIG.tableDots.documentType,
+        issuerDotColor: "#3b82f6",
+        typeDotColor: "#f43f5e",
       })),
       params
     ),
@@ -377,10 +357,7 @@ function filterGraph(params: URLSearchParams): GraphResponse {
 
   return {
     nodes,
-    edges: edges.map((edge) => ({
-      ...edge,
-      color: DEFAULT_VISUAL_CONFIG.graphEdges[edge.label] ?? "#94a3b8",
-    })),
+    edges,
     visualConfig: DEFAULT_VISUAL_CONFIG,
   };
 }
@@ -541,7 +518,7 @@ export const backendApi = {
     }
   },
   adminVisualConfig: async () => request<VisualConfig>("/api/admin/visual-config"),
-  updateVisualConfig: async (payload: { tableDots?: Record<string, string>; graphEdges?: Record<string, string> }) =>
+  updateVisualConfig: async (payload: { hoverLineColor?: string }) =>
     request<VisualConfig>("/api/admin/visual-config", {
       method: "PATCH",
       body: JSON.stringify(payload),
