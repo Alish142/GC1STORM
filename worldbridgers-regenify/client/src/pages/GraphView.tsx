@@ -103,10 +103,17 @@ function centerImageForNode(node: GraphNode | null) {
   return CENTER_IMAGES[node.type];
 }
 
-function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId: string) {
+function buildCircularLayout(
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  selectedId: string,
+  options?: { innerRadius?: number; outerRadius?: number }
+) {
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
   const others = nodes.filter((node) => node.id !== selected.id);
   const relatedIds = new Set<string>();
+  const innerRadius = options?.innerRadius ?? 120;
+  const outerRadius = options?.outerRadius ?? 225;
 
   for (const edge of edges) {
     if (edge.source === selected.id) {
@@ -129,8 +136,8 @@ function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId:
     const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(inner.length, 1);
     return {
       ...node,
-      x: Math.cos(angle) * 120,
-      y: Math.sin(angle) * 120,
+      x: Math.cos(angle) * innerRadius,
+      y: Math.sin(angle) * innerRadius,
       ring: "inner" as const,
       angle,
     };
@@ -140,8 +147,8 @@ function buildCircularLayout(nodes: GraphNode[], edges: GraphEdge[], selectedId:
     const angle = (-Math.PI / 2) + (index * Math.PI * 2) / Math.max(outer.length, 1);
     return {
       ...node,
-      x: Math.cos(angle) * 225,
-      y: Math.sin(angle) * 225,
+      x: Math.cos(angle) * outerRadius,
+      y: Math.sin(angle) * outerRadius,
       ring: "outer" as const,
       angle,
     };
@@ -213,13 +220,17 @@ export default function GraphView() {
   }, [querySelectedId, selectedId]);
 
   const selectedNode = filteredNodes.find((node) => node.id === defaultSelectedId) ?? null;
+  const layoutRadii = useMemo(
+    () => (isMobile ? { innerRadius: 148, outerRadius: 264 } : { innerRadius: 168, outerRadius: 306 }),
+    [isMobile]
+  );
 
   const graph = useMemo(() => {
     if (!filteredNodes.length || !defaultSelectedId) {
       return null;
     }
-    return buildCircularLayout(filteredNodes, data?.edges ?? [], defaultSelectedId);
-  }, [filteredNodes, data?.edges, defaultSelectedId]);
+    return buildCircularLayout(filteredNodes, data?.edges ?? [], defaultSelectedId, layoutRadii);
+  }, [filteredNodes, data?.edges, defaultSelectedId, layoutRadii]);
 
   const visibleNodeMap = useMemo(() => {
     if (!graph) {
@@ -259,21 +270,24 @@ export default function GraphView() {
 
   const centerLabelLines = useMemo(() => wrapCenterLabel(selectedNode?.label || "Graph View"), [selectedNode]);
   const centerImage = useMemo(() => centerImageForNode(selectedNode), [selectedNode]);
-  const graphScale = isMobile ? 1.52 : 1.24;
-  const outerLabelFontSize = isMobile ? 17 : 14;
-  const innerLabelFontSize = isMobile ? 18 : 15;
-  const outerLabelDistance = isMobile ? 72 : 64;
-  const innerLabelOffset = isMobile ? 26 : 22;
-  const outerNodeRadius = isMobile ? 13.5 : 12;
-  const outerActiveNodeRadius = isMobile ? 16 : 14.5;
-  const innerNodeRadius = isMobile ? 15 : 13.5;
-  const innerActiveNodeRadius = isMobile ? 17.5 : 16;
+  const graphScale = isMobile ? 1.2 : 1.06;
+  const outerLabelFontSize = isMobile ? 16 : 14;
+  const innerLabelFontSize = isMobile ? 18 : 16;
+  const outerLabelDistance = isMobile ? 56 : 50;
+  const innerLabelOffset = isMobile ? 24 : 24;
+  const outerNodeRadius = isMobile ? 14 : 13;
+  const outerActiveNodeRadius = isMobile ? 17 : 15.5;
+  const innerNodeRadius = isMobile ? 15.5 : 14.5;
+  const innerActiveNodeRadius = isMobile ? 18.5 : 17;
+  const nodeHitRadius = isMobile ? 24 : 21;
   const centerHexSize = isMobile ? 74 : 68;
   const centerTypeFontSize = isMobile ? 11 : 10;
-  const centerLabelPrimarySize = isMobile ? 16 : 14;
-  const centerLabelSecondarySize = isMobile ? 14 : 13;
-  const centerLabelLineGap = isMobile ? 17 : 15;
-  const centerImageSize = isMobile ? 176 : 164;
+  const centerLabelPrimarySize = isMobile ? 17 : 15;
+  const centerLabelSecondarySize = isMobile ? 15 : 13;
+  const centerLabelLineGap = isMobile ? 18 : 16;
+  const centerImageSize = isMobile ? 170 : 156;
+  const graphOffsetX = isMobile ? 0 : 8;
+  const graphOffsetY = isMobile ? -56 : -88;
 
   const selectedConnections = useMemo(() => {
     if (!selectedNode || !data) {
@@ -317,34 +331,34 @@ export default function GraphView() {
   const detailsPanel = selectedNode ? (
     <>
       <div
-        className="shrink-0 px-6 pb-6 pt-20 text-white"
+        className="shrink-0 min-h-[220px] px-7 pb-7 pt-14 text-white xl:min-h-[246px] xl:px-8 xl:pb-8 xl:pt-16"
         style={{
           backgroundImage: `linear-gradient(rgba(18,24,38,0.42), rgba(18,24,38,0.68)), url(${centerImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="mt-3 text-4xl font-semibold leading-tight">{selectedNode.label}</div>
+        <div className="mt-4 text-[40px] font-semibold leading-[1.05] xl:text-[48px]">{selectedNode.label}</div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge className="rounded-full border-0 px-3 py-1 text-xs" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white" }}>
+          <Badge className="rounded-full border-0 px-3 py-1 text-sm" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white" }}>
             {selectedNode.type}
           </Badge>
-          {selectedNode.region ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.region}</Badge> : null}
-          {selectedNode.country ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.country}</Badge> : null}
+          {selectedNode.region ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 px-3 py-1 text-sm text-white">{selectedNode.region}</Badge> : null}
+          {selectedNode.country ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 px-3 py-1 text-sm text-white">{selectedNode.country}</Badge> : null}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-7 py-6 xl:px-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Overview</div>
-          <p className="mt-3 text-base leading-8 text-slate-600">
+          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 xl:text-[12px]">Overview</div>
+          <p className="mt-3 text-[17px] leading-8 text-slate-600 xl:text-[18px]">
             {selectedNode.description || "This node is connected to the broader market intelligence network."}
           </p>
         </div>
 
-        <div className="rounded-[24px] bg-[#f7f6f2] px-5 py-5">
-          <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Interpretation</div>
-          <div className="mt-3 text-sm leading-7 text-slate-600">
+        <div className="rounded-[24px] border border-[#ece7de] bg-[#fbfaf7] px-6 py-5">
+          <div className="text-[11px] uppercase tracking-[0.22em] text-slate-400 xl:text-[12px]">Interpretation</div>
+          <div className="mt-3 text-[16px] leading-8 text-slate-600 xl:text-[17px]">
             {selectedNode.type === "Issuer" && "This issuer can be reviewed through offerings, disclosures, and relationship links across the Worldbridgers market ecosystem."}
             {selectedNode.type === "Investor" && "This investor node shows how capital relationships connect with issuers, themes, and regional opportunity clusters."}
             {selectedNode.type === "Market" && "This market node anchors the selected company within a wider region or thematic trading environment."}
@@ -356,7 +370,7 @@ export default function GraphView() {
 
         <div>
           <div className="flex items-center justify-between">
-            <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Related nodes</div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 xl:text-[12px]">Related nodes</div>
             <div className="text-xs text-slate-400">Move inward on select</div>
           </div>
           <div className="mt-3 space-y-2">
@@ -367,8 +381,8 @@ export default function GraphView() {
                 className="flex w-full items-center justify-between rounded-2xl border border-[#ebe8e0] bg-[#faf9f6] px-4 py-3 text-left transition-colors hover:border-[#d6d1c7] hover:bg-white"
               >
                 <div>
-                  <div className="text-sm font-medium text-slate-800">{shortLabel(node.label)}</div>
-                  <div className="mt-1 text-xs text-slate-500">{node.type}</div>
+                  <div className="text-[18px] font-medium leading-6 text-slate-800">{shortLabel(node.label)}</div>
+                  <div className="mt-1 text-sm text-slate-500">{node.type}</div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-400" />
               </button>
@@ -381,18 +395,18 @@ export default function GraphView() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
-            <div className="text-xs text-slate-500">Visible nodes</div>
-            <div className="mt-1 text-2xl font-semibold text-slate-900">{filteredNodes.length}</div>
+          <div className="rounded-2xl bg-[#f7f6f2] px-5 py-5">
+            <div className="text-sm text-slate-500">Visible nodes</div>
+            <div className="mt-2 text-3xl font-semibold text-slate-900">{filteredNodes.length}</div>
           </div>
-          <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
-            <div className="text-xs text-slate-500">Visible links</div>
-            <div className="mt-1 text-2xl font-semibold text-slate-900">{data?.edges.length ?? 0}</div>
+          <div className="rounded-2xl bg-[#f7f6f2] px-5 py-5">
+            <div className="text-sm text-slate-500">Visible links</div>
+            <div className="mt-2 text-3xl font-semibold text-slate-900">{data?.edges.length ?? 0}</div>
           </div>
         </div>
 
         <div className="rounded-[24px] border border-[#ebe5db] bg-[#faf8f3] p-5">
-          <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Node types</div>
+          <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 xl:text-[12px]">Node types</div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {(Object.keys(NODE_CONFIG) as GraphNode["type"][]).map((type) => {
               const Icon = NODE_CONFIG[type].icon;
@@ -404,7 +418,7 @@ export default function GraphView() {
                   >
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div className="text-sm font-medium text-slate-700">{type}</div>
+                  <div className="text-base font-medium text-slate-700">{type}</div>
                 </div>
               );
             })}
@@ -427,58 +441,59 @@ export default function GraphView() {
   return (
     <div className="h-screen overflow-hidden bg-[#f6f5f1]">
       <DashboardHeader />
-      <main className="mx-auto flex h-[calc(100vh-72px)] max-w-[1700px] flex-col px-2 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4">
-        <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      <main className="mx-auto flex h-[calc(100vh-72px)] max-w-[1900px] flex-col px-3 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4">
+        <div className="mb-3 flex flex-col gap-3 rounded-[28px] border border-[#e8e4dc] bg-white/70 px-4 py-3 backdrop-blur-sm xl:flex-row xl:items-center xl:justify-between xl:px-5">
           <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={() => navigate("/dashboard")}
-              className="flex items-center gap-2 text-base font-medium text-slate-800 transition-colors hover:text-[#244cba]"
+              className="flex items-center gap-2 text-xl font-semibold text-slate-800 transition-colors hover:text-[#244cba]"
             >
               <ArrowLeft className="h-4 w-4" />
               Discover
             </button>
             <div className="hidden h-8 w-px bg-[#dbd5ca] sm:block" />
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-slate-500 xl:text-[15px]">
               Explore the live relationship graph and inspect node context side by side.
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative min-w-[260px]">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative min-w-[260px] xl:min-w-[360px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search themes, issuers, investors..."
-                className="h-11 rounded-full border-[#e3ddd2] bg-white pl-10"
+                className="h-10 rounded-full border-[#e3ddd2] bg-white pl-10 xl:h-12"
               />
             </div>
-            <Button variant="outline" className="h-11 rounded-full border-[#dfd8cb] bg-white" onClick={() => refetch()}>
+            <Button variant="outline" className="h-10 rounded-full border-[#dfd8cb] bg-white px-5 xl:h-12" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.35fr)_410px]">
+        <div className="min-h-0 flex-1 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(420px,0.78fr)] 2xl:grid-cols-[minmax(0,1.8fr)_minmax(460px,0.82fr)]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
-            <div className="min-h-[56vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3">
+            <div className="min-h-[62vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3 xl:px-4 xl:py-4">
               {isLoading ? (
-                <div className="flex h-full min-h-[56vh] items-center justify-center sm:min-h-[520px]">
+                <div className="flex h-full min-h-[62vh] items-center justify-center sm:min-h-[700px] xl:min-h-[760px]">
                   <div className="flex flex-col items-center gap-3 text-slate-500">
                     <Loader2 className="h-8 w-8 animate-spin text-[#244cba]" />
                     <div className="text-sm">Loading graph view...</div>
                   </div>
                 </div>
               ) : graph ? (
-                <div className="flex h-full min-h-[56vh] items-center justify-center overflow-hidden sm:min-h-0">
+                <div className="flex h-full min-h-[62vh] items-center justify-center overflow-hidden sm:min-h-[700px] xl:min-h-[760px]">
                   <svg
-                    viewBox="-360 -360 720 720"
-                    className="mx-auto h-full w-full max-w-[min(100vw-1.25rem,38rem)] sm:max-h-[min(82vh,68rem)] sm:w-full sm:max-w-[min(100%,68rem)]"
+                    viewBox="-470 -450 940 900"
+                    className="mx-auto h-full w-full max-w-[min(100vw-1rem,46rem)] sm:max-h-[min(86vh,82rem)] sm:max-w-[min(100%,82rem)]"
+                    preserveAspectRatio="xMidYMid meet"
                   >
-                    <g transform={`scale(${graphScale})`}>
-                    <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
-                    <circle cx="0" cy="0" r="225" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
+                    <g transform={`translate(${graphOffsetX} ${graphOffsetY}) scale(${graphScale})`}>
+                    <circle cx="0" cy="0" r={layoutRadii.innerRadius} fill="none" stroke="#c7cedd" strokeWidth="2.2" />
+                    <circle cx="0" cy="0" r={layoutRadii.outerRadius} fill="none" stroke="#bcc6da" strokeWidth="2.2" />
 
                     {visibleEdges.map((edge) => {
                       const source = visibleNodeMap.get(edge.source);
@@ -509,14 +524,31 @@ export default function GraphView() {
                       const isActive = node.id === selectedNode?.id;
                       const isRelated = selectedConnections.has(node.id);
                       if (node.ring === "outer") {
-                        const angle = node.angle * 180 / Math.PI;
                         const labelDistance = outerLabelDistance;
-                        const labelX = Math.cos(node.angle) * labelDistance;
-                        const labelY = Math.sin(node.angle) * labelDistance;
-                        const rotate = angle > 90 || angle < -90 ? angle + 180 : angle;
-                        const anchor = angle > 90 || angle < -90 ? "end" : "start";
+                        const labelX = node.x >= 0 ? labelDistance : -labelDistance;
+                        const labelY = node.y > layoutRadii.outerRadius * 0.6
+                          ? labelDistance * 0.55
+                          : node.y < -layoutRadii.outerRadius * 0.6
+                            ? -labelDistance * 0.55
+                            : 0;
+                        const anchor =
+                          Math.abs(node.x) < layoutRadii.outerRadius * 0.24
+                            ? "middle"
+                            : node.x > 0
+                              ? "start"
+                              : "end";
                         return (
                           <g key={node.id} transform={`translate(${node.x} ${node.y})`} style={{ transition: NODE_TRANSITION }}>
+                            <circle
+                              cx="0"
+                              cy="0"
+                              r={nodeHitRadius}
+                              fill="transparent"
+                              onClick={() => handleNodeSelect(node.id, { openDetails: true })}
+                              onMouseEnter={() => setHoveredId(node.id)}
+                              onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
+                              style={{ cursor: "pointer" }}
+                            />
                             <circle
                               cx="0"
                               cy="0"
@@ -534,7 +566,6 @@ export default function GraphView() {
                               y={labelY}
                               textAnchor={anchor}
                               dominantBaseline="middle"
-                              transform={`rotate(${rotate} ${labelX} ${labelY})`}
                               fontSize={outerLabelFontSize}
                               fill={isActive ? "#1c2d80" : "#222631"}
                               style={{ fontWeight: isActive || isRelated ? 700 : 500 }}
@@ -549,11 +580,17 @@ export default function GraphView() {
                         <g
                           key={node.id}
                           transform={`translate(${node.x} ${node.y})`}
-                          onClick={() => handleNodeSelect(node.id, { openDetails: true })}
-                          onMouseEnter={() => setHoveredId(node.id)}
-                          onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
                           style={{ cursor: "pointer", transition: NODE_TRANSITION }}
                         >
+                          <circle
+                            cx="0"
+                            cy="0"
+                            r={nodeHitRadius}
+                            fill="transparent"
+                            onClick={() => handleNodeSelect(node.id, { openDetails: true })}
+                            onMouseEnter={() => setHoveredId(node.id)}
+                            onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
+                          />
                           <circle
                             cx="0"
                             cy="0"
@@ -613,7 +650,7 @@ export default function GraphView() {
                   </svg>
                 </div>
               ) : (
-                <div className="flex h-full min-h-[56vh] items-center justify-center text-center text-slate-500 sm:min-h-[520px]">
+                <div className="flex h-full min-h-[62vh] items-center justify-center text-center text-slate-500 sm:min-h-[700px] xl:min-h-[760px]">
                   <div>
                     <Network className="mx-auto h-10 w-10 text-slate-300" />
                     <div className="mt-4 text-sm">No graph data available for this selection.</div>
@@ -623,7 +660,7 @@ export default function GraphView() {
             </div>
           </section>
 
-          <aside className="hidden min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)] sm:flex">
+          <aside className="hidden min-h-0 flex-col overflow-hidden rounded-[36px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)] sm:flex">
             {detailsPanel}
           </aside>
         </div>
