@@ -79,8 +79,6 @@ def issuers(
     sort_by: str | None = None,
     sort_dir: str = "asc",
 ):
-    visual_config = get_visual_config(db)
-    table_dot_colors = visual_config["tableDots"]
     query = select(Issuer)
     if search:
         q = search.lower()
@@ -112,8 +110,8 @@ def issuers(
             "wbxLabel": row.wbx_label,
             "euTaxonomy": row.eu_taxonomy,
             "assets": _currency_display(row.assets_amount, row.assets_currency),
-            "issuerNameDotColor": table_dot_colors["issuerName"],
-            "wbxLabelDotColor": table_dot_colors["wbxLabel"],
+            "issuerNameDotColor": "#22c55e",
+            "wbxLabelDotColor": "#f59e0b",
         }
         for row in rows
     ]
@@ -134,8 +132,6 @@ def offerings(
     sort_by: str | None = None,
     sort_dir: str = "asc",
 ):
-    visual_config = get_visual_config(db)
-    table_dot_colors = visual_config["tableDots"]
     query = select(Offering, Issuer.name.label("issuer_name")).join(Issuer, Offering.issuer_id == Issuer.id)
     if not include_delisted:
         query = query.where(Offering.delisted.is_(False))
@@ -168,14 +164,12 @@ def offerings(
             "wbxClassification": offering.wbx_classification or "",
             "coupon": float(offering.coupon) if offering.coupon is not None else None,
             "lastPrice": float(offering.last_price) if offering.last_price is not None else 0,
-            "issuerDotColor": table_dot_colors["issuer"],
+            "issuerDotColor": "#3b82f6",
+            "typeDotColor": "#f59e0b",
         }
         for offering, issuer_name in rows
     ]
-    return {
-        **_paginate(data, total, page, page_size),
-        "visualConfig": visual_config,
-    }
+    return _paginate(data, total, page, page_size)
 
 
 @router.get("/indices")
@@ -219,6 +213,7 @@ def indices(
             "monthLow": float(row.month_low) if row.month_low is not None else 0,
             "yearHigh": float(row.year_high) if row.year_high is not None else 0,
             "yearLow": float(row.year_low) if row.year_low is not None else 0,
+            "typeDotColor": "#8b5cf6",
         }
         for row in rows
     ]
@@ -234,8 +229,6 @@ def documents(
     page: int = 1,
     page_size: int = 20,
 ):
-    visual_config = get_visual_config(db)
-    table_dot_colors = visual_config["tableDots"]
     member_states = (
         select(
             DocumentMemberState.document_id.label("document_id"),
@@ -280,33 +273,25 @@ def documents(
             "memberStates": member_state_list or [],
             "date": document.document_date.isoformat() if document.document_date else "",
             "fileSize": _file_size_display(document.file_size_bytes),
-            "issuerDotColor": table_dot_colors["issuer"],
+            "issuerDotColor": "#3b82f6",
+            "typeDotColor": "#f43f5e",
         }
         for document, issuer_name, member_state_list in rows
     ]
-    return {
-        **_paginate(data, total, page, page_size),
-        "visualConfig": visual_config,
-    }
+    return _paginate(data, total, page, page_size)
 
 
 @router.get("/graph")
 def graph_data(
+    db: Session = Depends(get_db),
     filter_types: list[str] | None = Query(default=None),
     filter_regions: list[str] | None = Query(default=None),
     search: str | None = None,
 ):
     visual_config = get_visual_config(db)
-    graph_edge_colors = visual_config["graphEdges"]
     graph_source = get_graph_view_data() if verify_neo4j() else GRAPH_DATA
     nodes = [*graph_source["nodes"]]
-    edges = [
-        {
-            **edge,
-            "color": graph_edge_colors.get(edge["label"], "#94a3b8"),
-        }
-        for edge in graph_source["edges"]
-    ]
+    edges = [*graph_source["edges"]]
 
     if filter_types:
         nodes = [n for n in nodes if n["type"] in filter_types]

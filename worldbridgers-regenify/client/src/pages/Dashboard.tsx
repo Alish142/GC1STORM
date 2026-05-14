@@ -18,11 +18,11 @@ import { Link } from "wouter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey = "issuers" | "offerings" | "indices" | "documents";
-type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number };
-type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string };
-type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number };
-type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number };
-type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string };
+type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; visualConfig?: unknown };
+type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
+type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; issuerDotColor?: string; typeDotColor?: string };
+type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; issuerDotColor?: string; typeDotColor?: string };
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "issuers", label: "Issuers", icon: Building2 },
@@ -165,20 +165,7 @@ function ChangeCell({ value, suffix = "%" }: { value: number; suffix?: string })
 }
 
 function HeaderDot({ color }: { color: string }) {
-  return <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />;
-}
-
-function rowDotColor(seed: string) {
-  const palette = [
-    "bg-emerald-500",
-    "bg-sky-500",
-    "bg-amber-500",
-    "bg-violet-500",
-    "bg-rose-500",
-    "bg-teal-500",
-  ];
-  const total = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return palette[total % palette.length];
+  return <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />;
 }
 
 function numericAssets(value: string) {
@@ -433,9 +420,9 @@ function IssuersTab() {
       label: "Issuer Name",
       sortable: true,
       className: "min-w-[200px]",
-      render: (v) => (
+      render: (v, row) => (
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <HeaderDot color={String(row.issuerNameDotColor ?? "#22c55e")} />
           <span className="font-medium text-foreground">{String(v)}</span>
         </div>
       ),
@@ -447,9 +434,9 @@ function IssuersTab() {
       )
     },
     { key: "wbxLabel", label: "WBX Label",
-      render: (v) => v ? (
+      render: (v, row) => v ? (
         <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-sky-50 to-emerald-50 px-2.5 py-1 text-xs font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(14,165,233,0.16)]">
-          <span className="h-2 w-2 rounded-full bg-sky-500" />
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.wbxLabelDotColor ?? "#f59e0b") }} />
           WBX
         </span>
       ) : <span className="text-muted-foreground text-xs">—</span>
@@ -542,7 +529,7 @@ function IssuersTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <HeaderDot color="bg-emerald-500" />
+                    <HeaderDot color={String(row.issuerNameDotColor ?? "#22c55e")} />
                     <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{String(row.country)}</p>
@@ -608,13 +595,13 @@ function OfferingsTab() {
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
-      render: (v) => <Badge variant="outline" className="gap-1 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-xs text-amber-800"><span className="h-2 w-2 rounded-full bg-amber-500" />{String(v)}</Badge>
+      render: (v, row) => <Badge variant="outline" className="gap-1 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-xs text-amber-800"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#f59e0b") }} />{String(v)}</Badge>
     },
     { key: "segment", label: "Segment / Market", sortable: true },
     { key: "issuer", label: "Issuer", sortable: true, className: "min-w-[160px]",
-      render: (v) => (
+      render: (v, row) => (
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <HeaderDot color={String(row.issuerDotColor ?? "#3b82f6")} />
           <span className="font-medium text-foreground">{String(v)}</span>
         </div>
       ) },
@@ -708,7 +695,7 @@ function OfferingsTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <HeaderDot color="bg-amber-500" />
+                    <HeaderDot color={String(row.typeDotColor ?? "#f59e0b")} />
                     <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
@@ -790,7 +777,7 @@ function IndicesTab() {
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
-      render: (v) => <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 text-xs font-medium text-violet-700 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.12)]"><span className="h-2 w-2 rounded-full bg-violet-500" />{String(v)}</span>
+      render: (v, row) => <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 text-xs font-medium text-violet-700 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.12)]"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#8b5cf6") }} />{String(v)}</span>
     },
     { key: "name", label: "Name", sortable: true, className: "min-w-[220px] font-medium" },
     { key: "currency", label: "Currency" },
@@ -889,7 +876,7 @@ function IndicesTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <HeaderDot color="bg-violet-500" />
+                    <HeaderDot color={String(row.typeDotColor ?? "#8b5cf6")} />
                     <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{String(row.type)}</p>
@@ -949,16 +936,16 @@ function DocumentsTab() {
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type",
-      render: (v) => <Badge variant="secondary" className="gap-1 border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-xs text-rose-800 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)]"><span className="h-2 w-2 rounded-full bg-rose-500" />{String(v)}</Badge>
+      render: (v, row) => <Badge variant="secondary" className="gap-1 border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-xs text-rose-800 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)]"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#f43f5e") }} />{String(v)}</Badge>
     },
     { key: "subType", label: "Sub Type",
       render: (v) => <span className="text-xs text-muted-foreground">{String(v)}</span>
     },
     { key: "name", label: "Name", className: "min-w-[260px] font-medium" },
     { key: "issuer", label: "Issuer", className: "min-w-[160px]",
-      render: (v) => (
+      render: (v, row) => (
         <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${rowDotColor(String(v))}`} />
+          <HeaderDot color={String(row.issuerDotColor ?? "#3b82f6")} />
           <span className="font-medium text-foreground">{String(v)}</span>
         </div>
       ) },
@@ -1059,7 +1046,7 @@ function DocumentsTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <HeaderDot color="bg-rose-500" />
+                    <HeaderDot color={String(row.typeDotColor ?? "#f43f5e")} />
                     <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>

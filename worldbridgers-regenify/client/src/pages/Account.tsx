@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
+import { backendApi } from "@/lib/backendApi";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   CheckCircle2,
@@ -54,6 +56,10 @@ const ACCOUNT_TABS: {
   },
 ];
 
+type VisualConfig = {
+  hoverLineColor: string;
+};
+
 function getView(search: string): AccountView {
   const params = new URLSearchParams(search);
   const raw = params.get("view");
@@ -66,6 +72,7 @@ function getView(search: string): AccountView {
 export default function Account() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [view, setView] = useState<AccountView>(() =>
     getView(typeof window !== "undefined" ? window.location.search : "")
   );
@@ -78,7 +85,33 @@ export default function Account() {
     preferredTime: "",
     notes: "",
   });
+  const [visualDraft, setVisualDraft] = useState<VisualConfig | null>(null);
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
+  const isAdmin = user?.role === "admin";
+
+  const visualConfigQuery = useQuery<VisualConfig>({
+    queryKey: ["admin", "visual-config"],
+    queryFn: () => backendApi.adminVisualConfig(),
+    enabled: isAdmin && view === "settings",
+    staleTime: 60_000,
+  });
+
+  const visualConfigMutation = useMutation({
+    mutationFn: (payload: VisualConfig) => backendApi.updateVisualConfig(payload),
+    onSuccess: (nextConfig) => {
+      setVisualDraft(nextConfig);
+      queryClient.setQueryData(["admin", "visual-config"], nextConfig);
+      void queryClient.invalidateQueries({ queryKey: ["issuers"] });
+      void queryClient.invalidateQueries({ queryKey: ["offerings"] });
+      void queryClient.invalidateQueries({ queryKey: ["indices"] });
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["graph-view"] });
+      toast.success("Visual settings updated.");
+    },
+    onError: () => {
+      toast.error("Could not save visual settings.");
+    },
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -92,11 +125,31 @@ export default function Account() {
     return () => window.removeEventListener("popstate", syncView);
   }, []);
 
+  useEffect(() => {
+    if (!visualConfigQuery.data) {
+      return;
+    }
+    setVisualDraft(visualConfigQuery.data);
+  }, [visualConfigQuery.data]);
+
   const openView = (nextView: AccountView) => {
     setView(nextView);
     if (typeof window !== "undefined") {
       window.history.pushState({}, "", `/dashboard/account?view=${nextView}`);
     }
+  };
+
+  const updateHoverLineColor = (value: string) => {
+    setVisualDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        hoverLineColor: value,
+      };
+    });
   };
 
   return (
@@ -239,6 +292,63 @@ export default function Account() {
                       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
                     </div>
                   ))}
+
+                  {isAdmin ? (
+                    <div className="rounded-3xl border border-border bg-card p-6">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <h2 className="text-lg font-semibold">Visual configuration</h2>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Set the hover-highlight color for graph connection lines. This is the only admin visual setting now.
+                          </p>
+                        </div>
+                        <Button
+                          className="bg-primary text-white hover:bg-primary/90"
+                          disabled={!visualDraft || visualConfigMutation.isPending}
+                          onClick={() => {
+                            if (!visualDraft) {
+                              return;
+                            }
+                            visualConfigMutation.mutate(visualDraft);
+                          }}
+                        >
+                          Save colors
+                        </Button>
+                      </div>
+
+                      {visualConfigQuery.isLoading ? (
+                        <div className="mt-6 text-sm text-muted-foreground">Loading visual settings...</div>
+                      ) : visualDraft ? (
+                        <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-4">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="h-1.5 w-12 rounded-full"
+                              style={{ backgroundColor: visualDraft.hoverLineColor || "#111111" }}
+                            />
+                            <div className="text-sm font-medium text-foreground">Hovered graph connection line</div>
+                          </div>
+                          <div className="mt-3 flex gap-3">
+                            <Input
+                              type="color"
+                              value={visualDraft.hoverLineColor || "#111111"}
+                              onChange={(event) => updateHoverLineColor(event.target.value)}
+                              className="h-11 w-16 p-1"
+                            />
+                            <Input
+                              value={visualDraft.hoverLineColor || ""}
+                              onChange={(event) => updateHoverLineColor(event.target.value)}
+                              placeholder="#111111"
+                              className="font-mono"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-6 text-sm text-muted-foreground">
+                          No visual settings available yet.
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               )}
 
