@@ -5,6 +5,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import { backendApi } from "@/lib/backendApi";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
@@ -169,6 +170,21 @@ export default function GraphView() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const syncMobile = () => setIsMobile(mediaQuery.matches);
+    syncMobile();
+
+    mediaQuery.addEventListener("change", syncMobile);
+    return () => mediaQuery.removeEventListener("change", syncMobile);
+  }, []);
 
   const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
     queryKey: ["graph-view", search],
@@ -243,6 +259,7 @@ export default function GraphView() {
 
   const centerLabelLines = useMemo(() => wrapCenterLabel(selectedNode?.label || "Graph View"), [selectedNode]);
   const centerImage = useMemo(() => centerImageForNode(selectedNode), [selectedNode]);
+  const graphScale = isMobile ? 1.18 : 1;
 
   const selectedConnections = useMemo(() => {
     if (!selectedNode || !data) {
@@ -270,10 +287,133 @@ export default function GraphView() {
     return ids;
   }, [data, hoveredId]);
 
+  useEffect(() => {
+    if (!isMobile) {
+      setDetailsOpen(false);
+    }
+  }, [isMobile]);
+
+  const handleNodeSelect = (nodeId: string, options?: { openDetails?: boolean }) => {
+    setSelectedId(nodeId);
+    if (isMobile && options?.openDetails) {
+      setDetailsOpen(true);
+    }
+  };
+
+  const detailsPanel = selectedNode ? (
+    <>
+      <div
+        className="shrink-0 px-6 pb-6 pt-20 text-white"
+        style={{
+          backgroundImage: `linear-gradient(rgba(18,24,38,0.42), rgba(18,24,38,0.68)), url(${centerImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="mt-3 text-4xl font-semibold leading-tight">{selectedNode.label}</div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Badge className="rounded-full border-0 px-3 py-1 text-xs" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white" }}>
+            {selectedNode.type}
+          </Badge>
+          {selectedNode.region ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.region}</Badge> : null}
+          {selectedNode.country ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.country}</Badge> : null}
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Overview</div>
+          <p className="mt-3 text-base leading-8 text-slate-600">
+            {selectedNode.description || "This node is connected to the broader market intelligence network."}
+          </p>
+        </div>
+
+        <div className="rounded-[24px] bg-[#f7f6f2] px-5 py-5">
+          <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Interpretation</div>
+          <div className="mt-3 text-sm leading-7 text-slate-600">
+            {selectedNode.type === "Issuer" && "This issuer can be reviewed through offerings, disclosures, and relationship links across the Worldbridgers market ecosystem."}
+            {selectedNode.type === "Investor" && "This investor node shows how capital relationships connect with issuers, themes, and regional opportunity clusters."}
+            {selectedNode.type === "Market" && "This market node anchors the selected company within a wider region or thematic trading environment."}
+            {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic."}
+            {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas."}
+            {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes."}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Related nodes</div>
+            <div className="text-xs text-slate-400">Move inward on select</div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {relatedNodes.length ? relatedNodes.map((node) => (
+              <button
+                key={node.id}
+                onClick={() => handleNodeSelect(node.id, { openDetails: isMobile })}
+                className="flex w-full items-center justify-between rounded-2xl border border-[#ebe8e0] bg-[#faf9f6] px-4 py-3 text-left transition-colors hover:border-[#d6d1c7] hover:bg-white"
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-800">{shortLabel(node.label)}</div>
+                  <div className="mt-1 text-xs text-slate-500">{node.type}</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400" />
+              </button>
+            )) : (
+              <div className="rounded-2xl border border-dashed border-[#ddd7cd] px-4 py-4 text-sm text-slate-500">
+                No related nodes available.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
+            <div className="text-xs text-slate-500">Visible nodes</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">{filteredNodes.length}</div>
+          </div>
+          <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
+            <div className="text-xs text-slate-500">Visible links</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900">{data?.edges.length ?? 0}</div>
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-[#ebe5db] bg-[#faf8f3] p-5">
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Node types</div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {(Object.keys(NODE_CONFIG) as GraphNode["type"][]).map((type) => {
+              const Icon = NODE_CONFIG[type].icon;
+              return (
+                <div key={type} className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: NODE_CONFIG[type].fill, color: NODE_CONFIG[type].color }}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="text-sm font-medium text-slate-700">{type}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+  ) : (
+    <div className="flex h-full min-h-[520px] items-center justify-center px-8 text-center">
+      <div>
+        <Network className="mx-auto h-10 w-10 text-slate-300" />
+        <div className="mt-4 text-lg font-medium text-slate-700">Select a node</div>
+        <p className="mt-2 text-sm leading-7 text-slate-500">
+          The information panel will update with its summary, context, and related connections.
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-screen overflow-hidden bg-[#f6f5f1]">
       <DashboardHeader />
-      <main className="mx-auto flex h-[calc(100vh-72px)] max-w-[1700px] flex-col px-4 pb-4 pt-4 sm:px-6">
+      <main className="mx-auto flex h-[calc(100vh-72px)] max-w-[1700px] flex-col px-2 pb-3 pt-3 sm:px-6 sm:pb-4 sm:pt-4">
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap items-center gap-4">
             <button
@@ -306,19 +446,23 @@ export default function GraphView() {
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_410px]">
+        <div className="min-h-0 flex-1 grid gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1.35fr)_410px]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
-            <div className="min-h-0 flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-2 py-2 sm:px-3 sm:py-3">
+            <div className="min-h-[56vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3">
               {isLoading ? (
-                <div className="flex h-full min-h-[520px] items-center justify-center">
+                <div className="flex h-full min-h-[56vh] items-center justify-center sm:min-h-[520px]">
                   <div className="flex flex-col items-center gap-3 text-slate-500">
                     <Loader2 className="h-8 w-8 animate-spin text-[#244cba]" />
                     <div className="text-sm">Loading graph view...</div>
                   </div>
                 </div>
               ) : graph ? (
-                <div className="flex h-full items-center justify-center overflow-hidden">
-                  <svg viewBox="-360 -360 720 720" className="mx-auto h-full max-h-[calc(100vh-250px)] w-full max-w-[calc(100vh-250px)] min-w-[520px]">
+                <div className="flex h-full min-h-[56vh] items-center justify-center overflow-hidden sm:min-h-0">
+                  <svg
+                    viewBox="-360 -360 720 720"
+                    className="mx-auto h-full w-full max-w-[min(100vw-1.75rem,34rem)] sm:max-h-[calc(100vh-250px)] sm:w-full sm:max-w-[calc(100vh-250px)]"
+                  >
+                    <g transform={`scale(${graphScale})`}>
                     <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
                     <circle cx="0" cy="0" r="225" fill="none" stroke="#bcc6da" strokeWidth="2.2" />
 
@@ -366,7 +510,7 @@ export default function GraphView() {
                               fill={isActive ? NODE_CONFIG[node.type].color : "white"}
                               stroke={NODE_CONFIG[node.type].color}
                               strokeWidth={isActive ? 3 : hoveredConnections.has(node.id) ? 2.9 : isRelated ? 2.4 : 1.9}
-                              onClick={() => setSelectedId(node.id)}
+                              onClick={() => handleNodeSelect(node.id, { openDetails: true })}
                               onMouseEnter={() => setHoveredId(node.id)}
                               onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
                               style={{ cursor: "pointer" }}
@@ -391,7 +535,7 @@ export default function GraphView() {
                         <g
                           key={node.id}
                           transform={`translate(${node.x} ${node.y})`}
-                          onClick={() => setSelectedId(node.id)}
+                          onClick={() => handleNodeSelect(node.id, { openDetails: true })}
                           onMouseEnter={() => setHoveredId(node.id)}
                           onMouseLeave={() => setHoveredId((current) => (current === node.id ? null : current))}
                           style={{ cursor: "pointer", transition: NODE_TRANSITION }}
@@ -451,10 +595,11 @@ export default function GraphView() {
                         />
                       </pattern>
                     </defs>
+                    </g>
                   </svg>
                 </div>
               ) : (
-                <div className="flex h-full min-h-[520px] items-center justify-center text-center text-slate-500">
+                <div className="flex h-full min-h-[56vh] items-center justify-center text-center text-slate-500 sm:min-h-[520px]">
                   <div>
                     <Network className="mx-auto h-10 w-10 text-slate-300" />
                     <div className="mt-4 text-sm">No graph data available for this selection.</div>
@@ -464,118 +609,26 @@ export default function GraphView() {
             </div>
           </section>
 
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
-            {selectedNode ? (
-              <>
-                <div
-                  className="shrink-0 px-6 pb-6 pt-20 text-white"
-                  style={{
-                    backgroundImage: `linear-gradient(rgba(18,24,38,0.42), rgba(18,24,38,0.68)), url(${centerImage})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  <div className="mt-3 text-4xl font-semibold leading-tight">{selectedNode.label}</div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge className="rounded-full border-0 px-3 py-1 text-xs" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "white" }}>
-                      {selectedNode.type}
-                    </Badge>
-                    {selectedNode.region ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.region}</Badge> : null}
-                    {selectedNode.country ? <Badge variant="outline" className="rounded-full border-white/35 bg-white/10 text-white">{selectedNode.country}</Badge> : null}
-                  </div>
-                </div>
-
-                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Overview</div>
-                    <p className="mt-3 text-base leading-8 text-slate-600">
-                      {selectedNode.description || "This node is connected to the broader market intelligence network."}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[24px] bg-[#f7f6f2] px-5 py-5">
-                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Interpretation</div>
-                    <div className="mt-3 text-sm leading-7 text-slate-600">
-                      {selectedNode.type === "Issuer" && "This issuer can be reviewed through offerings, disclosures, and relationship links across the Worldbridgers market ecosystem."}
-                      {selectedNode.type === "Investor" && "This investor node shows how capital relationships connect with issuers, themes, and regional opportunity clusters."}
-                      {selectedNode.type === "Market" && "This market node anchors the selected company within a wider region or thematic trading environment."}
-                      {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic."}
-                      {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas."}
-                      {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes."}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Related nodes</div>
-                      <div className="text-xs text-slate-400">Move inward on select</div>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {relatedNodes.length ? relatedNodes.map((node) => (
-                        <button
-                          key={node.id}
-                          onClick={() => setSelectedId(node.id)}
-                          className="flex w-full items-center justify-between rounded-2xl border border-[#ebe8e0] bg-[#faf9f6] px-4 py-3 text-left transition-colors hover:border-[#d6d1c7] hover:bg-white"
-                        >
-                          <div>
-                            <div className="text-sm font-medium text-slate-800">{shortLabel(node.label)}</div>
-                            <div className="mt-1 text-xs text-slate-500">{node.type}</div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-slate-400" />
-                        </button>
-                      )) : (
-                        <div className="rounded-2xl border border-dashed border-[#ddd7cd] px-4 py-4 text-sm text-slate-500">
-                          No related nodes available.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
-                      <div className="text-xs text-slate-500">Visible nodes</div>
-                      <div className="mt-1 text-2xl font-semibold text-slate-900">{filteredNodes.length}</div>
-                    </div>
-                    <div className="rounded-2xl bg-[#f7f6f2] px-4 py-4">
-                      <div className="text-xs text-slate-500">Visible links</div>
-                      <div className="mt-1 text-2xl font-semibold text-slate-900">{data?.edges.length ?? 0}</div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[24px] border border-[#ebe5db] bg-[#faf8f3] p-5">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Node types</div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {(Object.keys(NODE_CONFIG) as GraphNode["type"][]).map((type) => {
-                        const Icon = NODE_CONFIG[type].icon;
-                        return (
-                          <div key={type} className="flex items-center gap-3">
-                            <div
-                              className="flex h-10 w-10 items-center justify-center rounded-2xl"
-                              style={{ backgroundColor: NODE_CONFIG[type].fill, color: NODE_CONFIG[type].color }}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="text-sm font-medium text-slate-700">{type}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex h-full min-h-[520px] items-center justify-center px-8 text-center">
-                <div>
-                  <Network className="mx-auto h-10 w-10 text-slate-300" />
-                  <div className="mt-4 text-lg font-medium text-slate-700">Select a node</div>
-                  <p className="mt-2 text-sm leading-7 text-slate-500">
-                    The information panel will update with its summary, context, and related connections.
-                  </p>
-                </div>
-              </div>
-            )}
+          <aside className="hidden min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)] sm:flex">
+            {detailsPanel}
           </aside>
         </div>
+
+        {isMobile ? (
+          <Drawer open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <DrawerContent className="max-h-[82vh] rounded-t-[28px] border-[#e8e4dc] bg-[#f6f5f1]">
+              <DrawerHeader className="pb-2 text-left">
+                <DrawerTitle>{selectedNode ? selectedNode.label : "Node details"}</DrawerTitle>
+                <DrawerDescription>Swipe down to return to the graph.</DrawerDescription>
+              </DrawerHeader>
+              <div className="min-h-0 overflow-y-auto px-3 pb-4">
+                <div className="overflow-hidden rounded-[28px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
+                  {detailsPanel}
+                </div>
+              </div>
+            </DrawerContent>
+          </Drawer>
+        ) : null}
       </main>
     </div>
   );
