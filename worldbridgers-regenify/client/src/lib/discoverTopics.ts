@@ -6,6 +6,7 @@ export type DiscoverTopic = {
   summary: string;
   overview: string;
   highlights: string[];
+  details?: string[];
 };
 
 export const DISCOVER_TOPICS: DiscoverTopic[] = [
@@ -131,12 +132,18 @@ export const DISCOVER_TOPICS: DiscoverTopic[] = [
     title: "APAC Markets",
     graphNodeId: "market-apac",
     image: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80",
-    summary: "Explore how APAC regional activity contributes to the global opportunity set on the platform.",
-    overview: "APAC Markets gives public visitors regional context around market movement, issuer participation, and thematic growth.",
+    summary:
+      "Explore how APAC regional activity contributes to the global opportunity set on the platform, from issuer participation and index movement to market themes that are gaining momentum across Asia-Pacific.",
+    overview:
+      "APAC Markets gives public visitors a more grounded regional view of how Asia-Pacific activity fits inside the wider Worldbridgers Regenify ecosystem. It helps explain how issuers, market signals, and sustainability-focused themes from the region contribute to a broader cross-border opportunity story.",
     highlights: [
-      "Regional discovery for APAC-focused users",
-      "Cross-border context inside a global platform",
-      "Stronger public understanding of regional reach",
+      "Regional discovery for APAC-focused users looking for market activity with stronger geographic context",
+      "Cross-border visibility that places Asia-Pacific opportunities inside a wider global platform story",
+      "Stronger public understanding of how regional reach supports issuer discovery, themes, and investment review",
+    ],
+    details: [
+      "This topic is useful for visitors who want to understand how APAC-linked issuers and signals compare with activity shown elsewhere on the platform.",
+      "It also helps frame APAC as more than a location tag by showing how regional context supports thematic discovery, market interpretation, and connected navigation into deeper product areas.",
     ],
   },
   {

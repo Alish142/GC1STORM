@@ -104,6 +104,7 @@ const PLATFORM_FEATURES = [
     badge: "Core",
     color: "bg-primary/10 text-primary",
     href: "/capabilities/graph-relationship-engine",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: ShieldCheck,
@@ -112,6 +113,7 @@ const PLATFORM_FEATURES = [
     badge: "Compliance",
     color: "bg-blue-500/10 text-blue-600",
     href: "/capabilities/eu-taxonomy-compliance",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: TrendingUp,
@@ -120,6 +122,7 @@ const PLATFORM_FEATURES = [
     badge: "Live",
     color: "bg-amber-500/10 text-amber-600",
     href: "/capabilities/real-time-market-data",
+    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: Globe2,
@@ -128,6 +131,7 @@ const PLATFORM_FEATURES = [
     badge: "Global",
     color: "bg-violet-500/10 text-violet-600",
     href: "/capabilities/global-coverage",
+    image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: Leaf,
@@ -136,6 +140,7 @@ const PLATFORM_FEATURES = [
     badge: "Impact",
     color: "bg-emerald-500/10 text-emerald-600",
     href: "/capabilities/regenerative-finance",
+    image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80",
   },
   {
     icon: Zap,
@@ -144,6 +149,7 @@ const PLATFORM_FEATURES = [
     badge: "Exchange",
     color: "bg-rose-500/10 text-rose-600",
     href: "/capabilities/wbx-exchange-integration",
+    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
@@ -163,6 +169,23 @@ const HERO_BACKGROUND_SLIDES = [
   "/hero-bg-1.jpg",
   "/her0-bg-2.png",
 ];
+
+const FOOTER_LINKS: Record<string, string> = {
+  Issuers: "/capabilities/eu-taxonomy-compliance",
+  Offerings: "/discover/green-bonds",
+  Indices: "/discover/sustainable-indices",
+  Documents: "/capabilities/eu-taxonomy-compliance",
+  "Graph View": "/capabilities/graph-relationship-engine",
+  "Log In": "/login",
+  "Sign Up": "/login?mode=create-account",
+  Support: "/support",
+  Onboarding: "/contact",
+  Vision: "/about",
+  "Team Members": "/about",
+  Themes: "/about",
+  Contact: "/contact",
+  Privacy: "/privacy",
+};
 
 function previewHexPoints(size: number) {
   return Array.from({ length: 6 }, (_, index) => {
@@ -323,6 +346,20 @@ export default function Home() {
                   <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                 </div>
                 <div className="mt-2 text-[0.95rem] font-medium text-muted-foreground">{stat.label}</div>
+                <div
+                  className={`mt-5 inline-flex items-center gap-1 text-sm font-semibold ${
+                    stat.label === "Verified Issuers"
+                      ? "text-emerald-700"
+                      : stat.label === "Live Offerings"
+                        ? "text-blue-700"
+                        : stat.label === "Sustainable Indices"
+                          ? "text-amber-700"
+                          : "text-teal-700"
+                  }`}
+                >
+                  Learn more
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </div>
               </button>
             );
           })}
@@ -352,21 +389,31 @@ export default function Home() {
                   key={feature.title}
                   type="button"
                   onClick={() => navigate(feature.href)}
-                  className="flex min-h-[248px] flex-col rounded-[28px] border border-border bg-card p-7 text-left shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+                  className="flex min-h-[248px] flex-col rounded-[28px] border border-border bg-card text-left shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover overflow-hidden"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${feature.color}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {feature.badge}
-                    </span>
+                  <div className="relative h-32 overflow-hidden">
+                    <img
+                      src={feature.image}
+                      alt={feature.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                   </div>
-                  <h3 className="mt-6 text-[1.35rem] font-semibold leading-tight text-foreground">{feature.title}</h3>
-                  <p className="mt-4 text-sm leading-6 text-muted-foreground">{feature.description}</p>
-                  <div className="mt-auto inline-flex items-center gap-1 pt-6 text-base font-semibold text-primary">
-                    Learn more
-                    <ArrowRight className="h-4 w-4" />
+                  <div className="p-7 flex flex-col flex-1">
+                    <div className="flex items-start justify-between">
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${feature.color}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                        {feature.badge}
+                      </span>
+                    </div>
+                    <h3 className="mt-6 text-[1.35rem] font-semibold leading-tight text-foreground">{feature.title}</h3>
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">{feature.description}</p>
+                    <div className="mt-auto inline-flex items-center gap-1 pt-6 text-base font-semibold text-primary">
+                      Learn more
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
                   </div>
                 </button>
               );
@@ -614,27 +661,7 @@ export default function Home() {
                       key={link}
                       className="block text-sm transition-colors hover:text-white"
                       onClick={() => {
-                        if (link === "Sign Up") {
-                          window.location.href = "/login?mode=create-account";
-                          return;
-                        }
-                        if (title === "Platform") {
-                          navigate("/learn-more");
-                          return;
-                        }
-                        if (link === "Support") {
-                          navigate("/support");
-                          return;
-                        }
-                        if (link === "Contact") {
-                          navigate("/contact");
-                          return;
-                        }
-                        if (link === "Privacy") {
-                          navigate("/privacy");
-                          return;
-                        }
-                        navigate("/login");
+                        navigate(FOOTER_LINKS[link] ?? "/");
                       }}
                     >
                       {link}
