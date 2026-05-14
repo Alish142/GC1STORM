@@ -799,15 +799,57 @@ function IndicesTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={INDEX_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Index Filters</SheetTitle>
+                <SheetDescription>Refine indices without compressing the data table on mobile.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={INDEX_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -823,6 +865,44 @@ function IndicesTab() {
           isLoading={isLoading}
           searchPlaceholder="Search indices by name or type..."
           emptyMessage="No indices found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-violet-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.type)}</p>
+                </div>
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.currency)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last</div>
+                  <div className="mt-1 text-sm font-semibold text-foreground">{Number(row.last).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Change</div>
+                  <div className="mt-1 text-sm">{<ChangeCell value={Number(row.changePercent)} />}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Month Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.monthLow).toFixed(2)} - {Number(row.monthHigh).toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Year Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.yearLow).toFixed(2)} - {Number(row.yearHigh).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -896,15 +976,57 @@ function DocumentsTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={DOCUMENT_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Document Filters</SheetTitle>
+                <SheetDescription>Refine documents without cramming the list into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={DOCUMENT_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -917,6 +1039,57 @@ function DocumentsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search documents by name, type..."
           emptyMessage="No documents found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-rose-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.subType)}
+                </span>
+                {(row.memberStates as string[]).slice(0, 3).map((state) => (
+                  <span key={state} className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    {state}
+                  </span>
+                ))}
+                {(row.memberStates as string[]).length > 3 ? (
+                  <span className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    +{(row.memberStates as string[]).length - 3}
+                  </span>
+                ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Date</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.date)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Size</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.fileSize)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
