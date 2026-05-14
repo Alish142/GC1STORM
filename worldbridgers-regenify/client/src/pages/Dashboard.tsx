@@ -7,11 +7,12 @@ import DataTable, { Column } from "@/components/DataTable";
 import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { backendApi } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2,
+  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -442,15 +443,57 @@ function IssuersTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={ISSUER_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Issuer Filters</SheetTitle>
+                <SheetDescription>Refine the issuer list without squeezing the results table.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={ISSUER_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -466,6 +509,40 @@ function IssuersTab() {
           isLoading={isLoading}
           searchPlaceholder="Search issuers by name, country..."
           emptyMessage="No issuers found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-emerald-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.country)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px] font-medium">
+                  {String(row.classification)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {row.wbxLabel ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                    <ShieldCheck className="h-3 w-3" />
+                    WBX Label
+                  </span>
+                ) : null}
+                {row.euTaxonomy ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-semibold text-blue-600">
+                    <ShieldCheck className="h-3 w-3" />
+                    EU Taxonomy
+                  </span>
+                ) : null}
+              </div>
+              <div className="rounded-2xl bg-muted/50 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Assets</div>
+                <div className="mt-1 text-sm font-medium text-foreground">{String(row.assets)}</div>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -827,25 +904,25 @@ export default function Dashboard() {
         </div>
 
         {/* Content */}
-        <div className="container flex-1 py-6">
+        <div className="container flex-1 py-4 md:py-6">
           {activeTab === "home" && <DashboardHome onTabChange={handleTabChange} />}
           {activeTab === "issuers" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <IssuersTab />
             </div>
           )}
           {activeTab === "offerings" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <OfferingsTab />
             </div>
           )}
           {activeTab === "indices" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <IndicesTab />
             </div>
           )}
           {activeTab === "documents" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <DocumentsTab />
             </div>
           )}

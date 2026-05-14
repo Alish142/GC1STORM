@@ -138,7 +138,7 @@ export default function DashboardHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="flex h-11 min-w-[300px] items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2">
+            <div className="hidden h-11 items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2 sm:flex sm:min-w-[220px] lg:min-w-[300px]">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchValue}

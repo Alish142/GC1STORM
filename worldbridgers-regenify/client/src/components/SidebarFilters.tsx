@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 
 export interface FilterGroup {
@@ -16,6 +17,7 @@ interface SidebarFiltersProps {
   onChange: (groupId: string, values: string[]) => void;
   onClearAll: () => void;
   totalActive: number;
+  className?: string;
 }
 
 export default function SidebarFilters({
@@ -24,6 +26,7 @@ export default function SidebarFilters({
   onChange,
   onClearAll,
   totalActive,
+  className,
 }: SidebarFiltersProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -36,7 +39,12 @@ export default function SidebarFilters({
   };
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-0 overflow-hidden rounded-[24px] border border-[#2b3a49] bg-[#22313e] text-white shadow-[0_18px_48px_rgba(15,23,42,0.18)]">
+    <aside
+      className={cn(
+        "flex w-64 shrink-0 flex-col gap-0 overflow-hidden rounded-[24px] border border-[#2b3a49] bg-[#22313e] text-white shadow-[0_18px_48px_rgba(15,23,42,0.18)]",
+        className
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 bg-white/5 px-4 py-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
