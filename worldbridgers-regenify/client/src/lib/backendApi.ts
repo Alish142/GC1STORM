@@ -19,6 +19,8 @@ const LOCAL_USER_KEY = "regenify-user-info";
 const LOCAL_ACCOUNTS_KEY = "regenify-registered-accounts";
 const DEMO_EMAIL = "demo@regenify.com";
 const DEMO_PASSWORD = "demo1234";
+const DEMO_ADMIN_EMAIL = "admin@regenify.com";
+const DEMO_ADMIN_PASSWORD = "admin1234";
 
 type AuthUser = {
   id: number;
@@ -143,6 +145,18 @@ function writeRegisteredAccounts(accounts: RegisteredAccount[]) {
 }
 
 function buildDemoUser(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (normalizedEmail === DEMO_ADMIN_EMAIL) {
+    return {
+      ...demoUser,
+      id: 1,
+      openId: "demo-regenify-admin-0001",
+      email: DEMO_ADMIN_EMAIL,
+      name: "Demo Admin",
+      role: "admin",
+    };
+  }
+
   return {
     ...demoUser,
     email: DEMO_EMAIL,
@@ -402,7 +416,8 @@ export const backendApi = {
       }
 
       const validCredentials =
-        email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD;
+        (email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) ||
+        (email.trim().toLowerCase() === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD);
 
       if (!validCredentials) {
         throw new Error("Invalid email or password.");
@@ -410,7 +425,7 @@ export const backendApi = {
 
       return {
         success: true,
-        user: buildDemoUser(DEMO_EMAIL),
+        user: buildDemoUser(email),
       };
     }
   },

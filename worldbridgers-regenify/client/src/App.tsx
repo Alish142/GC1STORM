@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import GraphView from "./pages/GraphView";
 import Logout from "./pages/Logout";
 import Account from "./pages/Account";
+import Admin from "./pages/Admin";
 import PlatformFeaturePage from "./pages/PlatformFeaturePage";
 import AboutPage from "./pages/AboutPage";
 import LearnMore from "./pages/LearnMore";
@@ -21,8 +22,16 @@ import PrivacyPage from "./pages/PrivacyPage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { isAuthenticated, loading } = useAuth();
+function ProtectedRoute({
+  component: Component,
+  allowedRoles,
+  redirectTo,
+}: {
+  component: React.ComponentType;
+  allowedRoles?: string[];
+  redirectTo?: string;
+}) {
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -37,6 +46,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   if (!isAuthenticated) {
     return <Redirect to="/login" />;
+  }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    return <Redirect to={redirectTo ?? "/dashboard"} />;
   }
 
   return <Component />;
@@ -63,6 +76,7 @@ function Router() {
       <Route path="/dashboard/documents" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/dashboard/graph" component={() => <ProtectedRoute component={GraphView} />} />
       <Route path="/dashboard/account" component={() => <ProtectedRoute component={Account} />} />
+      <Route path="/admin" component={() => <ProtectedRoute component={Admin} allowedRoles={["admin"]} redirectTo="/dashboard" />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

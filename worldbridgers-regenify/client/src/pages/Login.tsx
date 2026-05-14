@@ -33,13 +33,23 @@ function readPageMode(search: string): PageMode {
 
 function readNextUrl(search: string) {
   const params = new URLSearchParams(search);
-  return params.get("next") || "/dashboard";
+  return params.get("next");
+}
+
+function destinationForUser(
+  user: { role: string },
+  nextUrl?: string | null,
+) {
+  if (nextUrl) {
+    return nextUrl;
+  }
+  return user.role === "admin" ? "/admin" : "/dashboard";
 }
 
 export default function Login() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { isAuthenticated, refresh: refreshAuth, loading } = useAuth();
+  const { isAuthenticated, refresh: refreshAuth, loading, user } = useAuth();
   const mode = readPageMode(window.location.search);
   const nextUrl = readNextUrl(window.location.search);
   const [email, setEmail] = useState("");
@@ -65,7 +75,7 @@ export default function Login() {
     localStorage.setItem("regenify-user-info", JSON.stringify(user));
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"], refetchType: "none" });
     void refreshAuth();
-    navigate(nextUrl);
+    navigate(destinationForUser(user, nextUrl));
   };
 
   const loginMutation = useMutation({
@@ -80,10 +90,10 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      navigate(nextUrl);
+    if (!loading && isAuthenticated && user) {
+      navigate(destinationForUser(user, nextUrl));
     }
-  }, [isAuthenticated, loading, navigate, nextUrl]);
+  }, [isAuthenticated, loading, navigate, nextUrl, user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -399,6 +409,36 @@ export default function Login() {
                     )}
                   </Button>
                 </form>
+
+                <div className="mt-5 rounded-3xl border border-[#ebe5db] bg-[#faf8f3] p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-foreground">Admin access uses the same sign-in</div>
+                      <p className="mt-1 text-sm leading-7 text-muted-foreground">
+                        Admin users are redirected to the admin console after authentication.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin@regenify.com</span>
+                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin1234</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-4 h-10 rounded-2xl"
+                        onClick={() => {
+                          setEmail("admin@regenify.com");
+                          setPassword("admin1234");
+                          setErrors({});
+                        }}
+                      >
+                        Use demo admin account
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-5 text-center text-sm text-muted-foreground">
                   Don&apos;t have an account?{" "}
