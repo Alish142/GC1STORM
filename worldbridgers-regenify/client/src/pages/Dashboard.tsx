@@ -613,15 +613,57 @@ function OfferingsTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={OFFERING_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Offering Filters</SheetTitle>
+                <SheetDescription>Refine offerings without squeezing the results into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={OFFERING_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -637,6 +679,56 @@ function OfferingsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search by name, ISIN, issuer..."
           emptyMessage="No offerings found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-amber-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.segment)}
+                </span>
+                <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                  {String(row.wbxClassification)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Amount</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">
+                    {formatCurrency(Number(row.issuedAmount), String(row.currency))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last Price</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{Number(row.lastPrice).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">ISIN</div>
+                  <div className="mt-1 truncate font-mono text-xs text-foreground/80">{String(row.isin)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Listed</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.listingDate)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Coupon</span>
+                <span className="font-medium text-foreground">
+                  {row.coupon !== null ? `${Number(row.coupon).toFixed(3)}%` : "—"}
+                </span>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
