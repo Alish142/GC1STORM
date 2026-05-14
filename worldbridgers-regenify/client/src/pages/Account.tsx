@@ -4,6 +4,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Bell,
   CheckCircle2,
@@ -66,6 +69,15 @@ export default function Account() {
   const [view, setView] = useState<AccountView>(() =>
     getView(typeof window !== "undefined" ? window.location.search : "")
   );
+  const [supportEmailForm, setSupportEmailForm] = useState({
+    subject: "",
+    message: "",
+  });
+  const [callRequestForm, setCallRequestForm] = useState({
+    organisation: "",
+    preferredTime: "",
+    notes: "",
+  });
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
 
   useEffect(() => {
@@ -232,26 +244,68 @@ export default function Account() {
 
               {view === "support" && (
                 <div className="space-y-4">
-                  {[
-                    {
-                      title: "Product support",
-                      description: "Questions about access, data quality, or onboarding.",
-                      action: "Email support",
-                    },
-                    {
-                      title: "Specialist desk",
-                      description: "Talk with the team about structuring offerings or impact workflows.",
-                      action: "Request call",
-                    },
-                  ].map((item) => (
-                    <div key={item.title} className="rounded-3xl border border-border bg-card p-6">
-                      <h2 className="text-lg font-semibold">{item.title}</h2>
-                      <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
-                      <Button className="mt-4 bg-primary text-white hover:bg-primary/90">
-                        {item.action}
+                  <div className="rounded-3xl border border-border bg-card p-6">
+                    <h2 className="text-lg font-semibold">Email support</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Send a support request about platform access, documents, onboarding, or data questions.
+                    </p>
+                    <div className="mt-5 space-y-4">
+                      <Input
+                        placeholder="Support subject"
+                        value={supportEmailForm.subject}
+                        onChange={(event) => setSupportEmailForm((current) => ({ ...current, subject: event.target.value }))}
+                      />
+                      <Textarea
+                        className="min-h-[140px]"
+                        placeholder="Describe the issue or request"
+                        value={supportEmailForm.message}
+                        onChange={(event) => setSupportEmailForm((current) => ({ ...current, message: event.target.value }))}
+                      />
+                      <Button
+                        className="bg-primary text-white hover:bg-primary/90"
+                        onClick={() => {
+                          toast.success("Support email request saved on the frontend.");
+                          setSupportEmailForm({ subject: "", message: "" });
+                        }}
+                      >
+                        Email support
                       </Button>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="rounded-3xl border border-border bg-card p-6">
+                    <h2 className="text-lg font-semibold">Request call</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Ask for a follow-up call about structuring offerings, investor workflows, or platform guidance.
+                    </p>
+                    <div className="mt-5 space-y-4">
+                      <Input
+                        placeholder="Organisation"
+                        value={callRequestForm.organisation}
+                        onChange={(event) => setCallRequestForm((current) => ({ ...current, organisation: event.target.value }))}
+                      />
+                      <Input
+                        placeholder="Preferred time or timezone"
+                        value={callRequestForm.preferredTime}
+                        onChange={(event) => setCallRequestForm((current) => ({ ...current, preferredTime: event.target.value }))}
+                      />
+                      <Textarea
+                        className="min-h-[140px]"
+                        placeholder="What would you like to discuss?"
+                        value={callRequestForm.notes}
+                        onChange={(event) => setCallRequestForm((current) => ({ ...current, notes: event.target.value }))}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          toast.success("Call request saved on the frontend.");
+                          setCallRequestForm({ organisation: "", preferredTime: "", notes: "" });
+                        }}
+                      >
+                        Request call
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>

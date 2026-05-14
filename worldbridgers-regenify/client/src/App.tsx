@@ -14,6 +14,9 @@ import Logout from "./pages/Logout";
 import Account from "./pages/Account";
 import PlatformFeaturePage from "./pages/PlatformFeaturePage";
 import AboutPage from "./pages/AboutPage";
+import SupportPage from "./pages/SupportPage";
+import ContactPage from "./pages/ContactPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
@@ -43,6 +46,9 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/support" component={SupportPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route path="/capabilities/:slug" component={PlatformFeaturePage} />
       <Route path="/discover" component={Discover} />
       <Route path="/discover/:slug" component={DiscoverTopicPage} />

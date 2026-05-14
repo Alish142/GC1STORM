@@ -52,10 +52,21 @@ export default function DiscoverTopicPage({ params }: DiscoverTopicPageProps) {
           <div className="rounded-[28px] border border-border bg-card p-8 shadow-card">
             <h2 className="text-2xl font-semibold text-foreground">Overview</h2>
             <p className="mt-5 text-[1rem] leading-8 text-muted-foreground">{topic.overview}</p>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {(topic.details ?? [topic.summary]).slice(0, 2).map((detail) => (
+                <div key={detail} className="rounded-2xl border border-border bg-muted/20 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Additional context</div>
+                  <p className="mt-3 text-sm leading-7 text-muted-foreground">{detail}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-[28px] border border-border bg-card p-8 shadow-card">
             <h2 className="text-2xl font-semibold text-foreground">Highlights</h2>
+            <p className="mt-4 text-[0.98rem] leading-7 text-muted-foreground">
+              These points show how this topic is positioned inside the wider Worldbridgers Regenify story and why it matters before users move into more detailed platform views.
+            </p>
             <div className="mt-6 space-y-4">
               {topic.highlights.map((highlight) => (
                 <div key={highlight} className="rounded-2xl border border-border bg-muted/30 px-4 py-4 text-sm leading-7 text-muted-foreground">
