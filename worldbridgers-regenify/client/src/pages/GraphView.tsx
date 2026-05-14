@@ -259,7 +259,21 @@ export default function GraphView() {
 
   const centerLabelLines = useMemo(() => wrapCenterLabel(selectedNode?.label || "Graph View"), [selectedNode]);
   const centerImage = useMemo(() => centerImageForNode(selectedNode), [selectedNode]);
-  const graphScale = isMobile ? 1.18 : 1;
+  const graphScale = isMobile ? 1.52 : 1.24;
+  const outerLabelFontSize = isMobile ? 17 : 14;
+  const innerLabelFontSize = isMobile ? 18 : 15;
+  const outerLabelDistance = isMobile ? 72 : 64;
+  const innerLabelOffset = isMobile ? 26 : 22;
+  const outerNodeRadius = isMobile ? 13.5 : 12;
+  const outerActiveNodeRadius = isMobile ? 16 : 14.5;
+  const innerNodeRadius = isMobile ? 15 : 13.5;
+  const innerActiveNodeRadius = isMobile ? 17.5 : 16;
+  const centerHexSize = isMobile ? 74 : 68;
+  const centerTypeFontSize = isMobile ? 11 : 10;
+  const centerLabelPrimarySize = isMobile ? 16 : 14;
+  const centerLabelSecondarySize = isMobile ? 14 : 13;
+  const centerLabelLineGap = isMobile ? 17 : 15;
+  const centerImageSize = isMobile ? 176 : 164;
 
   const selectedConnections = useMemo(() => {
     if (!selectedNode || !data) {
@@ -460,7 +474,7 @@ export default function GraphView() {
                 <div className="flex h-full min-h-[56vh] items-center justify-center overflow-hidden sm:min-h-0">
                   <svg
                     viewBox="-360 -360 720 720"
-                    className="mx-auto h-full w-full max-w-[min(100vw-1.75rem,34rem)] sm:max-h-[calc(100vh-250px)] sm:w-full sm:max-w-[calc(100vh-250px)]"
+                    className="mx-auto h-full w-full max-w-[min(100vw-1.25rem,38rem)] sm:max-h-[min(82vh,68rem)] sm:w-full sm:max-w-[min(100%,68rem)]"
                   >
                     <g transform={`scale(${graphScale})`}>
                     <circle cx="0" cy="0" r="122" fill="none" stroke="#c7cedd" strokeWidth="2.2" />
@@ -496,7 +510,7 @@ export default function GraphView() {
                       const isRelated = selectedConnections.has(node.id);
                       if (node.ring === "outer") {
                         const angle = node.angle * 180 / Math.PI;
-                        const labelDistance = 53;
+                        const labelDistance = outerLabelDistance;
                         const labelX = Math.cos(node.angle) * labelDistance;
                         const labelY = Math.sin(node.angle) * labelDistance;
                         const rotate = angle > 90 || angle < -90 ? angle + 180 : angle;
@@ -506,7 +520,7 @@ export default function GraphView() {
                             <circle
                               cx="0"
                               cy="0"
-                              r={isActive ? 12.5 : 10.5}
+                              r={isActive ? outerActiveNodeRadius : outerNodeRadius}
                               fill={isActive ? NODE_CONFIG[node.type].color : "white"}
                               stroke={NODE_CONFIG[node.type].color}
                               strokeWidth={isActive ? 3 : hoveredConnections.has(node.id) ? 2.9 : isRelated ? 2.4 : 1.9}
@@ -521,7 +535,7 @@ export default function GraphView() {
                               textAnchor={anchor}
                               dominantBaseline="middle"
                               transform={`rotate(${rotate} ${labelX} ${labelY})`}
-                              fontSize="11"
+                              fontSize={outerLabelFontSize}
                               fill={isActive ? "#1c2d80" : "#222631"}
                               style={{ fontWeight: isActive || isRelated ? 700 : 500 }}
                             >
@@ -543,17 +557,17 @@ export default function GraphView() {
                           <circle
                             cx="0"
                             cy="0"
-                            r={isActive ? 14 : 12.5}
+                            r={isActive ? innerActiveNodeRadius : innerNodeRadius}
                             fill={isActive ? NODE_CONFIG[node.type].color : "white"}
                             stroke={NODE_CONFIG[node.type].color}
                             strokeWidth={isActive ? 3 : hoveredConnections.has(node.id) ? 3 : isRelated ? 2.5 : 2.1}
                           />
                           <text
-                            x={node.x >= 0 ? 18 : -18}
+                            x={node.x >= 0 ? innerLabelOffset : -innerLabelOffset}
                             y="0"
                             textAnchor={node.x >= 0 ? "start" : "end"}
                             dominantBaseline="middle"
-                            fontSize="12"
+                            fontSize={innerLabelFontSize}
                             fill={isActive ? "#1c2d80" : "#1f2430"}
                             style={{ fontWeight: isActive || isRelated ? 700 : 600 }}
                           >
@@ -564,14 +578,14 @@ export default function GraphView() {
                     })}
 
                     <g>
-                      <polygon points={hexPoints(58)} fill={`url(#centerImagePattern)`} />
-                      <polygon points={hexPoints(58)} fill="rgba(28, 32, 40, 0.28)" />
-                      <text x="0" y="-12" textAnchor="middle" fontSize="9" fill="white" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
+                      <polygon points={hexPoints(centerHexSize)} fill={`url(#centerImagePattern)`} />
+                      <polygon points={hexPoints(centerHexSize)} fill="rgba(28, 32, 40, 0.28)" />
+                      <text x="0" y="-15" textAnchor="middle" fontSize={centerTypeFontSize} fill="white" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                         {selectedNode?.type?.toUpperCase() || "NODE"}
                       </text>
                       <text x="0" y="4" textAnchor="middle" fill="white" dominantBaseline="middle" style={{ fontWeight: 700 }}>
                         {centerLabelLines.map((line, index) => (
-                          <tspan key={line} x="0" dy={index === 0 ? 0 : 14} fontSize={index === 0 ? 12 : 11}>
+                          <tspan key={line} x="0" dy={index === 0 ? 0 : centerLabelLineGap} fontSize={index === 0 ? centerLabelPrimarySize : centerLabelSecondarySize}>
                             {line}
                           </tspan>
                         ))}
@@ -589,8 +603,8 @@ export default function GraphView() {
                           href={centerImage}
                           x="-12"
                           y="-8"
-                          width="140"
-                          height="140"
+                          width={centerImageSize}
+                          height={centerImageSize}
                           preserveAspectRatio="xMidYMid slice"
                         />
                       </pattern>
