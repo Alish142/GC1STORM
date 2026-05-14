@@ -46,6 +46,11 @@ function destinationForUser(
   return user.role === "admin" ? "/admin" : "/dashboard";
 }
 
+function isDemoAccount(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return normalizedEmail === "demo@regenify.com" || normalizedEmail === "admin@regenify.com";
+}
+
 export default function Login() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -116,8 +121,7 @@ export default function Login() {
     event.preventDefault();
     if (!validate()) return;
     setErrors({});
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === "demo@regenify.com") {
+    if (isDemoAccount(email)) {
       loginMutation.mutate({ email, password });
       return;
     }
