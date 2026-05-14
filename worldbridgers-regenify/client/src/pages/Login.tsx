@@ -231,27 +231,34 @@ export default function Login() {
 
             <div className="mt-[56px] w-full max-w-[548px]">
               <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm text-white/80">
-                {loginStats.map((item, index) => (
-                  <div
-                    key={item.label}
-                    className="relative min-h-[72px] overflow-hidden rounded-[16px] border border-white/10 px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm"
-                    style={{
-                      background:
-                        index === 0
-                          ? "linear-gradient(135deg, rgba(74, 222, 128, 0.18), rgba(255,255,255,0.06))"
-                          : index === 1
-                            ? "linear-gradient(135deg, rgba(96, 165, 250, 0.22), rgba(255,255,255,0.05))"
-                            : index === 2
-                              ? "linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(255,255,255,0.04))"
-                              : "linear-gradient(135deg, rgba(45, 212, 191, 0.18), rgba(255,255,255,0.05))",
-                    }}
-                  >
-                    <div className="relative">
-                      <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
-                      <div className="mt-1.5 text-[0.76rem] text-white/78">{item.label}</div>
+                {loginStats.map((item) => {
+                  const getGradient = (label: string) => {
+                    switch (label) {
+                      case "Verified Issuers":
+                        return "bg-gradient-to-br from-emerald-500/30 to-emerald-900/20 border-emerald-400/30";
+                      case "Active Offerings":
+                        return "bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-blue-400/30";
+                      case "ESG Indices":
+                        return "bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-purple-400/30";
+                      case "Documents":
+                        return "bg-gradient-to-br from-amber-500/30 to-amber-900/20 border-amber-400/30";
+                      default:
+                        return "bg-white/[0.04] border-white/10";
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={item.label}
+                      className={`relative min-h-[72px] overflow-hidden rounded-[16px] border px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm ${getGradient(item.label)}`}
+                    >
+                      <div className="relative">
+                        <div className="tabular-nums text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
+                        <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

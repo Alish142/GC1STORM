@@ -7,11 +7,12 @@ import DataTable, { Column } from "@/components/DataTable";
 import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { backendApi } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2,
+  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -470,15 +471,57 @@ function IssuersTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={ISSUER_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Issuer Filters</SheetTitle>
+                <SheetDescription>Refine the issuer list without squeezing the results table.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={ISSUER_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -494,6 +537,40 @@ function IssuersTab() {
           isLoading={isLoading}
           searchPlaceholder="Search issuers by name, country..."
           emptyMessage="No issuers found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-emerald-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.country)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px] font-medium">
+                  {String(row.classification)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {row.wbxLabel ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                    <ShieldCheck className="h-3 w-3" />
+                    WBX Label
+                  </span>
+                ) : null}
+                {row.euTaxonomy ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-semibold text-blue-600">
+                    <ShieldCheck className="h-3 w-3" />
+                    EU Taxonomy
+                  </span>
+                ) : null}
+              </div>
+              <div className="rounded-2xl bg-muted/50 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Assets</div>
+                <div className="mt-1 text-sm font-medium text-foreground">{String(row.assets)}</div>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -560,15 +637,57 @@ function OfferingsTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={OFFERING_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Offering Filters</SheetTitle>
+                <SheetDescription>Refine offerings without squeezing the results into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={OFFERING_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -584,6 +703,56 @@ function OfferingsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search by name, ISIN, issuer..."
           emptyMessage="No offerings found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-amber-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.segment)}
+                </span>
+                <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                  {String(row.wbxClassification)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Amount</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">
+                    {formatCurrency(Number(row.issuedAmount), String(row.currency))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last Price</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{Number(row.lastPrice).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">ISIN</div>
+                  <div className="mt-1 truncate font-mono text-xs text-foreground/80">{String(row.isin)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Listed</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.listingDate)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Coupon</span>
+                <span className="font-medium text-foreground">
+                  {row.coupon !== null ? `${Number(row.coupon).toFixed(3)}%` : "—"}
+                </span>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -649,15 +818,57 @@ function IndicesTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={INDEX_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Index Filters</SheetTitle>
+                <SheetDescription>Refine indices without compressing the data table on mobile.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={INDEX_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -673,6 +884,44 @@ function IndicesTab() {
           isLoading={isLoading}
           searchPlaceholder="Search indices by name or type..."
           emptyMessage="No indices found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-violet-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.type)}</p>
+                </div>
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.currency)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last</div>
+                  <div className="mt-1 text-sm font-semibold text-foreground">{Number(row.last).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Change</div>
+                  <div className="mt-1 text-sm">{<ChangeCell value={Number(row.changePercent)} />}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Month Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.monthLow).toFixed(2)} - {Number(row.monthHigh).toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Year Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.yearLow).toFixed(2)} - {Number(row.yearHigh).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -742,15 +991,57 @@ function DocumentsTab() {
   ];
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
         groups={DOCUMENT_FILTERS}
         selected={filters}
         onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
         onClearAll={() => { setFilters({}); setPage(1); }}
         totalActive={totalActive}
+        className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Document Filters</SheetTitle>
+                <SheetDescription>Refine documents without cramming the list into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={DOCUMENT_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
         <DataTable
           columns={columns}
           data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
@@ -763,6 +1054,57 @@ function DocumentsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search documents by name, type..."
           emptyMessage="No documents found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color="bg-rose-500" />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.subType)}
+                </span>
+                {(row.memberStates as string[]).slice(0, 3).map((state) => (
+                  <span key={state} className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    {state}
+                  </span>
+                ))}
+                {(row.memberStates as string[]).length > 3 ? (
+                  <span className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    +{(row.memberStates as string[]).length - 3}
+                  </span>
+                ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Date</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.date)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Size</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.fileSize)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )}
         />
       </div>
     </div>
@@ -797,16 +1139,16 @@ export default function Dashboard() {
         {/* Tab navigation */}
         <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
           <div className="container">
-            <div className="flex items-center gap-1 overflow-x-auto py-1.5">
+            <div className="grid grid-cols-3 gap-1.5 py-2 md:flex md:items-center md:gap-1 md:overflow-x-auto md:py-1.5">
               <button
                 onClick={() => navigate("/dashboard")}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                   activeTab === "home"
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
-                <BarChart3 className="w-4 h-4" />
+                <BarChart3 className="hidden h-4 w-4 sm:block" />
                 Overview
               </button>
               {TABS.map((tab) => {
@@ -815,52 +1157,53 @@ export default function Dashboard() {
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                       activeTab === tab.key
                         ? "bg-white text-[#1f2e3b]"
                         : "text-white/72 hover:bg-white/8 hover:text-white"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="hidden h-4 w-4 sm:block" />
                     {tab.label}
                   </button>
                 );
               })}
               <Link
                 href="/dashboard/graph"
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
                   location.includes("/dashboard/graph")
                     ? "bg-white text-[#1f2e3b]"
                     : "text-white/72 hover:bg-white/8 hover:text-white"
                 }`}
               >
-                <Network className="w-4 h-4" />
-                Graph View
+                <Network className="hidden h-4 w-4 sm:block" />
+                <span className="sm:hidden">Graph</span>
+                <span className="hidden sm:inline">Graph View</span>
               </Link>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="container flex-1 py-6">
+        <div className="container flex-1 py-4 md:py-6">
           {activeTab === "home" && <DashboardHome onTabChange={handleTabChange} />}
           {activeTab === "issuers" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <IssuersTab />
             </div>
           )}
           {activeTab === "offerings" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <OfferingsTab />
             </div>
           )}
           {activeTab === "indices" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <IndicesTab />
             </div>
           )}
           {activeTab === "documents" && (
-            <div className="h-[calc(100vh-160px)]">
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
               <DocumentsTab />
             </div>
           )}

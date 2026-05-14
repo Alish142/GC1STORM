@@ -14,6 +14,7 @@ import Logout from "./pages/Logout";
 import Account from "./pages/Account";
 import PlatformFeaturePage from "./pages/PlatformFeaturePage";
 import AboutPage from "./pages/AboutPage";
+import LearnMore from "./pages/LearnMore";
 import SupportPage from "./pages/SupportPage";
 import ContactPage from "./pages/ContactPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -46,6 +47,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/learn-more" component={LearnMore} />
       <Route path="/support" component={SupportPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/privacy" component={PrivacyPage} />
