@@ -11,8 +11,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 class VisualConfigUpdate(BaseModel):
-    table_dots: dict[str, str] = Field(default_factory=dict, alias="tableDots")
-    graph_edges: dict[str, str] = Field(default_factory=dict, alias="graphEdges")
+    hover_line_color: str | None = Field(default=None, alias="hoverLineColor")
 
     model_config = {
         "populate_by_name": True,
@@ -50,6 +49,5 @@ def patch_visual_config(
 ):
     return update_visual_config(
         db,
-        table_dots=payload.table_dots,
-        graph_edges=payload.graph_edges,
+        hover_line_color=payload.hover_line_color,
     )

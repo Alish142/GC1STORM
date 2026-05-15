@@ -53,14 +53,14 @@ export default function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#dde2ea] bg-white/96 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-md">
       <div className="container">
-        <div className="flex items-center justify-between gap-4 py-5">
+        <div className="flex items-center justify-between gap-4 py-4">
           {/* Logo */}
           <Link href="/" className="mr-4 flex shrink-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-brand">
               <Leaf className="h-4 w-4 text-white" />
             </div>
             <div className="leading-none">
-              <span className="font-bold text-[15px] text-foreground tracking-tight">Worldbridgers</span>
+              <span className="font-bold text-sm text-foreground tracking-tight">Worldbridgers</span>
               <span className="block text-[10px] font-semibold tracking-[0.28em] uppercase text-primary">Regenify</span>
             </div>
           </Link>
@@ -74,7 +74,7 @@ export default function DashboardHeader() {
                 onOpenChange={(open) => setActiveMenu(open ? item.label : null)}
               >
                 <DropdownMenuTrigger asChild>
-                  <button className={`flex items-center gap-2 rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors ${
+                  <button className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
                     activeMenu === item.label ? "bg-primary/8 text-primary" : "text-foreground/75 hover:bg-muted hover:text-foreground"
                   }`}>
                     <item.icon className="h-4 w-4" />
@@ -107,7 +107,7 @@ export default function DashboardHeader() {
                 <Link
                   key={i}
                   href={link.href}
-                  className="rounded-xl px-3 py-2.5 text-[15px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {link.label}
                 </Link>
@@ -137,7 +137,7 @@ export default function DashboardHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="flex h-12 min-w-[320px] items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2">
+            <div className="hidden h-11 items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2 sm:flex sm:min-w-[220px] lg:min-w-[300px]">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchValue}

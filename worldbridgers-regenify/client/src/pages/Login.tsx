@@ -33,13 +33,28 @@ function readPageMode(search: string): PageMode {
 
 function readNextUrl(search: string) {
   const params = new URLSearchParams(search);
-  return params.get("next") || "/dashboard";
+  return params.get("next");
+}
+
+function destinationForUser(
+  user: { role: string },
+  nextUrl?: string | null,
+) {
+  if (nextUrl) {
+    return nextUrl;
+  }
+  return user.role === "admin" ? "/admin" : "/dashboard";
+}
+
+function isDemoAccount(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return normalizedEmail === "demo@regenify.com" || normalizedEmail === "admin@regenify.com";
 }
 
 export default function Login() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const { isAuthenticated, refresh: refreshAuth, loading } = useAuth();
+  const { isAuthenticated, refresh: refreshAuth, loading, user } = useAuth();
   const mode = readPageMode(window.location.search);
   const nextUrl = readNextUrl(window.location.search);
   const [email, setEmail] = useState("");
@@ -65,7 +80,7 @@ export default function Login() {
     localStorage.setItem("regenify-user-info", JSON.stringify(user));
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"], refetchType: "none" });
     void refreshAuth();
-    navigate(nextUrl);
+    navigate(destinationForUser(user, nextUrl));
   };
 
   const loginMutation = useMutation({
@@ -80,10 +95,10 @@ export default function Login() {
   });
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      navigate(nextUrl);
+    if (!loading && isAuthenticated && user) {
+      navigate(destinationForUser(user, nextUrl));
     }
-  }, [isAuthenticated, loading, navigate, nextUrl]);
+  }, [isAuthenticated, loading, navigate, nextUrl, user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -106,8 +121,7 @@ export default function Login() {
     event.preventDefault();
     if (!validate()) return;
     setErrors({});
-    const normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail === "demo@regenify.com") {
+    if (isDemoAccount(email)) {
       loginMutation.mutate({ email, password });
       return;
     }
@@ -231,27 +245,34 @@ export default function Login() {
 
             <div className="mt-[56px] w-full max-w-[548px]">
               <div className="grid grid-cols-2 gap-x-3 gap-y-4 text-sm text-white/80">
-                {loginStats.map((item, index) => (
-                  <div
-                    key={item.label}
-                    className="relative min-h-[72px] overflow-hidden rounded-[16px] border border-white/10 px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm"
-                    style={{
-                      background:
-                        index === 0
-                          ? "linear-gradient(135deg, rgba(74, 222, 128, 0.18), rgba(255,255,255,0.06))"
-                          : index === 1
-                            ? "linear-gradient(135deg, rgba(96, 165, 250, 0.22), rgba(255,255,255,0.05))"
-                            : index === 2
-                              ? "linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(255,255,255,0.04))"
-                              : "linear-gradient(135deg, rgba(45, 212, 191, 0.18), rgba(255,255,255,0.05))",
-                    }}
-                  >
-                    <div className="relative">
-                      <div className="text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
-                      <div className="mt-1.5 text-[0.76rem] text-white/78">{item.label}</div>
+                {loginStats.map((item) => {
+                  const getGradient = (label: string) => {
+                    switch (label) {
+                      case "Verified Issuers":
+                        return "bg-gradient-to-br from-emerald-500/30 to-emerald-900/20 border-emerald-400/30";
+                      case "Active Offerings":
+                        return "bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-blue-400/30";
+                      case "ESG Indices":
+                        return "bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-purple-400/30";
+                      case "Documents":
+                        return "bg-gradient-to-br from-amber-500/30 to-amber-900/20 border-amber-400/30";
+                      default:
+                        return "bg-white/[0.04] border-white/10";
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={item.label}
+                      className={`relative min-h-[72px] overflow-hidden rounded-[16px] border px-4 py-3 shadow-[0_14px_28px_rgba(4,10,24,0.18)] backdrop-blur-sm ${getGradient(item.label)}`}
+                    >
+                      <div className="relative">
+                        <div className="tabular-nums text-[1.9rem] font-semibold leading-none text-white">{item.value}</div>
+                        <div className="mt-1.5 text-[0.76rem] text-white/56">{item.label}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -392,6 +413,36 @@ export default function Login() {
                     )}
                   </Button>
                 </form>
+
+                <div className="mt-5 rounded-3xl border border-[#ebe5db] bg-[#faf8f3] p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-foreground">Admin access uses the same sign-in</div>
+                      <p className="mt-1 text-sm leading-7 text-muted-foreground">
+                        Admin users are redirected to the admin console after authentication.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin@regenify.com</span>
+                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin1234</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-4 h-10 rounded-2xl"
+                        onClick={() => {
+                          setEmail("admin@regenify.com");
+                          setPassword("admin1234");
+                          setErrors({});
+                        }}
+                      >
+                        Use demo admin account
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mt-5 text-center text-sm text-muted-foreground">
                   Don&apos;t have an account?{" "}
