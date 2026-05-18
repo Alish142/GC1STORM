@@ -57,8 +57,43 @@ const ACCOUNT_TABS: {
 ];
 
 type VisualConfig = {
+  tableDots: Record<string, string>;
   hoverLineColor: string;
 };
+
+const TABLE_DOT_FIELDS = [
+  {
+    section: "Issuers page",
+    description: "Controls the issuer name dot and the WBX label dot in the Issuers table.",
+    fields: [
+      { key: "issuerName", label: "Issuer name column dot" },
+      { key: "wbxLabel", label: "WBX label column dot" },
+    ],
+  },
+  {
+    section: "Offerings page",
+    description: "Controls the issuer dot and the Type column dot in the Offerings table.",
+    fields: [
+      { key: "offeringIssuer", label: "Issuer column dot" },
+      { key: "offeringType", label: "Type column dot" },
+    ],
+  },
+  {
+    section: "Indices page",
+    description: "Controls the Type column dot in the Indices table.",
+    fields: [
+      { key: "indexType", label: "Type column dot" },
+    ],
+  },
+  {
+    section: "Documents page",
+    description: "Controls the issuer dot and the Type column dot in the Documents table.",
+    fields: [
+      { key: "documentIssuer", label: "Issuer column dot" },
+      { key: "documentType", label: "Type column dot" },
+    ],
+  },
+] as const;
 
 function getView(search: string): AccountView {
   const params = new URLSearchParams(search);
@@ -148,6 +183,22 @@ export default function Account() {
       return {
         ...current,
         hoverLineColor: value,
+      };
+    });
+  };
+
+  const updateTableDotColor = (key: string, value: string) => {
+    setVisualDraft((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        tableDots: {
+          ...current.tableDots,
+          [key]: value,
+        },
       };
     });
   };
@@ -299,7 +350,7 @@ export default function Account() {
                         <div>
                           <h2 className="text-lg font-semibold">Visual configuration</h2>
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Set the hover-highlight color for graph connection lines. This is the only admin visual setting now.
+                            Set dashboard table dot colors and the hover-highlight color for graph connection lines.
                           </p>
                         </div>
                         <Button
@@ -319,27 +370,72 @@ export default function Account() {
                       {visualConfigQuery.isLoading ? (
                         <div className="mt-6 text-sm text-muted-foreground">Loading visual settings...</div>
                       ) : visualDraft ? (
-                        <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-4">
-                          <div className="flex items-center gap-3">
-                            <span
-                              className="h-1.5 w-12 rounded-full"
-                              style={{ backgroundColor: visualDraft.hoverLineColor || "#111111" }}
-                            />
-                            <div className="text-sm font-medium text-foreground">Hovered graph connection line</div>
+                        <div className="mt-6 space-y-6">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                              Table dots
+                            </div>
+                            <div className="mt-4 space-y-4">
+                              {TABLE_DOT_FIELDS.map((group) => (
+                                <div key={group.section} className="rounded-2xl border border-border bg-muted/30 p-4">
+                                  <div>
+                                    <div className="text-sm font-semibold text-foreground">{group.section}</div>
+                                    <p className="mt-1 text-xs leading-6 text-muted-foreground">{group.description}</p>
+                                  </div>
+                                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                    {group.fields.map((field) => (
+                                      <div key={field.key} className="rounded-2xl border border-border bg-white p-4">
+                                        <div className="flex items-center gap-3">
+                                          <span
+                                            className="h-3.5 w-3.5 rounded-full border border-white shadow-sm"
+                                            style={{ backgroundColor: visualDraft.tableDots[field.key] ?? "#94a3b8" }}
+                                          />
+                                          <div className="text-sm font-medium text-foreground">{field.label}</div>
+                                        </div>
+                                        <div className="mt-3 flex gap-3">
+                                          <Input
+                                            type="color"
+                                            value={visualDraft.tableDots[field.key] ?? "#94a3b8"}
+                                            onChange={(event) => updateTableDotColor(field.key, event.target.value)}
+                                            className="h-11 w-16 p-1"
+                                          />
+                                          <Input
+                                            value={visualDraft.tableDots[field.key] ?? ""}
+                                            onChange={(event) => updateTableDotColor(field.key, event.target.value)}
+                                            placeholder="#22c55e"
+                                            className="font-mono"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="mt-3 flex gap-3">
-                            <Input
-                              type="color"
-                              value={visualDraft.hoverLineColor || "#111111"}
-                              onChange={(event) => updateHoverLineColor(event.target.value)}
-                              className="h-11 w-16 p-1"
-                            />
-                            <Input
-                              value={visualDraft.hoverLineColor || ""}
-                              onChange={(event) => updateHoverLineColor(event.target.value)}
-                              placeholder="#111111"
-                              className="font-mono"
-                            />
+
+                          <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="h-1.5 w-12 rounded-full"
+                                style={{ backgroundColor: visualDraft.hoverLineColor || "#111111" }}
+                              />
+                              <div className="text-sm font-medium text-foreground">Hovered graph connection line</div>
+                            </div>
+                            <div className="mt-3 flex gap-3">
+                              <Input
+                                type="color"
+                                value={visualDraft.hoverLineColor || "#111111"}
+                                onChange={(event) => updateHoverLineColor(event.target.value)}
+                                className="h-11 w-16 p-1"
+                              />
+                              <Input
+                                value={visualDraft.hoverLineColor || ""}
+                                onChange={(event) => updateHoverLineColor(event.target.value)}
+                                placeholder="#111111"
+                                className="font-mono"
+                              />
+                            </div>
                           </div>
                         </div>
                       ) : (

@@ -169,7 +169,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               group.href ? (
               <button
                   key={group.label}
-                  className={`flex items-center gap-1.5 rounded-xl px-5 py-3.5 text-[18px] font-semibold transition-colors ${
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-5 py-3.5 text-[18px] font-semibold transition-colors ${
                     useLightStyle
                       ? "text-foreground/70 hover:text-foreground hover:bg-muted"
                       : "text-white/80 hover:text-white hover:bg-white/10"
@@ -186,16 +186,13 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                 >
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`flex items-center gap-1.5 rounded-xl px-5 py-3.5 text-[18px] font-semibold transition-colors ${
+                      className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-5 py-3.5 text-[18px] font-semibold transition-colors ${
                         useLightStyle
                           ? "text-foreground/70 hover:text-foreground hover:bg-muted"
                           : "text-white/80 hover:text-white hover:bg-white/10"
                       } ${activeMenu === group.label ? (useLightStyle ? "text-primary bg-primary/8" : "text-white bg-white/15") : ""}`}
                     >
                       {group.label}
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${activeMenu === group.label ? "rotate-180" : ""}`}
-                      />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-80 rounded-2xl border-border p-2">
