@@ -64,6 +64,12 @@ export default function DataTable<T extends Record<string, unknown>>({
       : <ChevronDown className="w-3 h-3 text-primary" />;
   };
 
+  const getHeaderAlignmentClass = (className?: string) => {
+    if (className?.includes("text-right")) return "justify-end";
+    if (className?.includes("text-center")) return "justify-center";
+    return "";
+  };
+
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="relative">
@@ -114,7 +120,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         className={`px-4 py-3 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground ${col.className ?? ""} ${col.sortable ? "cursor-pointer select-none hover:text-foreground" : ""}`}
                         onClick={() => col.sortable && onSort?.(String(col.key))}
                       >
-                        <div className="flex items-center gap-1.5">
+                        <div className={`flex items-center gap-1.5 ${getHeaderAlignmentClass(col.className)}`.trim()}>
                           {col.label}
                           {col.sortable && <SortIcon col={String(col.key)} />}
                         </div>
@@ -154,7 +160,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   className={`px-4 py-3 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground ${col.className ?? ""} ${col.sortable ? "cursor-pointer select-none hover:text-foreground" : ""}`}
                   onClick={() => col.sortable && onSort?.(String(col.key))}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className={`flex items-center gap-1.5 ${getHeaderAlignmentClass(col.className)}`.trim()}>
                     {col.label}
                     {col.sortable && <SortIcon col={String(col.key)} />}
                   </div>

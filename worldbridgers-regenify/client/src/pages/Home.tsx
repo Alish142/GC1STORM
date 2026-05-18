@@ -149,7 +149,7 @@ const PLATFORM_FEATURES = [
     badge: "Exchange",
     color: "bg-rose-500/10 text-rose-600",
     href: "/capabilities/wbx-exchange-integration",
-    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80",
   },
 ];
 

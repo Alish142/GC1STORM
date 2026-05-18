@@ -260,7 +260,7 @@ const FEATURE_PAGES: FeaturePageData[] = [
         ],
       },
     ],
-    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
