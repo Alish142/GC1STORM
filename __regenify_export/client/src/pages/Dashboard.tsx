@@ -1,0 +1,1206 @@
+import { useState, useCallback } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/_core/hooks/useAuth";
+import DashboardHeader from "@/components/DashboardHeader";
+import DataTable, { Column } from "@/components/DataTable";
+import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { backendApi } from "@/lib/backendApi";
+import {
+  Building2, Layers, BarChart3, FileText, Network,
+  TrendingUp, TrendingDown, Download, Eye, ArrowRight,
+  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal,
+} from "lucide-react";
+import { Link } from "wouter";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type TabKey = "issuers" | "offerings" | "indices" | "documents";
+type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; visualConfig?: unknown };
+type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
+type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; issuerDotColor?: string; typeDotColor?: string };
+type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; issuerDotColor?: string; typeDotColor?: string };
+
+const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
+  { key: "issuers", label: "Issuers", icon: Building2 },
+  { key: "offerings", label: "Offerings", icon: Layers },
+  { key: "indices", label: "Indices", icon: BarChart3 },
+  { key: "documents", label: "Documents", icon: FileText },
+];
+
+// ── Filter configs ────────────────────────────────────────────────────────────
+const ISSUER_FILTERS: FilterGroup[] = [
+  {
+    id: "classifications",
+    label: "Issuer Classification",
+    options: [
+      { value: "SSA", label: "SSA", count: 4 },
+      { value: "Civic Society", label: "Civic Society", count: 2 },
+      { value: "Community", label: "Community", count: 3 },
+      { value: "Financial", label: "Financial", count: 7 },
+      { value: "Corporate", label: "Corporate", count: 4 },
+    ],
+  },
+  {
+    id: "wbx",
+    label: "WBX Information",
+    options: [
+      { value: "wbxLabel", label: "WBX Labelled Instruments" },
+      { value: "euTaxonomy", label: "EU Taxonomy Classification" },
+    ],
+  },
+  {
+    id: "regions",
+    label: "Country & Regions",
+    options: [
+      { value: "Europe", label: "Europe", count: 8 },
+      { value: "Asia", label: "Asia", count: 3 },
+      { value: "Pacific", label: "Pacific", count: 2 },
+      { value: "North America", label: "North America", count: 2 },
+      { value: "South America", label: "South America", count: 2 },
+      { value: "Africa", label: "Africa", count: 2 },
+      { value: "Middle East", label: "Middle East", count: 1 },
+    ],
+  },
+];
+
+const OFFERING_FILTERS: FilterGroup[] = [
+  {
+    id: "types",
+    label: "Instrument Type",
+    options: [
+      { value: "Bonds", label: "Bonds", count: 11 },
+      { value: "Certificates", label: "Certificates", count: 3 },
+      { value: "Funds", label: "Funds", count: 4 },
+      { value: "Equities", label: "Equities", count: 3 },
+      { value: "Warrants", label: "Warrants", count: 1 },
+    ],
+  },
+  {
+    id: "delisted",
+    label: "Listing Status",
+    options: [{ value: "includeDelisted", label: "Include Delisted" }],
+  },
+];
+
+const INDEX_FILTERS: FilterGroup[] = [
+  {
+    id: "types",
+    label: "Index Type",
+    options: [
+      { value: "Average Bond Yield Indices", label: "Average Bond Yield", count: 2 },
+      { value: "WBX Indices", label: "WBX Indices", count: 3 },
+      { value: "Sustainable Indices", label: "Sustainable Indices", count: 3 },
+      { value: "Systems Indices", label: "Systems Indices", count: 2 },
+      { value: "Social Indices", label: "Social Indices", count: 2 },
+      { value: "Regenify Indices", label: "Regenify Indices", count: 3 },
+    ],
+  },
+  {
+    id: "currencies",
+    label: "Currency",
+    options: [
+      { value: "EUR", label: "EUR", count: 8 },
+      { value: "USD", label: "USD", count: 5 },
+      { value: "AUD", label: "AUD", count: 1 },
+      { value: "CHF", label: "CHF", count: 1 },
+    ],
+  },
+];
+
+const DOCUMENT_FILTERS: FilterGroup[] = [
+  {
+    id: "types",
+    label: "Document Type",
+    options: [
+      { value: "All", label: "All Documents" },
+      { value: "Offerings Documents", label: "Offerings Documents", count: 12 },
+      { value: "Notices", label: "Notices", count: 6 },
+    ],
+  },
+  {
+    id: "subTypes",
+    label: "Sub-Type",
+    options: [
+      { value: "Prospectus Supplement", label: "Prospectus Supplement", count: 5 },
+      { value: "Annual Reports", label: "Annual Reports", count: 5 },
+      { value: "Public Offer", label: "Public Offer", count: 2 },
+      { value: "Publication", label: "Publication", count: 3 },
+      { value: "Information Notice", label: "Information Notice", count: 3 },
+    ],
+  },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatCurrency(amount: number, currency: string) {
+  if (amount >= 1_000_000_000) return `${currency} ${(amount / 1_000_000_000).toFixed(1)}B`;
+  if (amount >= 1_000_000) return `${currency} ${(amount / 1_000_000).toFixed(0)}M`;
+  return `${currency} ${amount.toLocaleString()}`;
+}
+
+function buildParams(input: Record<string, string | number | boolean | string[] | undefined>) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    if (value === undefined || value === "") continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => params.append(key, v));
+      continue;
+    }
+    params.set(key, String(value));
+  }
+  return params;
+}
+
+function ChangeCell({ value, suffix = "%" }: { value: number; suffix?: string }) {
+  const isPos = value >= 0;
+  return (
+    <span className={`flex items-center gap-1 font-medium ${isPos ? "text-positive" : "text-negative"}`}>
+      {isPos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      {isPos ? "+" : ""}{value.toFixed(2)}{suffix}
+    </span>
+  );
+}
+
+function HeaderDot({ color }: { color: string }) {
+  return <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />;
+}
+
+function DotLabel({ color, text }: { color: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-[0.32rem] shrink-0">
+        <HeaderDot color={color} />
+      </span>
+      <span className="font-medium leading-6 text-foreground">{text}</span>
+    </div>
+  );
+}
+
+function numericAssets(value: string) {
+  const match = value.match(/^([A-Z]{3})\s+([\d,.]+)([BM])$/i);
+  if (!match) {
+    return value === "—" ? "—" : value;
+  }
+  const [, currency, amountText, suffix] = match;
+  const amount = Number(amountText.replace(/,/g, ""));
+  const multiplier = suffix.toUpperCase() === "B" ? 1_000_000_000 : 1_000_000;
+  const expanded = amount * multiplier;
+  return `${currency} ${expanded.toLocaleString()}`;
+}
+
+// ── Dashboard Home ────────────────────────────────────────────────────────────
+function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
+  const { user } = useAuth();
+  const issuersQ = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["issuers", "home"],
+    queryFn: () => backendApi.issuers(buildParams({ page: 1, page_size: 3 })) as Promise<Paginated<IssuerRow>>,
+  });
+  const offeringsQ = useQuery<Paginated<OfferingRow>>({
+    queryKey: ["offerings", "home"],
+    queryFn: () => backendApi.offerings(buildParams({ page: 1, page_size: 3 })) as Promise<Paginated<OfferingRow>>,
+  });
+  const indicesQ = useQuery<Paginated<IndexRow>>({
+    queryKey: ["indices", "home"],
+    queryFn: () => backendApi.indices(buildParams({ page: 1, page_size: 4 })) as Promise<Paginated<IndexRow>>,
+  });
+  const documentsQ = useQuery<Paginated<DocumentRow>>({
+    queryKey: ["documents", "home"],
+    queryFn: () => backendApi.documents(buildParams({ page: 1, page_size: 1 })) as Promise<Paginated<DocumentRow>>,
+  });
+
+  const stats = [
+    {
+      label: "Issuers",
+      value: `${issuersQ.data?.total ?? 0}+`,
+      icon: Building2,
+      color: "text-primary bg-primary/10",
+      tab: "issuers" as TabKey,
+    },
+    {
+      label: "Offerings",
+      value: `${offeringsQ.data?.total ?? 0}+`,
+      icon: Layers,
+      color: "text-blue-600 bg-blue-500/10",
+      tab: "offerings" as TabKey,
+    },
+    {
+      label: "Indices",
+      value: `${indicesQ.data?.total ?? 0}`,
+      icon: BarChart3,
+      color: "text-amber-600 bg-amber-500/10",
+      tab: "indices" as TabKey,
+    },
+    {
+      label: "Documents",
+      value: `${documentsQ.data?.total ?? 0}+`,
+      icon: FileText,
+      color: "text-purple-600 bg-purple-500/10",
+      tab: "documents" as TabKey,
+    },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Welcome */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Welcome back, {user?.name?.split(" ")[0] || "Demo User"}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Here's an overview of your Regenify platform.
+          </p>
+        </div>
+        <Link href="/dashboard/graph">
+          <Button className="bg-primary text-white shadow-brand gap-2">
+            <Network className="w-4 h-4" />
+            Open Graph View
+          </Button>
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <button
+              key={i}
+              onClick={() => onTabChange(s.tab)}
+              className={`group rounded-[24px] border p-5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
+                s.label === "Issuers"
+                  ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+                  : s.label === "Offerings"
+                    ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
+                    : s.label === "Indices"
+                      ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white"
+                      : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"
+              }`}
+            >
+              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${s.color}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="text-[2rem] font-bold leading-none text-foreground">{s.value}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
+              <div className="mt-2 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                View all <ArrowRight className="w-3 h-3" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Recent data */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Recent Issuers */}
+        <div className="bg-card rounded-xl border border-border shadow-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Recent Issuers
+            </h3>
+            <button onClick={() => onTabChange("issuers")} className="text-xs text-primary hover:underline">View all</button>
+          </div>
+          {issuersQ.isLoading ? (
+            <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : (
+            <div className="space-y-2">
+              {(issuersQ.data?.data ?? []).map((issuer, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+                  <div>
+                    <div className="text-xs font-medium text-foreground">{issuer.name}</div>
+                    <div className="text-[10px] text-muted-foreground">{issuer.country} · {issuer.classification}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    {issuer.wbxLabel && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">WBX</span>}
+                    {issuer.euTaxonomy && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-medium">EU</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Offerings */}
+        <div className="bg-card rounded-xl border border-border shadow-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Layers className="w-4 h-4 text-blue-600" /> Recent Offerings
+            </h3>
+            <button onClick={() => onTabChange("offerings")} className="text-xs text-primary hover:underline">View all</button>
+          </div>
+          {offeringsQ.isLoading ? (
+            <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : (
+            <div className="space-y-2">
+              {(offeringsQ.data?.data ?? []).map((o, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+                  <div>
+                    <div className="text-xs font-medium text-foreground truncate max-w-[140px]">{o.name}</div>
+                    <div className="text-[10px] text-muted-foreground">{o.type} · {o.currency}</div>
+                  </div>
+                  <div className="text-xs font-semibold text-foreground">{o.lastPrice.toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Live Indices */}
+        <div className="bg-card rounded-xl border border-border shadow-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-amber-600" /> Live Indices
+            </h3>
+            <button onClick={() => onTabChange("indices")} className="text-xs text-primary hover:underline">View all</button>
+          </div>
+          {indicesQ.isLoading ? (
+            <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : (
+            <div className="space-y-2">
+              {(indicesQ.data?.data ?? []).map((idx, i) => (
+                <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
+                  <div className="text-xs font-medium text-foreground truncate max-w-[130px]">{idx.name}</div>
+                  <div className="text-right">
+                    <div className="text-xs font-semibold text-foreground">{idx.last.toFixed(2)}</div>
+                    <ChangeCell value={idx.changePercent} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-3">
+        {[
+          { label: "EU Taxonomy Aligned", icon: ShieldCheck, color: "text-primary" },
+          { label: "Global Coverage", icon: Globe2, color: "text-blue-600" },
+          { label: "Regenerative Finance", icon: Leaf, color: "text-green-600" },
+        ].map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-xs text-muted-foreground">
+              <Icon className={`w-3.5 h-3.5 ${item.color}`} />
+              {item.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Issuers Tab ───────────────────────────────────────────────────────────────
+function IssuersTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | undefined>();
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(key); setSortDir("asc"); }
+    setPage(1);
+  };
+
+  const { data, isLoading } = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["issuers", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.issuers(buildParams({
+      search: search || undefined,
+      classifications: filters.classifications?.length ? filters.classifications : undefined,
+      regions: filters.regions?.length ? filters.regions : undefined,
+      wbx_label: filters.wbx?.includes("wbxLabel") || undefined,
+      eu_taxonomy: filters.wbx?.includes("euTaxonomy") || undefined,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<IssuerRow>>,
+  });
+
+  const totalActive = Object.values(filters).flat().length;
+
+  const columns: Column<Record<string, unknown>>[] = [
+    {
+      key: "name",
+      label: "Issuer Name",
+      sortable: true,
+      className: "min-w-[200px]",
+      render: (v, row) => (
+        <div className="flex items-center gap-2">
+          <HeaderDot color={String(row.issuerNameDotColor ?? "#22c55e")} />
+          <span className="font-medium text-foreground">{String(v)}</span>
+        </div>
+      ),
+    },
+    { key: "country", label: "Country", sortable: true },
+    { key: "classification", label: "Classification", sortable: true,
+      render: (v) => (
+        <Badge variant="secondary" className="text-xs font-medium">{String(v)}</Badge>
+      )
+    },
+    { key: "wbxLabel", label: "WBX Label",
+      render: (v, row) => v ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-sky-50 to-emerald-50 px-2.5 py-1 text-xs font-semibold text-primary shadow-[inset_0_0_0_1px_rgba(14,165,233,0.16)]">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.wbxLabelDotColor ?? "#f59e0b") }} />
+          WBX
+        </span>
+      ) : <span className="text-muted-foreground text-xs">—</span>
+    },
+    { key: "euTaxonomy", label: "EU Taxonomy",
+      render: (v) => v ? (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full">
+          <ShieldCheck className="w-3 h-3" /> Aligned
+        </span>
+      ) : <span className="text-muted-foreground text-xs">—</span>
+    },
+    { key: "assets", label: "Assets", className: "text-right whitespace-nowrap" },
+    {
+      key: "assetsNumeric",
+      label: "Numerical",
+      className: "text-right min-w-[170px] whitespace-nowrap",
+      render: (_, row) => numericAssets(String(row.assets)),
+    },
+  ];
+
+  return (
+    <div className="flex h-full flex-col gap-4 md:flex-row">
+      <SidebarFilters
+        groups={ISSUER_FILTERS}
+        selected={filters}
+        onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+        onClearAll={() => { setFilters({}); setPage(1); }}
+        totalActive={totalActive}
+        className="hidden md:flex"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Issuer Filters</SheetTitle>
+                <SheetDescription>Refine the issuer list without squeezing the results table.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={ISSUER_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
+        <DataTable
+          columns={columns}
+          data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
+          total={data?.total ?? 0}
+          page={page}
+          pageSize={15}
+          onPageChange={setPage}
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSort={handleSort}
+          isLoading={isLoading}
+          searchPlaceholder="Search issuers by name, country..."
+          emptyMessage="No issuers found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color={String(row.issuerNameDotColor ?? "#22c55e")} />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.country)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px] font-medium">
+                  {String(row.classification)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {row.wbxLabel ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                    <ShieldCheck className="h-3 w-3" />
+                    WBX Label
+                  </span>
+                ) : null}
+                {row.euTaxonomy ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-1 text-[11px] font-semibold text-blue-600">
+                    <ShieldCheck className="h-3 w-3" />
+                    EU Taxonomy
+                  </span>
+                ) : null}
+              </div>
+              <div className="rounded-2xl bg-muted/50 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Assets</div>
+                <div className="mt-1 text-sm font-medium text-foreground">{String(row.assets)}</div>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Offerings Tab ─────────────────────────────────────────────────────────────
+function OfferingsTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | undefined>();
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(key); setSortDir("asc"); }
+    setPage(1);
+  };
+
+  const { data, isLoading } = useQuery<Paginated<OfferingRow>>({
+    queryKey: ["offerings", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.offerings(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      include_delisted: filters.delisted?.includes("includeDelisted") ?? false,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<OfferingRow>>,
+  });
+
+  const totalActive = Object.values(filters).flat().length;
+
+  const columns: Column<Record<string, unknown>>[] = [
+    { key: "type", label: "Type", sortable: true,
+      render: (v, row) => <Badge variant="outline" className="gap-1 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 text-xs text-amber-800"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#f59e0b") }} />{String(v)}</Badge>
+    },
+    { key: "segment", label: "Segment / Market", sortable: true },
+    { key: "issuer", label: "Issuer", sortable: true, className: "min-w-[160px]",
+      render: (v, row) => (
+        <DotLabel color={String(row.issuerDotColor ?? "#3b82f6")} text={String(v)} />
+      ) },
+    { key: "isin", label: "ISIN", className: "font-mono text-xs" },
+    { key: "name", label: "Name", className: "min-w-[200px]" },
+    { key: "issuedAmount", label: "Issued Amount", className: "text-right",
+      render: (v, row) => formatCurrency(Number(v), String(row.currency))
+    },
+    { key: "currency", label: "Currency" },
+    { key: "listingDate", label: "Listing Date", sortable: true },
+    { key: "wbxClassification", label: "WBX Class",
+      render: (v) => <span className="text-xs font-medium text-primary">{String(v)}</span>
+    },
+    { key: "coupon", label: "Coupon",
+      render: (v) => v !== null ? `${Number(v).toFixed(3)}%` : "—"
+    },
+    { key: "lastPrice", label: "Last Price", sortable: true, className: "text-right font-semibold",
+      render: (v) => Number(v).toFixed(2)
+    },
+  ];
+
+  return (
+    <div className="flex h-full flex-col gap-4 md:flex-row">
+      <SidebarFilters
+        groups={OFFERING_FILTERS}
+        selected={filters}
+        onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+        onClearAll={() => { setFilters({}); setPage(1); }}
+        totalActive={totalActive}
+        className="hidden md:flex"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Offering Filters</SheetTitle>
+                <SheetDescription>Refine offerings without squeezing the results into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={OFFERING_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
+        <DataTable
+          columns={columns}
+          data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
+          total={data?.total ?? 0}
+          page={page}
+          pageSize={15}
+          onPageChange={setPage}
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSort={handleSort}
+          isLoading={isLoading}
+          searchPlaceholder="Search by name, ISIN, issuer..."
+          emptyMessage="No offerings found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color={String(row.typeDotColor ?? "#f59e0b")} />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.segment)}
+                </span>
+                <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">
+                  {String(row.wbxClassification)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Amount</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">
+                    {formatCurrency(Number(row.issuedAmount), String(row.currency))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last Price</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{Number(row.lastPrice).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">ISIN</div>
+                  <div className="mt-1 truncate font-mono text-xs text-foreground/80">{String(row.isin)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Listed</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.listingDate)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Coupon</span>
+                <span className="font-medium text-foreground">
+                  {row.coupon !== null ? `${Number(row.coupon).toFixed(3)}%` : "—"}
+                </span>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Indices Tab ───────────────────────────────────────────────────────────────
+function IndicesTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string | undefined>();
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortBy(key); setSortDir("asc"); }
+    setPage(1);
+  };
+
+  const { data, isLoading } = useQuery<Paginated<IndexRow>>({
+    queryKey: ["indices", search, page, sortBy, sortDir, filters],
+    queryFn: () => backendApi.indices(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      currencies: filters.currencies?.length ? filters.currencies : undefined,
+      page,
+      page_size: 15,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+    })) as Promise<Paginated<IndexRow>>,
+  });
+
+  const totalActive = Object.values(filters).flat().length;
+
+  const columns: Column<Record<string, unknown>>[] = [
+    { key: "type", label: "Type", sortable: true,
+      render: (v, row) => <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-50 to-indigo-50 px-2.5 py-1 text-xs font-medium text-violet-700 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.12)]"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#8b5cf6") }} />{String(v)}</span>
+    },
+    { key: "name", label: "Name", sortable: true, className: "min-w-[220px] font-medium" },
+    { key: "currency", label: "Currency" },
+    { key: "last", label: "Last", sortable: true, className: "text-right font-semibold",
+      render: (v) => Number(v).toFixed(2)
+    },
+    { key: "changePercent", label: "Change (%)", sortable: true, className: "text-right",
+      render: (v) => <ChangeCell value={Number(v)} />
+    },
+    { key: "change", label: "Change", className: "text-right",
+      render: (v) => <ChangeCell value={Number(v)} suffix="" />
+    },
+    { key: "monthHigh", label: "Month High", className: "text-right",
+      render: (v) => Number(v).toFixed(2)
+    },
+    { key: "monthLow", label: "Month Low", className: "text-right",
+      render: (v) => Number(v).toFixed(2)
+    },
+    { key: "yearHigh", label: "Year High", className: "text-right",
+      render: (v) => Number(v).toFixed(2)
+    },
+    { key: "yearLow", label: "Year Low", className: "text-right",
+      render: (v) => Number(v).toFixed(2)
+    },
+  ];
+
+  return (
+    <div className="flex h-full flex-col gap-4 md:flex-row">
+      <SidebarFilters
+        groups={INDEX_FILTERS}
+        selected={filters}
+        onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+        onClearAll={() => { setFilters({}); setPage(1); }}
+        totalActive={totalActive}
+        className="hidden md:flex"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Index Filters</SheetTitle>
+                <SheetDescription>Refine indices without compressing the data table on mobile.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={INDEX_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
+        <DataTable
+          columns={columns}
+          data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
+          total={data?.total ?? 0}
+          page={page}
+          pageSize={15}
+          onPageChange={setPage}
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSort={handleSort}
+          isLoading={isLoading}
+          searchPlaceholder="Search indices by name or type..."
+          emptyMessage="No indices found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color={String(row.typeDotColor ?? "#8b5cf6")} />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.type)}</p>
+                </div>
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.currency)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Last</div>
+                  <div className="mt-1 text-sm font-semibold text-foreground">{Number(row.last).toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Change</div>
+                  <div className="mt-1 text-sm">{<ChangeCell value={Number(row.changePercent)} />}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Month Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.monthLow).toFixed(2)} - {Number(row.monthHigh).toFixed(2)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Year Range</div>
+                  <div className="mt-1 text-xs text-foreground/80">
+                    {Number(row.yearLow).toFixed(2)} - {Number(row.yearHigh).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Documents Tab ─────────────────────────────────────────────────────────────
+function DocumentsTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+
+  const { data, isLoading } = useQuery<Paginated<DocumentRow>>({
+    queryKey: ["documents", search, page, filters],
+    queryFn: () => backendApi.documents(buildParams({
+      search: search || undefined,
+      types: filters.types?.length ? filters.types : undefined,
+      sub_types: filters.subTypes?.length ? filters.subTypes : undefined,
+      page,
+      page_size: 15,
+    })) as Promise<Paginated<DocumentRow>>,
+  });
+
+  const totalActive = Object.values(filters).flat().length;
+
+  const columns: Column<Record<string, unknown>>[] = [
+    { key: "type", label: "Type",
+      render: (v, row) => <Badge variant="secondary" className="gap-1 border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 text-xs text-rose-800 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)]"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(row.typeDotColor ?? "#f43f5e") }} />{String(v)}</Badge>
+    },
+    { key: "subType", label: "Sub Type",
+      render: (v) => <span className="text-xs text-muted-foreground">{String(v)}</span>
+    },
+    { key: "name", label: "Name", className: "min-w-[260px] font-medium" },
+    { key: "issuer", label: "Issuer", className: "min-w-[160px]",
+      render: (v, row) => (
+        <DotLabel color={String(row.issuerDotColor ?? "#3b82f6")} text={String(v)} />
+      ) },
+    { key: "memberStates", label: "Member States",
+      render: (v) => (
+        <div className="flex flex-wrap gap-1">
+          {(v as string[]).slice(0, 3).map((s) => (
+            <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">{s}</span>
+          ))}
+          {(v as string[]).length > 3 && (
+            <span className="text-[10px] text-muted-foreground">+{(v as string[]).length - 3}</span>
+          )}
+        </div>
+      )
+    },
+    { key: "date", label: "Date", sortable: false },
+    { key: "fileSize", label: "Size" },
+    { key: "id", label: "Actions",
+      render: () => (
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+            <Eye className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      )
+    },
+  ];
+
+  return (
+    <div className="flex h-full flex-col gap-4 md:flex-row">
+      <SidebarFilters
+        groups={DOCUMENT_FILTERS}
+        selected={filters}
+        onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+        onClearAll={() => { setFilters({}); setPage(1); }}
+        totalActive={totalActive}
+        className="hidden md:flex"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
+                {totalActive > 0 ? (
+                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                    {totalActive}
+                  </span>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[90vw] max-w-none p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-border pb-4">
+                <SheetTitle>Document Filters</SheetTitle>
+                <SheetDescription>Refine documents without cramming the list into narrow columns.</SheetDescription>
+              </SheetHeader>
+              <div className="h-full overflow-hidden p-4 pt-0">
+                <SidebarFilters
+                  groups={DOCUMENT_FILTERS}
+                  selected={filters}
+                  onChange={(id, vals) => { setFilters((f) => ({ ...f, [id]: vals })); setPage(1); }}
+                  onClearAll={() => { setFilters({}); setPage(1); }}
+                  totalActive={totalActive}
+                  className="h-full w-full rounded-[20px] border-[#2b3a49] shadow-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+          {totalActive > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilters({}); setPage(1); }}
+              className="text-xs text-muted-foreground"
+            >
+              Clear all
+            </Button>
+          ) : null}
+        </div>
+        <DataTable
+          columns={columns}
+          data={(data?.data ?? []) as unknown as Record<string, unknown>[]}
+          total={data?.total ?? 0}
+          page={page}
+          pageSize={15}
+          onPageChange={setPage}
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          isLoading={isLoading}
+          searchPlaceholder="Search documents by name, type..."
+          emptyMessage="No documents found."
+          mobileCardRender={(row) => (
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <HeaderDot color={String(row.typeDotColor ?? "#f43f5e")} />
+                    <h3 className="text-sm font-semibold text-foreground">{String(row.name)}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{String(row.issuer)}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
+                  {String(row.type)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-foreground/80">
+                  {String(row.subType)}
+                </span>
+                {(row.memberStates as string[]).slice(0, 3).map((state) => (
+                  <span key={state} className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    {state}
+                  </span>
+                ))}
+                {(row.memberStates as string[]).length > 3 ? (
+                  <span className="rounded bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    +{(row.memberStates as string[]).length - 3}
+                  </span>
+                ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Date</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.date)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Size</div>
+                  <div className="mt-1 text-sm font-medium text-foreground">{String(row.fileSize)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  <Download className="h-3.5 w-3.5" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Main Dashboard ────────────────────────────────────────────────────────────
+export default function Dashboard() {
+  const [location] = useLocation();
+  const [, navigate] = useLocation();
+
+  // Determine active tab from URL
+  const getActiveTab = (): TabKey | "home" => {
+    if (location.includes("/issuers")) return "issuers";
+    if (location.includes("/offerings")) return "offerings";
+    if (location.includes("/indices")) return "indices";
+    if (location.includes("/documents")) return "documents";
+    return "home";
+  };
+
+  const activeTab = getActiveTab();
+
+  const handleTabChange = (tab: TabKey) => {
+    navigate(`/dashboard/${tab}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f6fa] flex flex-col">
+      <DashboardHeader />
+
+      <div className="flex-1 flex flex-col">
+        {/* Tab navigation */}
+        <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
+          <div className="container">
+            <div className="grid grid-cols-3 gap-1.5 py-2 md:flex md:items-center md:gap-1 md:overflow-x-auto md:py-1.5">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
+                  activeTab === "home"
+                    ? "bg-white text-[#1f2e3b]"
+                    : "text-white/72 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                <BarChart3 className="hidden h-4 w-4 sm:block" />
+                Overview
+              </button>
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleTabChange(tab.key)}
+                    className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
+                      activeTab === tab.key
+                        ? "bg-white text-[#1f2e3b]"
+                        : "text-white/72 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    <Icon className="hidden h-4 w-4 sm:block" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+              <Link
+                href="/dashboard/graph"
+                className={`flex min-w-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-2 py-2 text-[11px] font-medium transition-colors sm:gap-2 sm:px-4 sm:py-3 sm:text-sm md:shrink-0 ${
+                  location.includes("/dashboard/graph")
+                    ? "bg-white text-[#1f2e3b]"
+                    : "text-white/72 hover:bg-white/8 hover:text-white"
+                }`}
+              >
+                <Network className="hidden h-4 w-4 sm:block" />
+                <span className="sm:hidden">Graph</span>
+                <span className="hidden sm:inline">Graph View</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="container flex-1 py-4 md:py-6">
+          {activeTab === "home" && <DashboardHome onTabChange={handleTabChange} />}
+          {activeTab === "issuers" && (
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
+              <IssuersTab />
+            </div>
+          )}
+          {activeTab === "offerings" && (
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
+              <OfferingsTab />
+            </div>
+          )}
+          {activeTab === "indices" && (
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
+              <IndicesTab />
+            </div>
+          )}
+          {activeTab === "documents" && (
+            <div className="min-h-0 md:h-[calc(100vh-160px)]">
+              <DocumentsTab />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

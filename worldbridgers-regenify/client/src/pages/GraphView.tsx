@@ -194,14 +194,14 @@ export default function GraphView() {
     return () => mediaQuery.removeEventListener("change", syncMobile);
   }, []);
 
-  const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig: VisualConfig }>({
+  const { data, isLoading, refetch } = useQuery<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig?: VisualConfig }>({
     queryKey: ["graph-view", search],
     queryFn: () => {
       const params = new URLSearchParams();
       if (search) {
         params.set("search", search);
       }
-      return backendApi.graph(params) as Promise<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig: VisualConfig }>;
+      return backendApi.graph(params) as Promise<{ nodes: GraphNode[]; edges: GraphEdge[]; visualConfig?: VisualConfig }>;
     },
   });
 
@@ -289,7 +289,7 @@ export default function GraphView() {
   const centerImageSize = isMobile ? 170 : 156;
   const graphOffsetX = isMobile ? 0 : 8;
   const graphOffsetY = isMobile ? -56 : -88;
-  const hoverLineColor = data?.visualConfig.hoverLineColor ?? "#111111";
+  const hoverLineColor = data?.visualConfig?.hoverLineColor ?? "#111111";
 
   const selectedConnections = useMemo(() => {
     if (!selectedNode || !data) {
