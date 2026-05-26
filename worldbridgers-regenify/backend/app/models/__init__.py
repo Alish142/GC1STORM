@@ -1,3 +1,4 @@
+from app.models.audit_log import AuditLog
 from app.models.call_request import CallRequest
 from app.models.contact_request import ContactRequest
 from app.models.document import Document
@@ -12,6 +13,7 @@ from app.models.user import User
 from app.models.visual_setting import VisualSetting
 
 __all__ = [
+    "AuditLog",
     "CallRequest",
     "ContactRequest",
     "Document",

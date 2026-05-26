@@ -50,6 +50,7 @@ Set real values for:
 The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
 If SMTP is configured, forgot-password will send a real reset email. In `development`, if SMTP is not configured, the backend returns a development reset link instead.
 Login, registration, forgot-password, and public support/contact/call submission routes are rate-limited per client IP.
+Sensitive auth, admin, and request-submission actions are also written to the `audit_logs` table for review.
 
 3. Install deps:
 ```bash
@@ -71,6 +72,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
 - `POST /api/auth/logout`
+- `GET /api/admin/audit-logs`
 - `GET /api/data/issuers`
 - `GET /api/data/offerings`
 - `GET /api/data/indices`

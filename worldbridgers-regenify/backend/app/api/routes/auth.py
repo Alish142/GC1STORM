@@ -26,6 +26,7 @@ from app.crud.users import create_or_update_user, get_user_by_email
 from app.db import get_db
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
+from app.services.audit import log_audit_event
 from app.services.email import send_password_reset_email
 
 settings = get_settings()
@@ -123,14 +124,42 @@ def register(
 ):
     normalized_email = input_data.email.strip().lower()
     if not normalized_email:
+        log_audit_event(
+            db,
+            action="auth.register",
+            status="failure",
+            req=req,
+            details={"reason": "missing_email"},
+        )
         raise HTTPException(status_code=400, detail="Email is required.")
     if len(input_data.password) < 6:
+        log_audit_event(
+            db,
+            action="auth.register",
+            status="failure",
+            req=req,
+            details={"reason": "weak_password", "email": normalized_email},
+        )
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
     if get_user_by_email(db, normalized_email):
+        log_audit_event(
+            db,
+            action="auth.register",
+            status="failure",
+            req=req,
+            details={"reason": "duplicate_email", "email": normalized_email},
+        )
         raise HTTPException(status_code=409, detail="An account with this email already exists.")
 
     name = f"{input_data.first_name.strip()} {input_data.last_name.strip()}".strip()
     if not name:
+        log_audit_event(
+            db,
+            action="auth.register",
+            status="failure",
+            req=req,
+            details={"reason": "missing_name", "email": normalized_email},
+        )
         raise HTTPException(status_code=400, detail="Name is required.")
 
     user = create_or_update_user(
@@ -142,6 +171,15 @@ def register(
     )
     user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=True)
+    log_audit_event(
+        db,
+        action="auth.register",
+        req=req,
+        actor_user=user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"email": user.email, "role": user.role},
+    )
     return {
         "success": True,
         "user": user_payload,
@@ -173,6 +211,13 @@ def forgot_password(
     }
 
     if user is None:
+        log_audit_event(
+            db,
+            action="auth.forgot_password",
+            req=req,
+            status="ignored",
+            details={"email": normalized_email, "reason": "user_not_found"},
+        )
         return response
 
     token, reset_url = _issue_password_reset_token(req, db, user)
@@ -194,6 +239,16 @@ def forgot_password(
         response["resetToken"] = token
         response["resetUrl"] = reset_url
 
+    log_audit_event(
+        db,
+        action="auth.forgot_password",
+        req=req,
+        actor_user=user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"email": user.email},
+    )
+
     return response
 
 
@@ -214,10 +269,26 @@ def login(
     normalized_email = input_data.email.strip().lower()
     user = get_user_by_email(db, normalized_email)
     if user is None or not verify_password(input_data.password, user.password_hash):
+        log_audit_event(
+            db,
+            action="auth.login",
+            status="failure",
+            req=req,
+            details={"email": normalized_email},
+        )
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=input_data.remember_me)
+    log_audit_event(
+        db,
+        action="auth.login",
+        req=req,
+        actor_user=user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"rememberMe": input_data.remember_me},
+    )
     return {
         "success": True,
         "user": user_payload,
@@ -232,6 +303,13 @@ def reset_password(
     db: Session = Depends(get_db),
 ):
     if len(input_data.password) < 6:
+        log_audit_event(
+            db,
+            action="auth.reset_password",
+            status="failure",
+            req=req,
+            details={"reason": "weak_password"},
+        )
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
 
     token_hash = hash_reset_token(input_data.token.strip())
@@ -239,18 +317,39 @@ def reset_password(
         select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
     )
     if token_record is None or token_record.used_at is not None:
+        log_audit_event(
+            db,
+            action="auth.reset_password",
+            status="failure",
+            req=req,
+            details={"reason": "invalid_or_used_token"},
+        )
         raise HTTPException(status_code=400, detail="This reset link is invalid or has already been used.")
 
     now = datetime.now(UTC)
     if token_record.expires_at <= now:
         db.delete(token_record)
         db.commit()
+        log_audit_event(
+            db,
+            action="auth.reset_password",
+            status="failure",
+            req=req,
+            details={"reason": "expired_token"},
+        )
         raise HTTPException(status_code=400, detail="This reset link has expired.")
 
     user = db.get(User, token_record.user_id)
     if user is None:
         db.delete(token_record)
         db.commit()
+        log_audit_event(
+            db,
+            action="auth.reset_password",
+            status="failure",
+            req=req,
+            details={"reason": "user_missing"},
+        )
         raise HTTPException(status_code=400, detail="This reset link is no longer valid.")
 
     user.password_hash = hash_password(input_data.password)
@@ -262,6 +361,15 @@ def reset_password(
 
     user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=False)
+    log_audit_event(
+        db,
+        action="auth.reset_password",
+        req=req,
+        actor_user=user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"email": user.email},
+    )
     return {
         "success": True,
         "message": "Password updated successfully.",
@@ -270,6 +378,21 @@ def reset_password(
 
 
 @router.post("/logout")
-def logout(req: Request, res: Response):
+def logout(
+    req: Request,
+    res: Response,
+    user: User | None = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if user is not None:
+        log_audit_event(
+            db,
+            action="auth.logout",
+            req=req,
+            actor_user=user,
+            resource_type="user",
+            resource_id=str(user.id),
+            details={"email": user.email},
+        )
     clear_session_cookie(req, res)
     return {"success": True}

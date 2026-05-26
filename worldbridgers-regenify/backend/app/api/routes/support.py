@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from app.models.call_request import CallRequest
 from app.models.contact_request import ContactRequest
 from app.models.support_request import SupportRequest
 from app.models.user import User
+from app.services.audit import log_audit_event
 
 router = APIRouter(prefix="/support", tags=["support"])
 settings = get_settings()
@@ -95,6 +96,7 @@ def _serialize_call_request(record: CallRequest) -> dict[str, str | None]:
 @router.post("/support-requests")
 def create_support_request(
     payload: SupportRequestInput,
+    req: Request,
     _: None = Depends(
         rate_limit(
             scope="public-support-request",
@@ -113,6 +115,14 @@ def create_support_request(
     db.add(record)
     db.commit()
     db.refresh(record)
+    log_audit_event(
+        db,
+        action="support.request.created",
+        req=req,
+        resource_type="support_request",
+        resource_id=str(record.id),
+        details={"topic": record.topic, "email": record.email},
+    )
     return {
         "success": True,
         "requestId": str(record.id),
@@ -123,6 +133,7 @@ def create_support_request(
 @router.post("/contact-requests")
 def create_contact_request(
     payload: ContactRequestInput,
+    req: Request,
     _: None = Depends(
         rate_limit(
             scope="public-contact-request",
@@ -142,6 +153,14 @@ def create_contact_request(
     db.add(record)
     db.commit()
     db.refresh(record)
+    log_audit_event(
+        db,
+        action="contact.request.created",
+        req=req,
+        resource_type="contact_request",
+        resource_id=str(record.id),
+        details={"email": record.email, "companyName": record.company_name},
+    )
     return {
         "success": True,
         "requestId": str(record.id),
@@ -152,6 +171,7 @@ def create_contact_request(
 @router.post("/call-requests")
 def create_call_request(
     payload: CallRequestInput,
+    req: Request,
     _: None = Depends(
         rate_limit(
             scope="public-call-request",
@@ -180,6 +200,15 @@ def create_call_request(
     db.add(record)
     db.commit()
     db.refresh(record)
+    log_audit_event(
+        db,
+        action="call.request.created",
+        req=req,
+        actor_user=current_user,
+        resource_type="call_request",
+        resource_id=str(record.id),
+        details={"email": record.email, "organisation": record.organisation},
+    )
     return {
         "success": True,
         "requestId": str(record.id),
