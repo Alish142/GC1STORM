@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
+import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +10,7 @@ import { CalendarDays, Leaf } from "lucide-react";
 
 export default function ContactPage() {
   const [, navigate] = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     companyName: "",
@@ -16,6 +18,35 @@ export default function ContactPage() {
     phoneNumber: "",
     message: "",
   });
+
+  const submitContactRequest = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await backendApi.createContactRequest({
+        fullName: form.fullName,
+        companyName: form.companyName,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        message: form.message,
+      });
+      toast.success("Contact request sent.");
+      setForm({
+        fullName: "",
+        companyName: "",
+        email: "",
+        phoneNumber: "",
+        message: "",
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send contact request.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#faf9f6]">
@@ -101,19 +132,15 @@ export default function ContactPage() {
                     <div className="mt-6 flex flex-wrap gap-3">
                       <Button
                         className="h-12 rounded-full px-6 text-sm font-semibold"
-                        onClick={() => {
-                          toast.success("Contact request saved on the frontend.");
-                          setForm({
-                            fullName: "",
-                            companyName: "",
-                            email: "",
-                            phoneNumber: "",
-                            message: "",
-                          });
-                        }}
+                        disabled={isSubmitting}
+                        onClick={() => void submitContactRequest()}
                       >
-                        <CalendarDays className="h-4 w-4" />
-                        Submit
+                        {isSubmitting ? "Submitting..." : (
+                          <>
+                            <CalendarDays className="h-4 w-4" />
+                            Submit
+                          </>
+                        )}
                       </Button>
 
                       <Button variant="outline" className="h-12 rounded-full px-6" onClick={() => navigate("/about")}>

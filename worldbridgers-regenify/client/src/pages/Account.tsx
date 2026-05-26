@@ -148,6 +148,41 @@ export default function Account() {
     },
   });
 
+  const supportRequestMutation = useMutation({
+    mutationFn: () =>
+      backendApi.createSupportRequest({
+        fullName: user?.name ?? "",
+        email: user?.email ?? "",
+        topic: supportEmailForm.subject,
+        message: supportEmailForm.message,
+      }),
+    onSuccess: () => {
+      toast.success("Support request sent.");
+      setSupportEmailForm({ subject: "", message: "" });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not send support request.");
+    },
+  });
+
+  const callRequestMutation = useMutation({
+    mutationFn: () =>
+      backendApi.createCallRequest({
+        fullName: user?.name,
+        email: user?.email,
+        organisation: callRequestForm.organisation,
+        preferredTime: callRequestForm.preferredTime,
+        notes: callRequestForm.notes,
+      }),
+    onSuccess: () => {
+      toast.success("Call request sent.");
+      setCallRequestForm({ organisation: "", preferredTime: "", notes: "" });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not send call request.");
+    },
+  });
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     setView(getView(window.location.search));
@@ -469,12 +504,10 @@ export default function Account() {
                       />
                       <Button
                         className="bg-primary text-white hover:bg-primary/90"
-                        onClick={() => {
-                          toast.success("Support email request saved on the frontend.");
-                          setSupportEmailForm({ subject: "", message: "" });
-                        }}
+                        disabled={supportRequestMutation.isPending}
+                        onClick={() => supportRequestMutation.mutate()}
                       >
-                        Email support
+                        {supportRequestMutation.isPending ? "Sending..." : "Email support"}
                       </Button>
                     </div>
                   </div>
@@ -503,12 +536,10 @@ export default function Account() {
                       />
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          toast.success("Call request saved on the frontend.");
-                          setCallRequestForm({ organisation: "", preferredTime: "", notes: "" });
-                        }}
+                        disabled={callRequestMutation.isPending}
+                        onClick={() => callRequestMutation.mutate()}
                       >
-                        Request call
+                        {callRequestMutation.isPending ? "Sending..." : "Request call"}
                       </Button>
                     </div>
                   </div>

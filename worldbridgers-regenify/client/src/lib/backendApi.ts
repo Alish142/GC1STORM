@@ -40,6 +40,35 @@ type GraphResponse = {
   visualConfig: VisualConfig;
 };
 
+type SupportRequestPayload = {
+  fullName: string;
+  email: string;
+  topic: string;
+  message: string;
+};
+
+type ContactRequestPayload = {
+  fullName: string;
+  companyName?: string;
+  email: string;
+  phoneNumber?: string;
+  message: string;
+};
+
+type CallRequestPayload = {
+  fullName?: string;
+  email?: string;
+  organisation?: string;
+  preferredTime?: string;
+  notes: string;
+};
+
+type SubmissionResponse<T> = {
+  success: boolean;
+  requestId: string;
+  request: T;
+};
+
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   tableDots: {
     issuerName: "#22c55e",
@@ -357,6 +386,68 @@ export const backendApi = {
       }
       throw error;
     }
+  },
+  createSupportRequest: async (payload: SupportRequestPayload) => {
+    return request<SubmissionResponse<{
+      id: string;
+      fullName: string;
+      email: string;
+      topic: string;
+      message: string;
+      status: string;
+      createdAt: string;
+    }>>("/api/support/support-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: payload.fullName,
+        email: payload.email,
+        topic: payload.topic,
+        message: payload.message,
+      }),
+    });
+  },
+  createContactRequest: async (payload: ContactRequestPayload) => {
+    return request<SubmissionResponse<{
+      id: string;
+      fullName: string;
+      companyName: string | null;
+      email: string;
+      phoneNumber: string | null;
+      message: string;
+      status: string;
+      createdAt: string;
+    }>>("/api/support/contact-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: payload.fullName,
+        company_name: payload.companyName,
+        email: payload.email,
+        phone_number: payload.phoneNumber,
+        message: payload.message,
+      }),
+    });
+  },
+  createCallRequest: async (payload: CallRequestPayload) => {
+    return request<SubmissionResponse<{
+      id: string;
+      userId: string | null;
+      fullName: string | null;
+      email: string | null;
+      organisation: string | null;
+      preferredTime: string | null;
+      notes: string;
+      status: string;
+      createdAt: string;
+    }>>("/api/support/call-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: payload.fullName,
+        email: payload.email,
+        organisation: payload.organisation,
+        preferred_time: payload.preferredTime,
+        notes: payload.notes,
+      }),
+    });
   },
   issuers: async (params: URLSearchParams) => {
     try {
