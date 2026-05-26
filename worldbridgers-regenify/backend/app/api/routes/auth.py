@@ -18,6 +18,7 @@ from app.crud.users import create_or_update_user, get_user_by_email
 from app.db import get_db
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
+from app.services.email import send_password_reset_email
 
 COOKIE_NAME = "app_session_id"
 settings = get_settings()
@@ -94,8 +95,8 @@ def _serialize_user(user: User) -> dict:
 
 
 def _build_reset_url(req: Request, token: str) -> str:
-    frontend_base = str(req.base_url).rstrip("/")
-    configured_frontend = req.headers.get("origin") or frontend_base
+    configured_frontend = req.headers.get("origin") or settings.frontend_base_url
+    configured_frontend = configured_frontend.rstrip("/")
     return f"{configured_frontend}/login?mode=reset-password&token={token}"
 
 
@@ -187,12 +188,15 @@ def forgot_password(
     req: Request,
     db: Session = Depends(get_db),
 ):
+    if not settings.smtp_enabled and settings.app_env != "development":
+        raise HTTPException(status_code=503, detail="Password reset email delivery is not configured.")
+
     normalized_email = input_data.email.strip().lower()
     user = get_user_by_email(db, normalized_email) if normalized_email else None
 
     response: dict[str, object] = {
         "success": True,
-        "message": "If the account exists, password reset instructions have been generated.",
+        "message": "If the account exists, password reset instructions have been sent.",
     }
 
     if user is None:
@@ -200,7 +204,20 @@ def forgot_password(
 
     token, reset_url = _issue_password_reset_token(req, db, user)
 
-    if settings.app_env == "development":
+    if settings.smtp_enabled:
+        try:
+            send_password_reset_email(
+                to_email=user.email,
+                recipient_name=user.name,
+                reset_url=reset_url,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to send password reset email right now.",
+            ) from exc
+    elif settings.app_env == "development":
+        response["message"] = "Password reset link generated for development."
         response["resetToken"] = token
         response["resetUrl"] = reset_url
 

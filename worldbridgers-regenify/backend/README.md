@@ -29,8 +29,18 @@ Set real values for:
 - `SESSION_MAX_AGE_HOURS`
 - `REMEMBER_SESSION_DAYS`
 - `PASSWORD_RESET_TOKEN_HOURS`
+- `FRONTEND_BASE_URL`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USERNAME`
+- `SMTP_PASSWORD`
+- `SMTP_FROM_EMAIL`
+- `SMTP_FROM_NAME`
+- `SMTP_STARTTLS`
+- `SMTP_USE_SSL`
 
 The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
+If SMTP is configured, forgot-password will send a real reset email. In `development`, if SMTP is not configured, the backend returns a development reset link instead.
 
 3. Install deps:
 ```bash
