@@ -1,0 +1,82 @@
+from fastapi import Depends, HTTPException, Request, Response
+from sqlalchemy.orm import Session
+from uuid import UUID
+
+from app.core.security import decode_session_token
+from app.db import get_db
+from app.models.user import User
+
+COOKIE_NAME = "app_session_id"
+
+
+def is_secure_cookie(req: Request) -> bool:
+    return req.url.scheme == "https"
+
+
+def clear_session_cookie(req: Request, res: Response) -> None:
+    secure = is_secure_cookie(req)
+    res.delete_cookie(
+        key=COOKIE_NAME,
+        httponly=True,
+        samesite="none" if secure else "lax",
+        secure=secure,
+        path="/",
+    )
+
+
+def serialize_auth_user(user: User) -> dict[str, str]:
+    return {
+        "id": str(user.id),
+        "openId": f"user-{user.id}",
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+    }
+
+
+def get_current_user(
+    req: Request,
+    res: Response,
+    db: Session = Depends(get_db),
+) -> User | None:
+    token = req.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+
+    payload = decode_session_token(token)
+    if not payload:
+        clear_session_cookie(req, res)
+        return None
+
+    user_id = payload.get("id")
+    if user_id is None:
+        clear_session_cookie(req, res)
+        return None
+
+    try:
+        user = db.get(User, UUID(str(user_id)))
+    except (ValueError, TypeError):
+        clear_session_cookie(req, res)
+        return None
+
+    if user is None:
+        clear_session_cookie(req, res)
+        return None
+
+    return user
+
+
+def require_authenticated_user(
+    user: User | None = Depends(get_current_user),
+) -> User:
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    return user
+
+
+def require_admin_user(
+    user: User = Depends(require_authenticated_user),
+) -> User:
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    return user

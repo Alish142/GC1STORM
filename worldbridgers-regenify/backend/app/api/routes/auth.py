@@ -3,12 +3,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
-from uuid import UUID
 
+from app.api.deps.auth import (
+    COOKIE_NAME,
+    clear_session_cookie,
+    get_current_user,
+    is_secure_cookie,
+    serialize_auth_user,
+)
 from app.core.config import get_settings
 from app.core.security import (
     create_session_token,
-    decode_session_token,
     generate_reset_token,
     hash_reset_token,
     hash_password,
@@ -20,7 +25,6 @@ from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
 from app.services.email import send_password_reset_email
 
-COOKIE_NAME = "app_session_id"
 settings = get_settings()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -48,11 +52,6 @@ class ResetPasswordInput(BaseModel):
     token: str
     password: str
 
-
-def _cookie_secure(req: Request) -> bool:
-    return req.url.scheme == "https"
-
-
 def _session_max_age_seconds(remember_me: bool) -> int:
     if remember_me:
         return settings.remember_session_days * 24 * 60 * 60
@@ -61,7 +60,7 @@ def _session_max_age_seconds(remember_me: bool) -> int:
 
 def _write_session_cookie(req: Request, res: Response, user_payload: dict, *, remember_me: bool) -> None:
     token = create_session_token(user_payload)
-    secure = _cookie_secure(req)
+    secure = is_secure_cookie(req)
     res.set_cookie(
         key=COOKIE_NAME,
         value=token,
@@ -73,54 +72,10 @@ def _write_session_cookie(req: Request, res: Response, user_payload: dict, *, re
     )
 
 
-def _clear_session_cookie(req: Request, res: Response) -> None:
-    secure = _cookie_secure(req)
-    res.delete_cookie(
-        key=COOKIE_NAME,
-        httponly=True,
-        samesite="none" if secure else "lax",
-        secure=secure,
-        path="/",
-    )
-
-
-def _serialize_user(user: User) -> dict:
-    return {
-        "id": str(user.id),
-        "openId": f"user-{user.id}",
-        "email": user.email,
-        "name": user.name,
-        "role": user.role,
-    }
-
-
 def _build_reset_url(req: Request, token: str) -> str:
     configured_frontend = req.headers.get("origin") or settings.frontend_base_url
     configured_frontend = configured_frontend.rstrip("/")
     return f"{configured_frontend}/login?mode=reset-password&token={token}"
-
-
-def _cookie_user_payload(req: Request, db: Session) -> dict | None:
-    token = req.cookies.get(COOKIE_NAME)
-    if not token:
-        return None
-
-    payload = decode_session_token(token)
-    if not payload:
-        return None
-
-    user_id = payload.get("id")
-    if user_id is None:
-        return None
-
-    try:
-        user = db.get(User, UUID(str(user_id)))
-    except (ValueError, TypeError):
-        return None
-    if user is None:
-        return None
-
-    return _serialize_user(user)
 
 
 def _issue_password_reset_token(req: Request, db: Session, user: User) -> tuple[str, str]:
@@ -138,14 +93,10 @@ def _issue_password_reset_token(req: Request, db: Session, user: User) -> tuple[
 
 
 @router.get("/me")
-def me(req: Request, res: Response, db: Session = Depends(get_db)):
-    payload = _cookie_user_payload(req, db)
-    if not payload:
-        if req.cookies.get(COOKIE_NAME):
-            _clear_session_cookie(req, res)
+def me(user: User | None = Depends(get_current_user)):
+    if not user:
         return None
-
-    return payload
+    return serialize_auth_user(user)
 
 
 @router.post("/register")
@@ -174,7 +125,7 @@ def register(
         password_hash=hash_password(input_data.password),
         role="user",
     )
-    user_payload = _serialize_user(user)
+    user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=True)
     return {
         "success": True,
@@ -236,7 +187,7 @@ def login(
     if user is None or not verify_password(input_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-    user_payload = _serialize_user(user)
+    user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=input_data.remember_me)
     return {
         "success": True,
@@ -280,7 +231,7 @@ def reset_password(
     db.commit()
     db.refresh(user)
 
-    user_payload = _serialize_user(user)
+    user_payload = serialize_auth_user(user)
     _write_session_cookie(req, res, user_payload, remember_me=False)
     return {
         "success": True,
@@ -291,5 +242,5 @@ def reset_password(
 
 @router.post("/logout")
 def logout(req: Request, res: Response):
-    _clear_session_cookie(req, res)
+    clear_session_cookie(req, res)
     return {"success": True}

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.routes.auth import COOKIE_NAME
-from app.core.security import decode_session_token
+from app.api.deps.auth import require_admin_user
 from app.crud.visual_settings import get_visual_config, update_visual_config
 from app.db import get_db
+from app.models.user import User
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -19,24 +19,9 @@ class VisualConfigUpdate(BaseModel):
     }
 
 
-def _require_admin(req: Request) -> dict:
-    token = req.cookies.get(COOKIE_NAME)
-    if not token:
-        raise HTTPException(status_code=401, detail="Authentication required.")
-
-    payload = decode_session_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid session.")
-
-    if payload.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required.")
-
-    return payload
-
-
 @router.get("/visual-config")
 def admin_visual_config(
-    _: dict = Depends(_require_admin),
+    _: User = Depends(require_admin_user),
     db: Session = Depends(get_db),
 ):
     return get_visual_config(db)
@@ -45,7 +30,7 @@ def admin_visual_config(
 @router.patch("/visual-config")
 def patch_visual_config(
     payload: VisualConfigUpdate,
-    _: dict = Depends(_require_admin),
+    _: User = Depends(require_admin_user),
     db: Session = Depends(get_db),
 ):
     return update_visual_config(
