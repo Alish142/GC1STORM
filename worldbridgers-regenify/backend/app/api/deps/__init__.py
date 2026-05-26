@@ -6,6 +6,7 @@ from app.api.deps.auth import (
     get_current_user,
     require_admin_user,
     require_authenticated_user,
+    require_role,
     serialize_auth_user,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "get_current_user",
     "require_admin_user",
     "require_authenticated_user",
+    "require_role",
     "serialize_auth_user",
 ]

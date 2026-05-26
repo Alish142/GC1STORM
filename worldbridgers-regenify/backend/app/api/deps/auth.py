@@ -80,3 +80,17 @@ def require_admin_user(
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required.")
     return user
+
+
+def require_role(*allowed_roles: str):
+    normalized_roles = tuple(role.strip().lower() for role in allowed_roles if role.strip())
+    if not normalized_roles:
+        raise ValueError("require_role needs at least one role.")
+
+    def dependency(user: User = Depends(require_authenticated_user)) -> User:
+        if user.role.strip().lower() not in normalized_roles:
+            allowed = ", ".join(normalized_roles)
+            raise HTTPException(status_code=403, detail=f"Requires one of these roles: {allowed}.")
+        return user
+
+    return dependency

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.deps.auth import require_admin_user
+from app.api.deps.auth import require_admin_user, require_role
 from app.crud.visual_settings import get_visual_config, update_visual_config
 from app.db import get_db
 from app.models.user import User
@@ -38,3 +38,13 @@ def patch_visual_config(
         table_dots=payload.table_dots,
         hover_line_color=payload.hover_line_color,
     )
+
+
+@router.get("/role-check")
+def admin_or_editor_role_check(
+    user: User = Depends(require_role("admin", "editor")),
+):
+    return {
+        "ok": True,
+        "role": user.role,
+    }
