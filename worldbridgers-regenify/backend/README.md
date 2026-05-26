@@ -29,6 +29,14 @@ Set real values for:
 - `SESSION_MAX_AGE_HOURS`
 - `REMEMBER_SESSION_DAYS`
 - `PASSWORD_RESET_TOKEN_HOURS`
+- `LOGIN_RATE_LIMIT_ATTEMPTS`
+- `LOGIN_RATE_LIMIT_WINDOW_SECONDS`
+- `REGISTER_RATE_LIMIT_ATTEMPTS`
+- `REGISTER_RATE_LIMIT_WINDOW_SECONDS`
+- `FORGOT_PASSWORD_RATE_LIMIT_ATTEMPTS`
+- `FORGOT_PASSWORD_RATE_LIMIT_WINDOW_SECONDS`
+- `PUBLIC_FORM_RATE_LIMIT_ATTEMPTS`
+- `PUBLIC_FORM_RATE_LIMIT_WINDOW_SECONDS`
 - `FRONTEND_BASE_URL`
 - `SMTP_HOST`
 - `SMTP_PORT`
@@ -41,6 +49,7 @@ Set real values for:
 
 The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
 If SMTP is configured, forgot-password will send a real reset email. In `development`, if SMTP is not configured, the backend returns a development reset link instead.
+Login, registration, forgot-password, and public support/contact/call submission routes are rate-limited per client IP.
 
 3. Install deps:
 ```bash

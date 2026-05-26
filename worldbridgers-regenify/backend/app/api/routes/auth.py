@@ -13,6 +13,7 @@ from app.api.deps.auth import (
     serialize_auth_user,
     set_csrf_cookie,
 )
+from app.api.deps.rate_limit import rate_limit
 from app.core.config import get_settings
 from app.core.security import (
     create_session_token,
@@ -111,6 +112,13 @@ def register(
     input_data: RegisterInput,
     req: Request,
     res: Response,
+    _: None = Depends(
+        rate_limit(
+            scope="auth-register",
+            limit=settings.register_rate_limit_attempts,
+            window_seconds=settings.register_rate_limit_window_seconds,
+        )
+    ),
     db: Session = Depends(get_db),
 ):
     normalized_email = input_data.email.strip().lower()
@@ -144,6 +152,13 @@ def register(
 def forgot_password(
     input_data: ForgotPasswordInput,
     req: Request,
+    _: None = Depends(
+        rate_limit(
+            scope="auth-forgot-password",
+            limit=settings.forgot_password_rate_limit_attempts,
+            window_seconds=settings.forgot_password_rate_limit_window_seconds,
+        )
+    ),
     db: Session = Depends(get_db),
 ):
     if not settings.smtp_enabled and settings.app_env != "development":
@@ -187,6 +202,13 @@ def login(
     input_data: LoginInput,
     req: Request,
     res: Response,
+    _: None = Depends(
+        rate_limit(
+            scope="auth-login",
+            limit=settings.login_rate_limit_attempts,
+            window_seconds=settings.login_rate_limit_window_seconds,
+        )
+    ),
     db: Session = Depends(get_db),
 ):
     normalized_email = input_data.email.strip().lower()

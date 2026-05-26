@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     session_max_age_hours: int = 12
     remember_session_days: int = 30
     password_reset_token_hours: int = 2
+    login_rate_limit_attempts: int = 10
+    login_rate_limit_window_seconds: int = 900
+    register_rate_limit_attempts: int = 5
+    register_rate_limit_window_seconds: int = 3600
+    forgot_password_rate_limit_attempts: int = 5
+    forgot_password_rate_limit_window_seconds: int = 900
+    public_form_rate_limit_attempts: int = 10
+    public_form_rate_limit_window_seconds: int = 3600
     frontend_base_url: str = "http://localhost:3000"
     smtp_host: Optional[str] = None
     smtp_port: int = 587
@@ -55,6 +63,14 @@ class Settings(BaseSettings):
             raise ValueError("REMEMBER_SESSION_DAYS must be greater than 0.")
         if self.password_reset_token_hours <= 0:
             raise ValueError("PASSWORD_RESET_TOKEN_HOURS must be greater than 0.")
+        if self.login_rate_limit_attempts <= 0 or self.login_rate_limit_window_seconds <= 0:
+            raise ValueError("Login rate limit settings must be greater than 0.")
+        if self.register_rate_limit_attempts <= 0 or self.register_rate_limit_window_seconds <= 0:
+            raise ValueError("Register rate limit settings must be greater than 0.")
+        if self.forgot_password_rate_limit_attempts <= 0 or self.forgot_password_rate_limit_window_seconds <= 0:
+            raise ValueError("Forgot-password rate limit settings must be greater than 0.")
+        if self.public_form_rate_limit_attempts <= 0 or self.public_form_rate_limit_window_seconds <= 0:
+            raise ValueError("Public form rate limit settings must be greater than 0.")
         if self.smtp_port <= 0:
             raise ValueError("SMTP_PORT must be greater than 0.")
         if self.smtp_use_ssl and self.smtp_starttls:

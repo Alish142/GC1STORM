@@ -4,6 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps.auth import get_current_user, require_admin_user
+from app.api.deps.rate_limit import rate_limit
+from app.core.config import get_settings
 from app.db import get_db
 from app.models.call_request import CallRequest
 from app.models.contact_request import ContactRequest
@@ -11,6 +13,7 @@ from app.models.support_request import SupportRequest
 from app.models.user import User
 
 router = APIRouter(prefix="/support", tags=["support"])
+settings = get_settings()
 
 
 class SupportRequestInput(BaseModel):
@@ -92,6 +95,13 @@ def _serialize_call_request(record: CallRequest) -> dict[str, str | None]:
 @router.post("/support-requests")
 def create_support_request(
     payload: SupportRequestInput,
+    _: None = Depends(
+        rate_limit(
+            scope="public-support-request",
+            limit=settings.public_form_rate_limit_attempts,
+            window_seconds=settings.public_form_rate_limit_window_seconds,
+        )
+    ),
     db: Session = Depends(get_db),
 ):
     record = SupportRequest(
@@ -113,6 +123,13 @@ def create_support_request(
 @router.post("/contact-requests")
 def create_contact_request(
     payload: ContactRequestInput,
+    _: None = Depends(
+        rate_limit(
+            scope="public-contact-request",
+            limit=settings.public_form_rate_limit_attempts,
+            window_seconds=settings.public_form_rate_limit_window_seconds,
+        )
+    ),
     db: Session = Depends(get_db),
 ):
     record = ContactRequest(
@@ -135,6 +152,13 @@ def create_contact_request(
 @router.post("/call-requests")
 def create_call_request(
     payload: CallRequestInput,
+    _: None = Depends(
+        rate_limit(
+            scope="public-call-request",
+            limit=settings.public_form_rate_limit_attempts,
+            window_seconds=settings.public_form_rate_limit_window_seconds,
+        )
+    ),
     current_user: User | None = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
