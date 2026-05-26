@@ -15,7 +15,7 @@ PBKDF2_ITERATIONS = 600_000
 
 
 def _secret() -> str:
-    return settings.jwt_secret or "local-dev-jwt-secret"
+    return settings.jwt_secret
 
 
 def create_session_token(payload: dict[str, Any], expires_days: int = 7) -> str:

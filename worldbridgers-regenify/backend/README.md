@@ -16,6 +16,19 @@ docker compose -f backend/docker-compose.yml up -d
 ```bash
 cp backend/.env.example backend/.env
 ```
+Set real values for:
+- `REGENIFY_POSTGRES_USER`
+- `REGENIFY_POSTGRES_PASSWORD`
+- `REGENIFY_POSTGRES_DB`
+- `REGENIFY_NEO4J_AUTH`
+- `POSTGRES_DSN`
+- `NEO4J_URI`
+- `NEO4J_USER`
+- `NEO4J_PASSWORD`
+- `JWT_SECRET`
+
+The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
+
 3. Install deps:
 ```bash
 cd backend

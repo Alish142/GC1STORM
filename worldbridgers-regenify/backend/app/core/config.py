@@ -12,13 +12,13 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
-    postgres_dsn: str = "postgresql+psycopg://postgres:postgres@localhost:5432/regenify"
+    postgres_dsn: str
 
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = "password123"
+    neo4j_uri: str
+    neo4j_user: str
+    neo4j_password: str
     neo4j_trust_all: bool = False
-    jwt_secret: str = "local-dev-jwt-secret"
+    jwt_secret: str
     bootstrap_admin_email: Optional[str] = None
     bootstrap_admin_password: Optional[str] = None
     bootstrap_admin_name: str = "Platform Admin"
@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [x.strip() for x in self.cors_origins.split(",") if x.strip()]
+
+    def model_post_init(self, __context) -> None:
+        if self.jwt_secret.strip().lower() in {"local-dev-jwt-secret", "change-me", "changeme"}:
+            raise ValueError("JWT_SECRET must be set to a strong, non-default value.")
 
 
 @lru_cache

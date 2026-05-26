@@ -3,9 +3,9 @@ services:
     image: postgres:16
     container_name: regenify-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: regenify
+      POSTGRES_USER: ${REGENIFY_POSTGRES_USER:?Set REGENIFY_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${REGENIFY_POSTGRES_PASSWORD:?Set REGENIFY_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${REGENIFY_POSTGRES_DB:?Set REGENIFY_POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -15,7 +15,7 @@ services:
     image: neo4j:5
     container_name: regenify-neo4j
     environment:
-      NEO4J_AUTH: neo4j/password123
+      NEO4J_AUTH: ${REGENIFY_NEO4J_AUTH:?Set REGENIFY_NEO4J_AUTH}
     ports:
       - "7474:7474"
       - "7687:7687"
