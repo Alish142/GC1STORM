@@ -5,11 +5,13 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.api.deps.auth import (
+    CSRF_COOKIE_NAME,
     COOKIE_NAME,
     clear_session_cookie,
     get_current_user,
     is_secure_cookie,
     serialize_auth_user,
+    set_csrf_cookie,
 )
 from app.core.config import get_settings
 from app.core.security import (
@@ -59,6 +61,7 @@ def _session_max_age_seconds(remember_me: bool) -> int:
 
 
 def _write_session_cookie(req: Request, res: Response, user_payload: dict, *, remember_me: bool) -> None:
+    max_age = _session_max_age_seconds(remember_me)
     token = create_session_token(user_payload)
     secure = is_secure_cookie(req)
     res.set_cookie(
@@ -67,9 +70,10 @@ def _write_session_cookie(req: Request, res: Response, user_payload: dict, *, re
         httponly=True,
         samesite="none" if secure else "lax",
         secure=secure,
-        max_age=_session_max_age_seconds(remember_me),
+        max_age=max_age,
         path="/",
     )
+    set_csrf_cookie(req, res, max_age=max_age)
 
 
 def _build_reset_url(req: Request, token: str) -> str:
@@ -96,7 +100,10 @@ def _issue_password_reset_token(req: Request, db: Session, user: User) -> tuple[
 def me(user: User | None = Depends(get_current_user)):
     if not user:
         return None
-    return serialize_auth_user(user)
+    return {
+        **serialize_auth_user(user),
+        "csrfCookieName": CSRF_COOKIE_NAME,
+    }
 
 
 @router.post("/register")

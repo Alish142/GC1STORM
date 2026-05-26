@@ -21,6 +21,7 @@ type AuthUser = {
   email: string;
   name: string;
   role: string;
+  csrfCookieName?: string;
 };
 
 type Paginated<T> = {
@@ -106,6 +107,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await res.json()) as T;
+}
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  for (const cookie of document.cookie.split(";")) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
+function withCsrfHeader(init: RequestInit = {}, cookieName = "app_csrf_token"): RequestInit {
+  const token = readCookie(cookieName);
+  if (!token) {
+    return init;
+  }
+
+  return {
+    ...init,
+    headers: {
+      ...(init.headers ?? {}),
+      "X-CSRF-Token": token,
+    },
+  };
 }
 
 function isNetworkError(error: unknown) {
@@ -502,6 +534,7 @@ export const backendApi = {
   adminVisualConfig: async () => request<VisualConfig>("/api/admin/visual-config"),
   updateVisualConfig: async (payload: { tableDots?: Record<string, string>; hoverLineColor?: string }) =>
     request<VisualConfig>("/api/admin/visual-config", {
+      ...withCsrfHeader(),
       method: "PATCH",
       body: JSON.stringify(payload),
     }),

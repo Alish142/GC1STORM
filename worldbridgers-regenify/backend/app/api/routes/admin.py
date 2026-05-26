@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.api.deps.auth import require_admin_user, require_role
+from app.api.deps.auth import require_admin_user, require_csrf_token, require_role
 from app.crud.visual_settings import get_visual_config, update_visual_config
 from app.db import get_db
 from app.models.user import User
@@ -31,6 +31,7 @@ def admin_visual_config(
 def patch_visual_config(
     payload: VisualConfigUpdate,
     _: User = Depends(require_admin_user),
+    __: None = Depends(require_csrf_token),
     db: Session = Depends(get_db),
 ):
     return update_visual_config(

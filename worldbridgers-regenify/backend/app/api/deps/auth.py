@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -7,6 +9,7 @@ from app.db import get_db
 from app.models.user import User
 
 COOKIE_NAME = "app_session_id"
+CSRF_COOKIE_NAME = "app_csrf_token"
 
 
 def is_secure_cookie(req: Request) -> bool:
@@ -22,6 +25,28 @@ def clear_session_cookie(req: Request, res: Response) -> None:
         secure=secure,
         path="/",
     )
+    res.delete_cookie(
+        key=CSRF_COOKIE_NAME,
+        httponly=False,
+        samesite="none" if secure else "lax",
+        secure=secure,
+        path="/",
+    )
+
+
+def set_csrf_cookie(req: Request, res: Response, *, max_age: int) -> str:
+    secure = is_secure_cookie(req)
+    token = secrets.token_urlsafe(32)
+    res.set_cookie(
+        key=CSRF_COOKIE_NAME,
+        value=token,
+        httponly=False,
+        samesite="none" if secure else "lax",
+        secure=secure,
+        max_age=max_age,
+        path="/",
+    )
+    return token
 
 
 def serialize_auth_user(user: User) -> dict[str, str]:
@@ -80,6 +105,17 @@ def require_admin_user(
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required.")
     return user
+
+
+def require_csrf_token(
+    req: Request,
+    _: User = Depends(require_authenticated_user),
+) -> None:
+    cookie_token = req.cookies.get(CSRF_COOKIE_NAME)
+    header_token = req.headers.get("X-CSRF-Token")
+
+    if not cookie_token or not header_token or not secrets.compare_digest(cookie_token, header_token):
+        raise HTTPException(status_code=403, detail="CSRF validation failed.")
 
 
 def require_role(*allowed_roles: str):
