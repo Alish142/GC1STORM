@@ -70,7 +70,7 @@ export default function Login() {
     dateOfBirth: "",
   });
 
-  const finalizeAuth = async (user: { id: number; openId?: string; email: string; name: string; role: string }) => {
+  const finalizeAuth = async (user: { id: string; openId?: string; email: string; name: string; role: string }) => {
     queryClient.setQueryData(["auth", "me"], user);
     localStorage.setItem("regenify-user-info", JSON.stringify(user));
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"], refetchType: "none" });

@@ -9,7 +9,7 @@ type UseAuthOptions = {
 };
 
 type AuthUser = {
-  id: number;
+  id: string;
   openId: string;
   email: string;
   name: string;

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from app.core.security import (
     create_session_token,
@@ -36,7 +37,7 @@ def _cookie_secure(req: Request) -> bool:
 
 def _serialize_user(user: User) -> dict:
     return {
-        "id": user.id,
+        "id": str(user.id),
         "openId": f"user-{user.id}",
         "email": user.email,
         "name": user.name,
@@ -57,7 +58,10 @@ def _cookie_user_payload(req: Request, db: Session) -> dict | None:
     if user_id is None:
         return None
 
-    user = db.get(User, user_id)
+    try:
+        user = db.get(User, UUID(str(user_id)))
+    except (ValueError, TypeError):
+        return None
     if user is None:
         return None
 
