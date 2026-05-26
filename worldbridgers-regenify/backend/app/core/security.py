@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import os
+import secrets
 from typing import Any
 
 import jwt
@@ -55,3 +56,11 @@ def verify_password(password: str, password_hash: str | None) -> bool:
         return hmac.compare_digest(actual, expected)
     except (ValueError, TypeError):
         return False
+
+
+def generate_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

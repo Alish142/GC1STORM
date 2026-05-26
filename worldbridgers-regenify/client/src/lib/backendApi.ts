@@ -64,7 +64,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status} ${res.statusText}`);
+    let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+    try {
+      const payload = (await res.json()) as { detail?: string };
+      if (payload?.detail) {
+        errorMessage = payload.detail;
+      }
+    } catch {
+      // Keep the generic fallback when the response body is not JSON.
+    }
+    throw new Error(errorMessage);
   }
 
   return (await res.json()) as T;
@@ -322,6 +331,21 @@ export const backendApi = {
         password,
         date_of_birth: dateOfBirth,
       }),
+    });
+  },
+  forgotPassword: async (email: string) => {
+    return request<{ success: boolean; message: string; resetToken?: string; resetUrl?: string }>(
+      "/api/auth/forgot-password",
+      {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }
+    );
+  },
+  resetPassword: async (token: string, password: string) => {
+    return request<{ success: boolean; message: string; user: AuthUser }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
     });
   },
   logout: async () => {

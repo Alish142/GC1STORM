@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     jwt_secret: str
     session_max_age_hours: int = 12
     remember_session_days: int = 30
+    password_reset_token_hours: int = 2
+    frontend_base_url: str = "http://localhost:3000"
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from_email: Optional[str] = None
+    smtp_from_name: str = "Worldbridgers Regenify"
+    smtp_starttls: bool = True
+    smtp_use_ssl: bool = False
     bootstrap_admin_email: Optional[str] = None
     bootstrap_admin_password: Optional[str] = None
     bootstrap_admin_name: str = "Platform Admin"
@@ -43,6 +53,16 @@ class Settings(BaseSettings):
             raise ValueError("SESSION_MAX_AGE_HOURS must be greater than 0.")
         if self.remember_session_days <= 0:
             raise ValueError("REMEMBER_SESSION_DAYS must be greater than 0.")
+        if self.password_reset_token_hours <= 0:
+            raise ValueError("PASSWORD_RESET_TOKEN_HOURS must be greater than 0.")
+        if self.smtp_port <= 0:
+            raise ValueError("SMTP_PORT must be greater than 0.")
+        if self.smtp_use_ssl and self.smtp_starttls:
+            raise ValueError("SMTP_USE_SSL and SMTP_STARTTLS cannot both be enabled.")
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_from_email)
 
 
 @lru_cache

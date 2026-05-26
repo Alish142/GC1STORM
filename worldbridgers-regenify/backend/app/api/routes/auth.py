@@ -1,5 +1,7 @@
+from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -7,11 +9,14 @@ from app.core.config import get_settings
 from app.core.security import (
     create_session_token,
     decode_session_token,
+    generate_reset_token,
+    hash_reset_token,
     hash_password,
     verify_password,
 )
 from app.crud.users import create_or_update_user, get_user_by_email
 from app.db import get_db
+from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
 
 COOKIE_NAME = "app_session_id"
@@ -32,6 +37,15 @@ class RegisterInput(BaseModel):
     email: str
     password: str
     date_of_birth: str | None = None
+
+
+class ForgotPasswordInput(BaseModel):
+    email: str
+
+
+class ResetPasswordInput(BaseModel):
+    token: str
+    password: str
 
 
 def _cookie_secure(req: Request) -> bool:
@@ -79,6 +93,12 @@ def _serialize_user(user: User) -> dict:
     }
 
 
+def _build_reset_url(req: Request, token: str) -> str:
+    frontend_base = str(req.base_url).rstrip("/")
+    configured_frontend = req.headers.get("origin") or frontend_base
+    return f"{configured_frontend}/login?mode=reset-password&token={token}"
+
+
 def _cookie_user_payload(req: Request, db: Session) -> dict | None:
     token = req.cookies.get(COOKIE_NAME)
     if not token:
@@ -100,6 +120,20 @@ def _cookie_user_payload(req: Request, db: Session) -> dict | None:
         return None
 
     return _serialize_user(user)
+
+
+def _issue_password_reset_token(req: Request, db: Session, user: User) -> tuple[str, str]:
+    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+
+    token = generate_reset_token()
+    token_record = PasswordResetToken(
+        user_id=user.id,
+        token_hash=hash_reset_token(token),
+        expires_at=datetime.now(UTC) + timedelta(hours=settings.password_reset_token_hours),
+    )
+    db.add(token_record)
+    db.commit()
+    return token, _build_reset_url(req, token)
 
 
 @router.get("/me")
@@ -147,6 +181,32 @@ def register(
     }
 
 
+@router.post("/forgot-password")
+def forgot_password(
+    input_data: ForgotPasswordInput,
+    req: Request,
+    db: Session = Depends(get_db),
+):
+    normalized_email = input_data.email.strip().lower()
+    user = get_user_by_email(db, normalized_email) if normalized_email else None
+
+    response: dict[str, object] = {
+        "success": True,
+        "message": "If the account exists, password reset instructions have been generated.",
+    }
+
+    if user is None:
+        return response
+
+    token, reset_url = _issue_password_reset_token(req, db, user)
+
+    if settings.app_env == "development":
+        response["resetToken"] = token
+        response["resetUrl"] = reset_url
+
+    return response
+
+
 @router.post("/login")
 def login(
     input_data: LoginInput,
@@ -163,6 +223,51 @@ def login(
     _write_session_cookie(req, res, user_payload, remember_me=input_data.remember_me)
     return {
         "success": True,
+        "user": user_payload,
+    }
+
+
+@router.post("/reset-password")
+def reset_password(
+    input_data: ResetPasswordInput,
+    req: Request,
+    res: Response,
+    db: Session = Depends(get_db),
+):
+    if len(input_data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    token_hash = hash_reset_token(input_data.token.strip())
+    token_record = db.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+    )
+    if token_record is None or token_record.used_at is not None:
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has already been used.")
+
+    now = datetime.now(UTC)
+    if token_record.expires_at <= now:
+        db.delete(token_record)
+        db.commit()
+        raise HTTPException(status_code=400, detail="This reset link has expired.")
+
+    user = db.get(User, token_record.user_id)
+    if user is None:
+        db.delete(token_record)
+        db.commit()
+        raise HTTPException(status_code=400, detail="This reset link is no longer valid.")
+
+    user.password_hash = hash_password(input_data.password)
+    token_record.used_at = now
+    db.add(user)
+    db.add(token_record)
+    db.commit()
+    db.refresh(user)
+
+    user_payload = _serialize_user(user)
+    _write_session_cookie(req, res, user_payload, remember_me=False)
+    return {
+        "success": True,
+        "message": "Password updated successfully.",
         "user": user_payload,
     }
 

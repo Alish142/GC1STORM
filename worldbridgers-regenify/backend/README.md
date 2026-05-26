@@ -28,6 +28,7 @@ Set real values for:
 - `JWT_SECRET`
 - `SESSION_MAX_AGE_HOURS`
 - `REMEMBER_SESSION_DAYS`
+- `PASSWORD_RESET_TOKEN_HOURS`
 
 The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
 
@@ -48,6 +49,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `GET /api/auth/me`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 - `POST /api/auth/logout`
 - `GET /api/data/issuers`
 - `GET /api/data/offerings`

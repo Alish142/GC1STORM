@@ -20,20 +20,28 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-type PageMode = "login" | "request-access" | "create-account";
+type PageMode = "login" | "request-access" | "create-account" | "forgot-password" | "reset-password";
 
 function readPageMode(search: string): PageMode {
   const params = new URLSearchParams(search);
   const mode = params.get("mode");
-  if (mode === "create-account" || mode === "request-access") {
+  if (mode === "create-account") {
     return "create-account";
   }
+  if (mode === "request-access") return "request-access";
+  if (mode === "forgot-password") return "forgot-password";
+  if (mode === "reset-password") return "reset-password";
   return "login";
 }
 
 function readNextUrl(search: string) {
   const params = new URLSearchParams(search);
   return params.get("next");
+}
+
+function readResetToken(search: string) {
+  const params = new URLSearchParams(search);
+  return params.get("token");
 }
 
 function destinationForUser(
@@ -52,6 +60,7 @@ export default function Login() {
   const { isAuthenticated, refresh: refreshAuth, loading, user } = useAuth();
   const mode = readPageMode(window.location.search);
   const nextUrl = readNextUrl(window.location.search);
+  const resetToken = readResetToken(window.location.search);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -68,6 +77,11 @@ export default function Login() {
     email: "",
     password: "",
     dateOfBirth: "",
+  });
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetForm, setResetForm] = useState({
+    password: "",
+    confirmPassword: "",
   });
 
   const finalizeAuth = async (user: { id: string; openId?: string; email: string; name: string; role: string }) => {
@@ -97,6 +111,35 @@ export default function Login() {
           ? err.message.replace(/^Request failed:\s*/i, "")
           : "Unable to sign in. Please try again.";
       setErrors({ general: message || "Unable to sign in. Please try again." });
+    },
+  });
+
+  const forgotPasswordMutation = useMutation({
+    mutationFn: (inputEmail: string) => backendApi.forgotPassword(inputEmail),
+    onSuccess: (result) => {
+      toast.success(result.message);
+      if (result.resetUrl) {
+        window.location.href = result.resetUrl;
+      }
+    },
+    onError: (err) => {
+      const message =
+        err instanceof Error ? err.message.replace(/^Request failed:\s*/i, "") : "Unable to start password reset.";
+      toast.error(message);
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ token, nextPassword }: { token: string; nextPassword: string }) =>
+      backendApi.resetPassword(token, nextPassword),
+    onSuccess: async (result) => {
+      toast.success(result.message);
+      await finalizeAuth(result.user);
+    },
+    onError: (err) => {
+      const message =
+        err instanceof Error ? err.message.replace(/^Request failed:\s*/i, "") : "Unable to reset password.";
+      toast.error(message);
     },
   });
 
@@ -175,6 +218,32 @@ export default function Login() {
           : "Unable to create account.";
       toast.error(message);
     }
+  };
+
+  const submitForgotPassword = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!forgotEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    forgotPasswordMutation.mutate(forgotEmail);
+  };
+
+  const submitResetPassword = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!resetToken) {
+      toast.error("Missing reset token.");
+      return;
+    }
+    if (!resetForm.password || resetForm.password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (resetForm.password !== resetForm.confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    resetPasswordMutation.mutate({ token: resetToken, nextPassword: resetForm.password });
   };
 
   const isBusy = loginMutation.isPending;
@@ -359,7 +428,13 @@ export default function Login() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <button type="button" className="text-xs font-medium text-primary hover:underline">
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-primary hover:underline"
+                        onClick={() => {
+                          window.location.href = "/login?mode=forgot-password";
+                        }}
+                      >
                         Forgot password?
                       </button>
                     </div>
@@ -442,6 +517,121 @@ export default function Login() {
                     Create account
                   </button>
                 </div>
+              </div>
+            ) : mode === "forgot-password" ? (
+              <div className="px-1 pb-1">
+                <div className="mb-8">
+                  <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Password Reset</div>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Forgot your password?</h1>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    Enter your account email and we&apos;ll generate a reset link. In development, you&apos;ll be redirected straight to it.
+                  </p>
+                </div>
+
+                <form onSubmit={submitForgotPassword} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email">Email</Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="name@company.com"
+                      className="h-12 rounded-2xl"
+                      value={forgotEmail}
+                      disabled={forgotPasswordMutation.isPending}
+                      onChange={(event) => setForgotEmail(event.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="h-12 w-full rounded-2xl bg-primary text-white shadow-brand hover:bg-primary/90"
+                    disabled={forgotPasswordMutation.isPending}
+                  >
+                    {forgotPasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending reset link...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="h-4 w-4" />
+                        Send reset link
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-5 text-center text-sm text-muted-foreground">
+                  Remembered your password?{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-primary hover:underline"
+                    onClick={() => {
+                      window.location.href = "/login";
+                    }}
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </div>
+            ) : mode === "reset-password" ? (
+              <div className="px-1 pb-1">
+                <div className="mb-8">
+                  <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Password Reset</div>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Create a new password</h1>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    Choose a new password for your account. You&apos;ll be signed in once it&apos;s updated.
+                  </p>
+                </div>
+
+                <form onSubmit={submitResetPassword} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-password">New password</Label>
+                    <Input
+                      id="reset-password"
+                      type="password"
+                      placeholder="Enter a new password"
+                      className="h-12 rounded-2xl"
+                      value={resetForm.password}
+                      disabled={resetPasswordMutation.isPending}
+                      onChange={(event) =>
+                        setResetForm((current) => ({ ...current, password: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-confirm-password">Confirm password</Label>
+                    <Input
+                      id="reset-confirm-password"
+                      type="password"
+                      placeholder="Confirm your new password"
+                      className="h-12 rounded-2xl"
+                      value={resetForm.confirmPassword}
+                      disabled={resetPasswordMutation.isPending}
+                      onChange={(event) =>
+                        setResetForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="h-12 w-full rounded-2xl bg-primary text-white shadow-brand hover:bg-primary/90"
+                    disabled={resetPasswordMutation.isPending}
+                  >
+                    {resetPasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Updating password...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="h-4 w-4" />
+                        Reset password
+                      </>
+                    )}
+                  </Button>
+                </form>
               </div>
             ) : mode === "create-account" ? (
               <div className="px-1 pb-1">
