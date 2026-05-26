@@ -26,6 +26,8 @@ Set real values for:
 - `NEO4J_USER`
 - `NEO4J_PASSWORD`
 - `JWT_SECRET`
+- `SESSION_MAX_AGE_HOURS`
+- `REMEMBER_SESSION_DAYS`
 
 The backend no longer falls back to insecure built-in database credentials or a default JWT secret.
 

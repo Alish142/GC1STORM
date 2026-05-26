@@ -294,10 +294,10 @@ export const backendApi = {
   me: async () => {
     return request<AuthUser | null>("/api/auth/me");
   },
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string, rememberMe = false) => {
     return request<{ success: boolean; user: AuthUser }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, remember_me: rememberMe }),
     });
   },
   register: async ({

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     neo4j_password: str
     neo4j_trust_all: bool = False
     jwt_secret: str
+    session_max_age_hours: int = 12
+    remember_session_days: int = 30
     bootstrap_admin_email: Optional[str] = None
     bootstrap_admin_password: Optional[str] = None
     bootstrap_admin_name: str = "Platform Admin"
@@ -37,6 +39,10 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         if self.jwt_secret.strip().lower() in {"local-dev-jwt-secret", "change-me", "changeme"}:
             raise ValueError("JWT_SECRET must be set to a strong, non-default value.")
+        if self.session_max_age_hours <= 0:
+            raise ValueError("SESSION_MAX_AGE_HOURS must be greater than 0.")
+        if self.remember_session_days <= 0:
+            raise ValueError("REMEMBER_SESSION_DAYS must be greater than 0.")
 
 
 @lru_cache

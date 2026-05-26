@@ -79,8 +79,15 @@ export default function Login() {
   };
 
   const loginMutation = useMutation({
-    mutationFn: ({ email: inputEmail, password: inputPassword }: { email: string; password: string }) =>
-      backendApi.login(inputEmail, inputPassword),
+    mutationFn: ({
+      email: inputEmail,
+      password: inputPassword,
+      rememberMe: shouldRememberMe,
+    }: {
+      email: string;
+      password: string;
+      rememberMe: boolean;
+    }) => backendApi.login(inputEmail, inputPassword, shouldRememberMe),
     onSuccess: async (result) => {
       await finalizeAuth(result.user);
     },
@@ -120,7 +127,7 @@ export default function Login() {
     event.preventDefault();
     if (!validate()) return;
     setErrors({});
-    loginMutation.mutate({ email, password });
+    loginMutation.mutate({ email, password, rememberMe });
   };
 
   const submitAccessRequest = (event: React.FormEvent) => {
