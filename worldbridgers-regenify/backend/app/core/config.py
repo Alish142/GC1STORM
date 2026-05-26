@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -18,6 +19,9 @@ class Settings(BaseSettings):
     neo4j_password: str = "password123"
     neo4j_trust_all: bool = False
     jwt_secret: str = "local-dev-jwt-secret"
+    bootstrap_admin_email: Optional[str] = None
+    bootstrap_admin_password: Optional[str] = None
+    bootstrap_admin_name: str = "Platform Admin"
 
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),

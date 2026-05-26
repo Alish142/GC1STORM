@@ -46,11 +46,6 @@ function destinationForUser(
   return user.role === "admin" ? "/admin" : "/dashboard";
 }
 
-function isDemoAccount(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  return normalizedEmail === "demo@regenify.com" || normalizedEmail === "admin@regenify.com";
-}
-
 export default function Login() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -85,12 +80,16 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: ({ email: inputEmail, password: inputPassword }: { email: string; password: string }) =>
-      backendApi.demoLogin(inputEmail, inputPassword),
+      backendApi.login(inputEmail, inputPassword),
     onSuccess: async (result) => {
       await finalizeAuth(result.user);
     },
     onError: (err) => {
-      setErrors({ general: err.message || "Unable to sign in. Please try again." });
+      const message =
+        err instanceof Error
+          ? err.message.replace(/^Request failed:\s*/i, "")
+          : "Unable to sign in. Please try again.";
+      setErrors({ general: message || "Unable to sign in. Please try again." });
     },
   });
 
@@ -112,7 +111,7 @@ export default function Login() {
     if (!email) nextErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = "Enter a valid email address";
     if (!password) nextErrors.password = "Password is required";
-    else if (password.length < 4) nextErrors.password = "Password must be at least 4 characters";
+    else if (password.length < 6) nextErrors.password = "Password must be at least 6 characters";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -121,17 +120,7 @@ export default function Login() {
     event.preventDefault();
     if (!validate()) return;
     setErrors({});
-    if (isDemoAccount(email)) {
-      loginMutation.mutate({ email, password });
-      return;
-    }
-
-    backendApi
-      .loginLocalAccount(email, password)
-      .then((result) => finalizeAuth(result.user))
-      .catch((err: Error) => {
-        setErrors({ general: err.message || "Unable to sign in. Please try again." });
-      });
+    loginMutation.mutate({ email, password });
   };
 
   const submitAccessRequest = (event: React.FormEvent) => {
@@ -169,11 +158,14 @@ export default function Login() {
     }
 
     try {
-      const result = await backendApi.registerLocalAccount(createForm);
+      const result = await backendApi.register(createForm);
       toast.success("Account created.");
       await finalizeAuth(result.user);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to create account.";
+      const message =
+        err instanceof Error
+          ? err.message.replace(/^Request failed:\s*/i, "")
+          : "Unable to create account.";
       toast.error(message);
     }
   };
@@ -422,24 +414,11 @@ export default function Login() {
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-foreground">Admin access uses the same sign-in</div>
                       <p className="mt-1 text-sm leading-7 text-muted-foreground">
-                        Admin users are redirected to the admin console after authentication.
+                        Admin users are redirected to the admin console after authenticating with their real account.
                       </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin@regenify.com</span>
-                        <span className="rounded-full bg-white px-3 py-1 font-medium text-foreground">admin1234</span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="mt-4 h-10 rounded-2xl"
-                        onClick={() => {
-                          setEmail("admin@regenify.com");
-                          setPassword("admin1234");
-                          setErrors({});
-                        }}
-                      >
-                        Use demo admin account
-                      </Button>
+                      <p className="mt-3 text-xs leading-6 text-muted-foreground">
+                        Set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in the backend environment to provision an initial admin account.
+                      </p>
                     </div>
                   </div>
                 </div>

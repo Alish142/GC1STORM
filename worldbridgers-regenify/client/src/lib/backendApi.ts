@@ -1,5 +1,4 @@
 import {
-  demoUser,
   fallbackDocuments,
   fallbackGraphData,
   fallbackIndices,
@@ -15,12 +14,6 @@ import {
 } from "@/lib/frontendFallbackData";
 
 const API_BASE = import.meta.env.VITE_BACKEND_API_BASE_URL ?? "http://localhost:8000";
-const LOCAL_USER_KEY = "regenify-user-info";
-const LOCAL_ACCOUNTS_KEY = "regenify-registered-accounts";
-const DEMO_EMAIL = "demo@regenify.com";
-const DEMO_PASSWORD = "demo1234";
-const DEMO_ADMIN_EMAIL = "admin@regenify.com";
-const DEMO_ADMIN_PASSWORD = "admin1234";
 
 type AuthUser = {
   id: number;
@@ -28,15 +21,6 @@ type AuthUser = {
   email: string;
   name: string;
   role: string;
-};
-
-type RegisteredAccount = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  dateOfBirth: string;
-  createdAt: string;
 };
 
 type Paginated<T> = {
@@ -88,78 +72,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 function isNetworkError(error: unknown) {
   return error instanceof TypeError || error instanceof Error;
-}
-
-function readStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const raw = localStorage.getItem(LOCAL_USER_KEY);
-    if (!raw || raw === "null") {
-      return null;
-    }
-
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
-function readRegisteredAccounts(): RegisteredAccount[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
-    if (!raw || raw === "null") {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as RegisteredAccount[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeRegisteredAccounts(accounts: RegisteredAccount[]) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
-}
-
-function buildDemoUser(email: string) {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (normalizedEmail === DEMO_ADMIN_EMAIL) {
-    return {
-      ...demoUser,
-      id: 1,
-      openId: "demo-regenify-admin-0001",
-      email: DEMO_ADMIN_EMAIL,
-      name: "Demo Admin",
-      role: "admin",
-    };
-  }
-
-  return {
-    ...demoUser,
-    email: DEMO_EMAIL,
-  };
-}
-
-function buildRegisteredUser(account: RegisteredAccount): AuthUser {
-  return {
-    id: Date.parse(account.createdAt) || Date.now(),
-    openId: `local-${account.email}`,
-    email: account.email,
-    name: `${account.firstName} ${account.lastName}`.trim(),
-    role: "user",
-  };
 }
 
 function sortData<T extends Record<string, unknown>>(rows: T[], sortBy: string | null, sortDir: "asc" | "desc") {
@@ -380,42 +292,15 @@ export const backendApi = {
     }
   },
   me: async () => {
-    try {
-      const user = await request<AuthUser | null>("/api/auth/me");
-      return user ?? readStoredUser();
-    } catch (error) {
-      if (isNetworkError(error)) {
-        return readStoredUser();
-      }
-      throw error;
-    }
+    return request<AuthUser | null>("/api/auth/me");
   },
-  demoLogin: async (email: string, password: string) => {
-    try {
-      return await request<{ success: boolean; user: AuthUser }>("/api/auth/demo-login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-    } catch (error) {
-      if (!isNetworkError(error)) {
-        throw error;
-      }
-
-      const validCredentials =
-        (email.trim().toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) ||
-        (email.trim().toLowerCase() === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD);
-
-      if (!validCredentials) {
-        throw new Error("Invalid email or password.");
-      }
-
-      return {
-        success: true,
-        user: buildDemoUser(email),
-      };
-    }
+  login: async (email: string, password: string) => {
+    return request<{ success: boolean; user: AuthUser }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
   },
-  registerLocalAccount: async ({
+  register: async ({
     firstName,
     lastName,
     email,
@@ -428,43 +313,16 @@ export const backendApi = {
     password: string;
     dateOfBirth: string;
   }) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const existing = readRegisteredAccounts();
-
-    if (existing.some((account) => account.email === normalizedEmail)) {
-      throw new Error("An account with this email already exists.");
-    }
-
-    const account: RegisteredAccount = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: normalizedEmail,
-      password,
-      dateOfBirth,
-      createdAt: new Date().toISOString(),
-    };
-
-    writeRegisteredAccounts([...existing, account]);
-
-    return {
-      success: true,
-      user: buildRegisteredUser(account),
-    };
-  },
-  loginLocalAccount: async (email: string, password: string) => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const account = readRegisteredAccounts().find(
-      (item) => item.email === normalizedEmail && item.password === password
-    );
-
-    if (!account) {
-      throw new Error("Invalid email or password.");
-    }
-
-    return {
-      success: true,
-      user: buildRegisteredUser(account),
-    };
+    return request<{ success: boolean; user: AuthUser }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        password,
+        date_of_birth: dateOfBirth,
+      }),
+    });
   },
   logout: async () => {
     try {

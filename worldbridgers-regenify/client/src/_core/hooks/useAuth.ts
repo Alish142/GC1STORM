@@ -44,7 +44,7 @@ export function useAuth(options?: UseAuthOptions) {
     try {
       await logoutMutation.mutateAsync();
     } catch {
-      // Ignore logout API errors in demo mode.
+      // Keep the client logged out locally even if the server logout call fails.
     } finally {
       queryClient.setQueryData(["auth", "me"], null);
       void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
