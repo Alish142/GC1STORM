@@ -6,13 +6,20 @@ export default function Logout() {
   const { logout } = useAuth();
 
   useEffect(() => {
+    let active = true;
+
     const run = async () => {
-      void logout();
+      await logout();
+      if (!active) return;
+
       toast.success("Logout successful.");
       window.location.replace("/");
     };
 
     void run();
+    return () => {
+      active = false;
+    };
   }, [logout]);
 
   return null;
