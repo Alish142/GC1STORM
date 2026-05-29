@@ -22,6 +22,8 @@ import {
 
 type PageMode = "login" | "request-access" | "create-account" | "forgot-password" | "reset-password";
 
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 function readPageMode(search: string): PageMode {
   const params = new URLSearchParams(search);
   const mode = params.get("mode");
@@ -76,7 +78,6 @@ export default function Login() {
     lastName: "",
     email: "",
     password: "",
-    dateOfBirth: "",
   });
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetForm, setResetForm] = useState({
@@ -161,7 +162,6 @@ export default function Login() {
     if (!email) nextErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = "Enter a valid email address";
     if (!password) nextErrors.password = "Password is required";
-    else if (password.length < 6) nextErrors.password = "Password must be at least 6 characters";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -190,8 +190,7 @@ export default function Login() {
       !createForm.firstName ||
       !createForm.lastName ||
       !createForm.email ||
-      !createForm.password ||
-      !createForm.dateOfBirth
+      !createForm.password
     ) {
       toast.error("Please complete all account fields.");
       return;
@@ -202,8 +201,8 @@ export default function Login() {
       return;
     }
 
-    if (createForm.password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (!STRONG_PASSWORD_PATTERN.test(createForm.password)) {
+      toast.error("Password must be 8+ characters with uppercase, lowercase, number, and special character.");
       return;
     }
 
@@ -235,8 +234,8 @@ export default function Login() {
       toast.error("Missing reset token.");
       return;
     }
-    if (!resetForm.password || resetForm.password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (!resetForm.password || !STRONG_PASSWORD_PATTERN.test(resetForm.password)) {
+      toast.error("Password must be 8+ characters with uppercase, lowercase, number, and special character.");
       return;
     }
     if (resetForm.password !== resetForm.confirmPassword) {
@@ -576,6 +575,9 @@ export default function Login() {
                         setResetForm((current) => ({ ...current, password: event.target.value }))
                       }
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use 8+ characters with uppercase, lowercase, number, and special character.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="reset-confirm-password">Confirm password</Label>
@@ -673,19 +675,9 @@ export default function Login() {
                         setCreateForm((current) => ({ ...current, password: event.target.value }))
                       }
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="create-dob">Date of birth</Label>
-                    <Input
-                      id="create-dob"
-                      type="date"
-                      className="h-12 rounded-2xl"
-                      value={createForm.dateOfBirth}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({ ...current, dateOfBirth: event.target.value }))
-                      }
-                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use 8+ characters with uppercase, lowercase, number, and special character.
+                    </p>
                   </div>
 
                   <Button type="submit" className="h-12 w-full rounded-2xl bg-primary text-white shadow-brand hover:bg-primary/90">

@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
@@ -47,7 +48,6 @@ class RegisterInput(BaseModel):
     last_name: str
     email: str
     password: str
-    date_of_birth: str | None = None
 
 
 class ForgotPasswordInput(BaseModel):
@@ -62,6 +62,49 @@ class ResetPasswordInput(BaseModel):
 class ChangePasswordInput(BaseModel):
     current_password: str
     new_password: str
+
+
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z\s'-]*[A-Za-z]$|^[A-Za-z]$")
+PASSWORD_POLICY_PATTERN = re.compile(
+    r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
+)
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _validate_name_field(value: str, field_name: str) -> str:
+    normalized_value = value.strip()
+    if not normalized_value:
+        raise HTTPException(status_code=400, detail=f"{field_name} is required.")
+    if not NAME_PATTERN.fullmatch(normalized_value):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{field_name} must contain letters only, with optional spaces, hyphens, or apostrophes.",
+        )
+    return normalized_value
+
+
+def _validate_email(email: str) -> str:
+    normalized_email = _normalize_email(email)
+    if not normalized_email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+    if not EMAIL_PATTERN.fullmatch(normalized_email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+    return normalized_email
+
+
+def _validate_password_strength(password: str, *, field_label: str = "Password") -> None:
+    if not PASSWORD_POLICY_PATTERN.fullmatch(password):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{field_label} must be at least 8 characters and include uppercase, "
+                "lowercase, number, and special character."
+            ),
+        )
 
 def _session_max_age_seconds(remember_me: bool) -> int:
     if remember_me:
@@ -129,25 +172,20 @@ def register(
     ),
     db: Session = Depends(get_db),
 ):
-    normalized_email = input_data.email.strip().lower()
-    if not normalized_email:
+    try:
+        first_name = _validate_name_field(input_data.first_name, "First name")
+        last_name = _validate_name_field(input_data.last_name, "Last name")
+        normalized_email = _validate_email(input_data.email)
+        _validate_password_strength(input_data.password)
+    except HTTPException as exc:
         log_audit_event(
             db,
             action="auth.register",
             status="failure",
             req=req,
-            details={"reason": "missing_email"},
+            details={"reason": "validation_failed", "email": _normalize_email(input_data.email)},
         )
-        raise HTTPException(status_code=400, detail="Email is required.")
-    if len(input_data.password) < 6:
-        log_audit_event(
-            db,
-            action="auth.register",
-            status="failure",
-            req=req,
-            details={"reason": "weak_password", "email": normalized_email},
-        )
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+        raise exc
     if get_user_by_email(db, normalized_email):
         log_audit_event(
             db,
@@ -158,21 +196,10 @@ def register(
         )
         raise HTTPException(status_code=409, detail="An account with this email already exists.")
 
-    name = f"{input_data.first_name.strip()} {input_data.last_name.strip()}".strip()
-    if not name:
-        log_audit_event(
-            db,
-            action="auth.register",
-            status="failure",
-            req=req,
-            details={"reason": "missing_name", "email": normalized_email},
-        )
-        raise HTTPException(status_code=400, detail="Name is required.")
-
     user = create_or_update_user(
         db,
         email=normalized_email,
-        name=name,
+        name=f"{first_name} {last_name}",
         password_hash=hash_password(input_data.password),
         role="user",
     )
@@ -209,7 +236,7 @@ def forgot_password(
     if not settings.smtp_enabled and settings.app_env != "development":
         raise HTTPException(status_code=503, detail="Password reset email delivery is not configured.")
 
-    normalized_email = input_data.email.strip().lower()
+    normalized_email = _normalize_email(input_data.email)
     user = get_user_by_email(db, normalized_email) if normalized_email else None
 
     response: dict[str, object] = {
@@ -273,7 +300,7 @@ def login(
     ),
     db: Session = Depends(get_db),
 ):
-    normalized_email = input_data.email.strip().lower()
+    normalized_email = _normalize_email(input_data.email)
     user = get_user_by_email(db, normalized_email)
     if user is None or not verify_password(input_data.password, user.password_hash):
         log_audit_event(
@@ -309,7 +336,9 @@ def reset_password(
     res: Response,
     db: Session = Depends(get_db),
 ):
-    if len(input_data.password) < 6:
+    try:
+        _validate_password_strength(input_data.password)
+    except HTTPException as exc:
         log_audit_event(
             db,
             action="auth.reset_password",
@@ -317,7 +346,7 @@ def reset_password(
             req=req,
             details={"reason": "weak_password"},
         )
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+        raise exc
 
     token_hash = hash_reset_token(input_data.token.strip())
     token_record = db.scalar(
@@ -408,7 +437,9 @@ def change_password(
         )
         raise HTTPException(status_code=400, detail="Current password is incorrect.")
 
-    if len(new_password) < 6:
+    try:
+        _validate_password_strength(new_password, field_label="New password")
+    except HTTPException as exc:
         log_audit_event(
             db,
             action="auth.change_password",
@@ -419,7 +450,7 @@ def change_password(
             resource_id=str(user.id),
             details={"reason": "weak_password", "email": user.email},
         )
-        raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
+        raise exc
 
     if current_password == new_password:
         log_audit_event(

@@ -403,13 +403,11 @@ export const backendApi = {
     lastName,
     email,
     password,
-    dateOfBirth,
   }: {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
-    dateOfBirth: string;
   }) => {
     return request<{ success: boolean; user: AuthUser }>("/api/auth/register", {
       method: "POST",
@@ -418,7 +416,6 @@ export const backendApi = {
         last_name: lastName,
         email,
         password,
-        date_of_birth: dateOfBirth,
       }),
     });
   },
