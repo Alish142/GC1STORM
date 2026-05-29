@@ -10,6 +10,8 @@ from app.api.deps.auth import (
     clear_session_cookie,
     get_current_user,
     is_secure_cookie,
+    require_authenticated_user,
+    require_csrf_token,
     serialize_auth_user,
     set_csrf_cookie,
 )
@@ -55,6 +57,11 @@ class ForgotPasswordInput(BaseModel):
 class ResetPasswordInput(BaseModel):
     token: str
     password: str
+
+
+class ChangePasswordInput(BaseModel):
+    current_password: str
+    new_password: str
 
 def _session_max_age_seconds(remember_me: bool) -> int:
     if remember_me:
@@ -374,6 +381,77 @@ def reset_password(
         "success": True,
         "message": "Password updated successfully.",
         "user": user_payload,
+    }
+
+
+@router.post("/change-password")
+def change_password(
+    input_data: ChangePasswordInput,
+    req: Request,
+    user: User = Depends(require_authenticated_user),
+    __: None = Depends(require_csrf_token),
+    db: Session = Depends(get_db),
+):
+    current_password = input_data.current_password
+    new_password = input_data.new_password
+
+    if not verify_password(current_password, user.password_hash):
+        log_audit_event(
+            db,
+            action="auth.change_password",
+            status="failure",
+            req=req,
+            actor_user=user,
+            resource_type="user",
+            resource_id=str(user.id),
+            details={"reason": "invalid_current_password", "email": user.email},
+        )
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+    if len(new_password) < 6:
+        log_audit_event(
+            db,
+            action="auth.change_password",
+            status="failure",
+            req=req,
+            actor_user=user,
+            resource_type="user",
+            resource_id=str(user.id),
+            details={"reason": "weak_password", "email": user.email},
+        )
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
+
+    if current_password == new_password:
+        log_audit_event(
+            db,
+            action="auth.change_password",
+            status="failure",
+            req=req,
+            actor_user=user,
+            resource_type="user",
+            resource_id=str(user.id),
+            details={"reason": "same_password", "email": user.email},
+        )
+        raise HTTPException(status_code=400, detail="New password must be different from the current password.")
+
+    user.password_hash = hash_password(new_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    log_audit_event(
+        db,
+        action="auth.change_password",
+        req=req,
+        actor_user=user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"email": user.email},
+    )
+
+    return {
+        "success": True,
+        "message": "Password updated successfully.",
     }
 
 

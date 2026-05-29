@@ -436,6 +436,16 @@ export const backendApi = {
       body: JSON.stringify({ token, password }),
     });
   },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return request<{ success: boolean; message: string }>("/api/auth/change-password", {
+      ...withCsrfHeader(),
+      method: "POST",
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+  },
   logout: async () => {
     try {
       return await request<{ success: boolean }>("/api/auth/logout", { method: "POST" });

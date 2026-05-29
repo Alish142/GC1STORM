@@ -136,6 +136,11 @@ export default function Account() {
     preferredTime: "",
     notes: "",
   });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [visualDraft, setVisualDraft] = useState<VisualConfig | null>(null);
   const [documentUploadForm, setDocumentUploadForm] = useState<DocumentUploadForm>({
     type: "Offerings Documents",
@@ -213,6 +218,21 @@ export default function Account() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Could not send call request.");
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: () => backendApi.changePassword(passwordForm.currentPassword, passwordForm.newPassword),
+    onSuccess: () => {
+      toast.success("Password updated.");
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not update password.");
     },
   });
 
@@ -527,6 +547,75 @@ export default function Account() {
                       )}
                     </div>
                   ) : null}
+
+                  <div className="rounded-3xl border border-border bg-card p-6">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h2 className="text-lg font-semibold">Change password</h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Update your account password while staying signed in.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <div className="md:col-span-2">
+                        <Input
+                          type="password"
+                          placeholder="Current password"
+                          value={passwordForm.currentPassword}
+                          onChange={(event) =>
+                            setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="password"
+                          placeholder="New password"
+                          value={passwordForm.newPassword}
+                          onChange={(event) =>
+                            setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="password"
+                          placeholder="Confirm new password"
+                          value={passwordForm.confirmPassword}
+                          onChange={(event) =>
+                            setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Passwords must be at least 6 characters and different from your current password.
+                      </p>
+                      <Button
+                        className="bg-primary text-white hover:bg-primary/90"
+                        disabled={
+                          changePasswordMutation.isPending ||
+                          !passwordForm.currentPassword ||
+                          !passwordForm.newPassword ||
+                          passwordForm.newPassword.length < 6 ||
+                          passwordForm.newPassword !== passwordForm.confirmPassword
+                        }
+                        onClick={() => {
+                          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                            toast.error("New password confirmation does not match.");
+                            return;
+                          }
+                          changePasswordMutation.mutate();
+                        }}
+                      >
+                        {changePasswordMutation.isPending ? "Updating..." : "Save password"}
+                      </Button>
+                    </div>
+                  </div>
 
                   {isAdmin ? (
                     <div className="rounded-3xl border border-border bg-card p-6">
