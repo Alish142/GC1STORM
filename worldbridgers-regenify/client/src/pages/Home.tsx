@@ -542,7 +542,7 @@ export default function Home() {
                   })}
 
                     <g>
-                      <polygon points={previewHexPoints(52)} transform="translate(200 200)" fill="url(#centerGlow)" stroke="rgba(96,165,250,0.95)" strokeWidth="2.5" />
+                      <polygon points={previewHexPoints(44)} transform="translate(200 200)" fill="url(#centerGlow)" stroke="rgba(96,165,250,0.95)" strokeWidth="2.5" />
                       <circle cx="200" cy="200" r="60" fill="none" stroke="rgba(137,166,255,0.32)" strokeWidth="2" />
                     </g>
 
