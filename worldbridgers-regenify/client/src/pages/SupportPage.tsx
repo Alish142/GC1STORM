@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
 import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
@@ -7,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowRight, Headset, LifeBuoy, Mail, PhoneCall } from "lucide-react";
+import { ArrowRight, Headset, LifeBuoy, Mail } from "lucide-react";
 
 export default function SupportPage() {
-  const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phoneNumber: "",
     topic: "",
     message: "",
   });
@@ -29,11 +28,12 @@ export default function SupportPage() {
       await backendApi.createSupportRequest({
         fullName: form.name,
         email: form.email,
+        phoneNumber: form.phoneNumber,
         topic: form.topic,
         message: form.message,
       });
       toast.success("Support request sent.");
-      setForm({ name: "", email: "", topic: "", message: "" });
+      setForm({ name: "", email: "", phoneNumber: "", topic: "", message: "" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not send support request.");
     } finally {
@@ -102,6 +102,13 @@ export default function SupportPage() {
 
               <Input
                 className="mt-4"
+                placeholder="Phone number"
+                value={form.phoneNumber}
+                onChange={(event) => setForm((current) => ({ ...current, phoneNumber: event.target.value }))}
+              />
+
+              <Input
+                className="mt-4"
                 placeholder="Support topic"
                 value={form.topic}
                 onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
@@ -122,13 +129,6 @@ export default function SupportPage() {
                 >
                   {isSubmitting ? "Sending..." : "Send support request"}
                   <ArrowRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" onClick={() => navigate("/login?mode=create-account")}>
-                  Request platform access
-                </Button>
-                <Button variant="ghost" onClick={() => navigate("/contact")}>
-                  <PhoneCall className="h-4 w-4" />
-                  Request a call
                 </Button>
               </div>
             </div>

@@ -31,6 +31,8 @@ import {
 
 type AccountView = "profile" | "settings" | "support";
 
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 const ACCOUNT_TABS: {
   key: AccountView;
   label: string;
@@ -593,7 +595,7 @@ export default function Account() {
 
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-muted-foreground">
-                        Passwords must be at least 6 characters and different from your current password.
+                        Passwords must be 8+ characters with uppercase, lowercase, number, and special character.
                       </p>
                       <Button
                         className="bg-primary text-white hover:bg-primary/90"
@@ -601,7 +603,7 @@ export default function Account() {
                           changePasswordMutation.isPending ||
                           !passwordForm.currentPassword ||
                           !passwordForm.newPassword ||
-                          passwordForm.newPassword.length < 6 ||
+                          !STRONG_PASSWORD_PATTERN.test(passwordForm.newPassword) ||
                           passwordForm.newPassword !== passwordForm.confirmPassword
                         }
                         onClick={() => {

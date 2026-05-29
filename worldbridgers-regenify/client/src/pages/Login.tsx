@@ -22,6 +22,8 @@ import {
 
 type PageMode = "login" | "request-access" | "create-account" | "forgot-password" | "reset-password";
 
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
 function readPageMode(search: string): PageMode {
   const params = new URLSearchParams(search);
   const mode = params.get("mode");
@@ -64,8 +66,10 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [createErrors, setCreateErrors] = useState<{ password?: string }>({});
   const [requestForm, setRequestForm] = useState({
     name: "",
     organization: "",
@@ -76,7 +80,6 @@ export default function Login() {
     lastName: "",
     email: "",
     password: "",
-    dateOfBirth: "",
   });
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetForm, setResetForm] = useState({
@@ -161,7 +164,6 @@ export default function Login() {
     if (!email) nextErrors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = "Enter a valid email address";
     if (!password) nextErrors.password = "Password is required";
-    else if (password.length < 6) nextErrors.password = "Password must be at least 6 characters";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -185,13 +187,13 @@ export default function Login() {
 
   const submitCreateAccount = async (event: React.FormEvent) => {
     event.preventDefault();
+    setCreateErrors({});
 
     if (
       !createForm.firstName ||
       !createForm.lastName ||
       !createForm.email ||
-      !createForm.password ||
-      !createForm.dateOfBirth
+      !createForm.password
     ) {
       toast.error("Please complete all account fields.");
       return;
@@ -202,8 +204,10 @@ export default function Login() {
       return;
     }
 
-    if (createForm.password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (!STRONG_PASSWORD_PATTERN.test(createForm.password)) {
+      setCreateErrors({
+        password: "Password must be 8+ characters with uppercase, lowercase, number, and special character.",
+      });
       return;
     }
 
@@ -216,6 +220,9 @@ export default function Login() {
         err instanceof Error
           ? err.message.replace(/^Request failed:\s*/i, "")
           : "Unable to create account.";
+      if (/password/i.test(message)) {
+        setCreateErrors({ password: message });
+      }
       toast.error(message);
     }
   };
@@ -235,8 +242,8 @@ export default function Login() {
       toast.error("Missing reset token.");
       return;
     }
-    if (!resetForm.password || resetForm.password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (!resetForm.password || !STRONG_PASSWORD_PATTERN.test(resetForm.password)) {
+      toast.error("Password must be 8+ characters with uppercase, lowercase, number, and special character.");
       return;
     }
     if (resetForm.password !== resetForm.confirmPassword) {
@@ -297,7 +304,7 @@ export default function Login() {
             <div className="mt-[94px] max-w-[540px]">
               <h1 className="max-w-[500px] text-[3.28rem] font-semibold leading-[1.08] tracking-[-0.03em]">
                 The intelligent platform for{" "}
-                <span className="bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-emerald-300 via-sky-300 via-65% to-violet-300 bg-clip-text text-transparent">
                   regenerative finance
                 </span>
               </h1>
@@ -367,7 +374,7 @@ export default function Login() {
               <div className="rounded-full bg-[#f5f3ee] p-1">
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" || mode === "create-account" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
+                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
                       window.location.href = "/login";
                     }}
@@ -436,7 +443,7 @@ export default function Login() {
                     <div className="relative">
                       <Input
                         id="password"
-                        type={showPassword ? "text" : "password"}
+                        type={showLoginPassword ? "text" : "password"}
                         placeholder="Enter your password"
                         value={password}
                         disabled={isBusy}
@@ -448,10 +455,11 @@ export default function Login() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword((current) => !current)}
+                        onClick={() => setShowLoginPassword((current) => !current)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showLoginPassword ? "Hide password" : "Show password"}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                     {errors.password ? <p className="text-xs text-destructive">{errors.password}</p> : null}
@@ -482,23 +490,6 @@ export default function Login() {
                     )}
                   </Button>
                 </form>
-
-                <div className="mt-5 rounded-3xl border border-[#ebe5db] bg-[#faf8f3] p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <ShieldCheck className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-foreground">Admin access uses the same sign-in</div>
-                      <p className="mt-1 text-sm leading-7 text-muted-foreground">
-                        Admin users are redirected to the admin console after authenticating with their real account.
-                      </p>
-                      <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                        Set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in the backend environment to provision an initial admin account.
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="mt-5 text-center text-sm text-muted-foreground">
                   Don&apos;t have an account?{" "}
@@ -593,6 +584,9 @@ export default function Login() {
                         setResetForm((current) => ({ ...current, password: event.target.value }))
                       }
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Use 8+ characters with uppercase, lowercase, number, and special character.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="reset-confirm-password">Confirm password</Label>
@@ -680,29 +674,33 @@ export default function Login() {
 
                   <div className="space-y-2">
                     <Label htmlFor="create-password">Password</Label>
-                    <Input
-                      id="create-password"
-                      type="password"
-                      placeholder="Create your password"
-                      className="h-12 rounded-2xl"
-                      value={createForm.password}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({ ...current, password: event.target.value }))
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="create-dob">Date of birth</Label>
-                    <Input
-                      id="create-dob"
-                      type="date"
-                      className="h-12 rounded-2xl"
-                      value={createForm.dateOfBirth}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({ ...current, dateOfBirth: event.target.value }))
-                      }
-                    />
+                    <div className="relative">
+                      <Input
+                        id="create-password"
+                        type={showCreatePassword ? "text" : "password"}
+                        placeholder="Create your password"
+                        className={`h-12 rounded-2xl pr-11 ${createErrors.password ? "border-destructive" : ""}`}
+                        value={createForm.password}
+                        onChange={(event) => {
+                          setCreateForm((current) => ({ ...current, password: event.target.value }));
+                          setCreateErrors((current) => ({ ...current, password: undefined }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCreatePassword((current) => !current)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                      >
+                        {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Use 8+ characters with uppercase, lowercase, number, and special character.
+                    </p>
+                    {createErrors.password ? (
+                      <p className="text-xs text-destructive">{createErrors.password}</p>
+                    ) : null}
                   </div>
 
                   <Button type="submit" className="h-12 w-full rounded-2xl bg-primary text-white shadow-brand hover:bg-primary/90">

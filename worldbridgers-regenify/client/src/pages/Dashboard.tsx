@@ -7,7 +7,17 @@ import DataTable, { Column } from "@/components/DataTable";
 import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,11 +26,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { backendApi } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal, Upload,
+  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -28,10 +39,13 @@ import { toast } from "sonner";
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey = "issuers" | "offerings" | "indices" | "documents";
 type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; visualConfig?: unknown };
-type IssuerRow = { id: string; name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
-type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; issuerDotColor?: string; typeDotColor?: string };
-type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
+type IssuerRow = { id: string; name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; assetsAmount?: number | null; assetsCurrency?: string; description?: string; foundedYear?: number | null; issuerNameDotColor?: string; wbxLabelDotColor?: string };
+type OfferingRow = { id: string; issuerId: string; type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; delisted: boolean; issuerDotColor?: string; typeDotColor?: string };
+type IndexRow = { id: string; type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
 type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
+type IssuerFormState = { name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assetsAmount: string; assetsCurrency: string; foundedYear: string; description: string };
+type OfferingFormState = { issuerId: string; type: string; segment: string; isin: string; name: string; issuedAmount: string; currency: string; listingDate: string; wbxClassification: string; coupon: string; lastPrice: string; delisted: boolean };
+type IndexFormState = { type: string; name: string; currency: string; last: string; changePercent: string; change: string; monthHigh: string; monthLow: string; yearHigh: string; yearLow: string };
 type AdminDocumentUploadForm = {
   type: string;
   subType: string;
@@ -152,6 +166,47 @@ const DOCUMENT_FILTERS: FilterGroup[] = [
   },
 ];
 
+const EMPTY_ISSUER_FORM: IssuerFormState = {
+  name: "",
+  country: "",
+  region: "",
+  classification: "",
+  wbxLabel: false,
+  euTaxonomy: false,
+  assetsAmount: "",
+  assetsCurrency: "",
+  foundedYear: "",
+  description: "",
+};
+
+const EMPTY_OFFERING_FORM: OfferingFormState = {
+  issuerId: "",
+  type: "",
+  segment: "",
+  isin: "",
+  name: "",
+  issuedAmount: "",
+  currency: "",
+  listingDate: "",
+  wbxClassification: "",
+  coupon: "",
+  lastPrice: "",
+  delisted: false,
+};
+
+const EMPTY_INDEX_FORM: IndexFormState = {
+  type: "",
+  name: "",
+  currency: "",
+  last: "",
+  changePercent: "",
+  change: "",
+  monthHigh: "",
+  monthLow: "",
+  yearHigh: "",
+  yearLow: "",
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatCurrency(amount: number, currency: string) {
   if (amount >= 1_000_000_000) return `${currency} ${(amount / 1_000_000_000).toFixed(1)}B`;
@@ -210,6 +265,63 @@ function numericAssets(value: string) {
 }
 
 // ── Dashboard Home ────────────────────────────────────────────────────────────
+function toOptionalNumber(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? Number(trimmed) : null;
+}
+
+function toOptionalInteger(value: string) {
+  const trimmed = value.trim();
+  return trimmed ? Number.parseInt(trimmed, 10) : null;
+}
+
+function issuerToForm(row: IssuerRow): IssuerFormState {
+  return {
+    name: row.name,
+    country: row.country,
+    region: row.region ?? "",
+    classification: row.classification,
+    wbxLabel: row.wbxLabel,
+    euTaxonomy: row.euTaxonomy,
+    assetsAmount: row.assetsAmount != null ? String(row.assetsAmount) : "",
+    assetsCurrency: row.assetsCurrency ?? "",
+    foundedYear: row.foundedYear != null ? String(row.foundedYear) : "",
+    description: row.description ?? "",
+  };
+}
+
+function offeringToForm(row: OfferingRow): OfferingFormState {
+  return {
+    issuerId: row.issuerId,
+    type: row.type,
+    segment: row.segment,
+    isin: row.isin,
+    name: row.name,
+    issuedAmount: String(row.issuedAmount ?? ""),
+    currency: row.currency,
+    listingDate: row.listingDate ?? "",
+    wbxClassification: row.wbxClassification ?? "",
+    coupon: row.coupon != null ? String(row.coupon) : "",
+    lastPrice: String(row.lastPrice ?? ""),
+    delisted: row.delisted,
+  };
+}
+
+function indexToForm(row: IndexRow): IndexFormState {
+  return {
+    type: row.type,
+    name: row.name,
+    currency: row.currency,
+    last: String(row.last ?? ""),
+    changePercent: String(row.changePercent ?? ""),
+    change: String(row.change ?? ""),
+    monthHigh: String(row.monthHigh ?? ""),
+    monthLow: String(row.monthLow ?? ""),
+    yearHigh: String(row.yearHigh ?? ""),
+    yearLow: String(row.yearLow ?? ""),
+  };
+}
+
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
   const overviewQ = useQuery<{ issuers: number; offerings: number; indices: number; documents: number }>({
@@ -420,11 +532,17 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
 
 // ── Issuers Tab ───────────────────────────────────────────────────────────────
 function IssuersTab() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingIssuer, setEditingIssuer] = useState<IssuerRow | null>(null);
+  const [form, setForm] = useState<IssuerFormState>(EMPTY_ISSUER_FORM);
 
   const handleSort = (key: string) => {
     if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -446,6 +564,60 @@ function IssuersTab() {
       sort_dir: sortDir,
     })) as Promise<Paginated<IssuerRow>>,
   });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: form.name,
+        country: form.country,
+        region: form.region,
+        classification: form.classification,
+        wbxLabel: form.wbxLabel,
+        euTaxonomy: form.euTaxonomy,
+        description: form.description || undefined,
+        foundedYear: toOptionalInteger(form.foundedYear),
+        assetsAmount: toOptionalNumber(form.assetsAmount),
+        assetsCurrency: form.assetsCurrency || undefined,
+      };
+      if (editingIssuer) {
+        return backendApi.updateIssuer(editingIssuer.id, payload);
+      }
+      return backendApi.createIssuer(payload);
+    },
+    onSuccess: () => {
+      toast.success(editingIssuer ? "Issuer updated." : "Issuer created.");
+      setDialogOpen(false);
+      setEditingIssuer(null);
+      setForm(EMPTY_ISSUER_FORM);
+      void queryClient.invalidateQueries({ queryKey: ["issuers"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not save issuer."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (issuerId: string) => backendApi.deleteIssuer(issuerId),
+    onSuccess: () => {
+      toast.success("Issuer deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["issuers"] });
+      void queryClient.invalidateQueries({ queryKey: ["offerings"] });
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not delete issuer."),
+  });
+
+  const openCreate = () => {
+    setEditingIssuer(null);
+    setForm(EMPTY_ISSUER_FORM);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (row: IssuerRow) => {
+    setEditingIssuer(row);
+    setForm(issuerToForm(row));
+    setDialogOpen(true);
+  };
 
   const totalActive = Object.values(filters).flat().length;
 
@@ -492,6 +664,35 @@ function IssuersTab() {
     },
   ];
 
+  if (isAdmin) {
+    columns.push({
+      key: "id",
+      label: "Actions",
+      className: "text-right",
+      render: (_, row) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(row as unknown as IssuerRow)}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              const issuer = row as unknown as IssuerRow;
+              if (window.confirm(`Delete issuer "${issuer.name}"? This also removes linked offerings.`)) {
+                deleteMutation.mutate(issuer.id);
+              }
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    });
+  }
+
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
@@ -503,6 +704,14 @@ function IssuersTab() {
         className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        {isAdmin ? (
+          <div className="mb-3 flex justify-end">
+            <Button className="gap-2" onClick={openCreate}>
+              <Plus className="h-4 w-4" />
+              New issuer
+            </Button>
+          </div>
+        ) : null}
         <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -594,6 +803,64 @@ function IssuersTab() {
             </div>
           )}
         />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingIssuer ? "Edit issuer" : "Create issuer"}</DialogTitle>
+              <DialogDescription>Manage issuer details shown across the dashboard.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Classification</Label>
+                <Input value={form.classification} onChange={(e) => setForm((c) => ({ ...c, classification: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Country</Label>
+                <Input value={form.country} onChange={(e) => setForm((c) => ({ ...c, country: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Region</Label>
+                <Input value={form.region} onChange={(e) => setForm((c) => ({ ...c, region: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Assets Amount</Label>
+                <Input value={form.assetsAmount} onChange={(e) => setForm((c) => ({ ...c, assetsAmount: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Assets Currency</Label>
+                <Input value={form.assetsCurrency} onChange={(e) => setForm((c) => ({ ...c, assetsCurrency: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Founded Year</Label>
+                <Input value={form.foundedYear} onChange={(e) => setForm((c) => ({ ...c, foundedYear: e.target.value }))} />
+              </div>
+              <div className="flex items-center gap-6 pt-7">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={form.wbxLabel} onCheckedChange={(v) => setForm((c) => ({ ...c, wbxLabel: Boolean(v) }))} />
+                  <Label>WBX Label</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={form.euTaxonomy} onCheckedChange={(v) => setForm((c) => ({ ...c, euTaxonomy: Boolean(v) }))} />
+                  <Label>EU Taxonomy</Label>
+                </div>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Description</Label>
+                <Textarea value={form.description} onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? "Saving..." : editingIssuer ? "Save changes" : "Create issuer"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
@@ -601,11 +868,17 @@ function IssuersTab() {
 
 // ── Offerings Tab ─────────────────────────────────────────────────────────────
 function OfferingsTab() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingOffering, setEditingOffering] = useState<OfferingRow | null>(null);
+  const [form, setForm] = useState<OfferingFormState>(EMPTY_OFFERING_FORM);
 
   const handleSort = (key: string) => {
     if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -624,6 +897,55 @@ function OfferingsTab() {
       sort_by: sortBy,
       sort_dir: sortDir,
     })) as Promise<Paginated<OfferingRow>>,
+  });
+
+  const issuerOptionsQuery = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["offerings-crud", "issuers"],
+    queryFn: () => backendApi.issuers(buildParams({ page: 1, page_size: 500 })) as Promise<Paginated<IssuerRow>>,
+    enabled: isAdmin,
+    staleTime: 60_000,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        issuerId: form.issuerId,
+        type: form.type,
+        segment: form.segment,
+        isin: form.isin,
+        name: form.name,
+        issuedAmount: toOptionalNumber(form.issuedAmount),
+        currency: form.currency,
+        listingDate: form.listingDate || undefined,
+        wbxClassification: form.wbxClassification || undefined,
+        coupon: toOptionalNumber(form.coupon),
+        lastPrice: toOptionalNumber(form.lastPrice),
+        delisted: form.delisted,
+      };
+      if (editingOffering) {
+        return backendApi.updateOffering(editingOffering.id, payload);
+      }
+      return backendApi.createOffering(payload);
+    },
+    onSuccess: () => {
+      toast.success(editingOffering ? "Offering updated." : "Offering created.");
+      setDialogOpen(false);
+      setEditingOffering(null);
+      setForm(EMPTY_OFFERING_FORM);
+      void queryClient.invalidateQueries({ queryKey: ["offerings"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not save offering."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (offeringId: string) => backendApi.deleteOffering(offeringId),
+    onSuccess: () => {
+      toast.success("Offering deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["offerings"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not delete offering."),
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -655,6 +977,45 @@ function OfferingsTab() {
     },
   ];
 
+  if (isAdmin) {
+    columns.push({
+      key: "id",
+      label: "Actions",
+      className: "text-right",
+      render: (_, row) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => {
+              const offering = row as unknown as OfferingRow;
+              setEditingOffering(offering);
+              setForm(offeringToForm(offering));
+              setDialogOpen(true);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              const offering = row as unknown as OfferingRow;
+              if (window.confirm(`Delete offering "${offering.name}"?`)) {
+                deleteMutation.mutate(offering.id);
+              }
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    });
+  }
+
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
@@ -666,6 +1027,21 @@ function OfferingsTab() {
         className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        {isAdmin ? (
+          <div className="mb-3 flex justify-end">
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setEditingOffering(null);
+                setForm(EMPTY_OFFERING_FORM);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              New offering
+            </Button>
+          </div>
+        ) : null}
         <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -773,6 +1149,45 @@ function OfferingsTab() {
             </div>
           )}
         />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{editingOffering ? "Edit offering" : "Create offering"}</DialogTitle>
+              <DialogDescription>Manage offering records tied to issuers.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Issuer</Label>
+                <Select value={form.issuerId || "__none__"} onValueChange={(value) => setForm((c) => ({ ...c, issuerId: value === "__none__" ? "" : value }))}>
+                  <SelectTrigger><SelectValue placeholder="Select issuer" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Select issuer</SelectItem>
+                    {(issuerOptionsQuery.data?.data ?? []).map((issuer) => (
+                      <SelectItem key={issuer.id} value={issuer.id}>{issuer.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>Type</Label><Input value={form.type} onChange={(e) => setForm((c) => ({ ...c, type: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Name</Label><Input value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>ISIN</Label><Input value={form.isin} onChange={(e) => setForm((c) => ({ ...c, isin: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Segment</Label><Input value={form.segment} onChange={(e) => setForm((c) => ({ ...c, segment: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Currency</Label><Input value={form.currency} onChange={(e) => setForm((c) => ({ ...c, currency: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Issued Amount</Label><Input value={form.issuedAmount} onChange={(e) => setForm((c) => ({ ...c, issuedAmount: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Listing Date</Label><Input type="date" value={form.listingDate} onChange={(e) => setForm((c) => ({ ...c, listingDate: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>WBX Classification</Label><Input value={form.wbxClassification} onChange={(e) => setForm((c) => ({ ...c, wbxClassification: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Coupon</Label><Input value={form.coupon} onChange={(e) => setForm((c) => ({ ...c, coupon: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Last Price</Label><Input value={form.lastPrice} onChange={(e) => setForm((c) => ({ ...c, lastPrice: e.target.value }))} /></div>
+              <div className="flex items-center gap-2 pt-7"><Checkbox checked={form.delisted} onCheckedChange={(value) => setForm((c) => ({ ...c, delisted: Boolean(value) }))} /><Label>Delisted</Label></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? "Saving..." : editingOffering ? "Save changes" : "Create offering"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
@@ -780,11 +1195,17 @@ function OfferingsTab() {
 
 // ── Indices Tab ───────────────────────────────────────────────────────────────
 function IndicesTab() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<string | undefined>();
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<IndexRow | null>(null);
+  const [form, setForm] = useState<IndexFormState>(EMPTY_INDEX_FORM);
 
   const handleSort = (key: string) => {
     if (sortBy === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -803,6 +1224,46 @@ function IndicesTab() {
       sort_by: sortBy,
       sort_dir: sortDir,
     })) as Promise<Paginated<IndexRow>>,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        type: form.type,
+        name: form.name,
+        currency: form.currency,
+        last: toOptionalNumber(form.last),
+        changePercent: toOptionalNumber(form.changePercent),
+        change: toOptionalNumber(form.change),
+        monthHigh: toOptionalNumber(form.monthHigh),
+        monthLow: toOptionalNumber(form.monthLow),
+        yearHigh: toOptionalNumber(form.yearHigh),
+        yearLow: toOptionalNumber(form.yearLow),
+      };
+      if (editingIndex) {
+        return backendApi.updateIndex(editingIndex.id, payload);
+      }
+      return backendApi.createIndex(payload);
+    },
+    onSuccess: () => {
+      toast.success(editingIndex ? "Index updated." : "Index created.");
+      setDialogOpen(false);
+      setEditingIndex(null);
+      setForm(EMPTY_INDEX_FORM);
+      void queryClient.invalidateQueries({ queryKey: ["indices"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not save index."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (indexId: string) => backendApi.deleteIndex(indexId),
+    onSuccess: () => {
+      toast.success("Index deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["indices"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Could not delete index."),
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -836,6 +1297,45 @@ function IndicesTab() {
     },
   ];
 
+  if (isAdmin) {
+    columns.push({
+      key: "id",
+      label: "Actions",
+      className: "text-right",
+      render: (_, row) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => {
+              const index = row as unknown as IndexRow;
+              setEditingIndex(index);
+              setForm(indexToForm(index));
+              setDialogOpen(true);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              const index = row as unknown as IndexRow;
+              if (window.confirm(`Delete index "${index.name}"?`)) {
+                deleteMutation.mutate(index.id);
+              }
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ),
+    });
+  }
+
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
       <SidebarFilters
@@ -847,6 +1347,21 @@ function IndicesTab() {
         className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        {isAdmin ? (
+          <div className="mb-3 flex justify-end">
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setEditingIndex(null);
+                setForm(EMPTY_INDEX_FORM);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              New index
+            </Button>
+          </div>
+        ) : null}
         <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -942,6 +1457,32 @@ function IndicesTab() {
             </div>
           )}
         />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{editingIndex ? "Edit index" : "Create index"}</DialogTitle>
+              <DialogDescription>Manage index records and performance values.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><Label>Type</Label><Input value={form.type} onChange={(e) => setForm((c) => ({ ...c, type: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Name</Label><Input value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Currency</Label><Input value={form.currency} onChange={(e) => setForm((c) => ({ ...c, currency: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Last</Label><Input value={form.last} onChange={(e) => setForm((c) => ({ ...c, last: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Change (%)</Label><Input value={form.changePercent} onChange={(e) => setForm((c) => ({ ...c, changePercent: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Change</Label><Input value={form.change} onChange={(e) => setForm((c) => ({ ...c, change: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Month High</Label><Input value={form.monthHigh} onChange={(e) => setForm((c) => ({ ...c, monthHigh: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Month Low</Label><Input value={form.monthLow} onChange={(e) => setForm((c) => ({ ...c, monthLow: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Year High</Label><Input value={form.yearHigh} onChange={(e) => setForm((c) => ({ ...c, yearHigh: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>Year Low</Label><Input value={form.yearLow} onChange={(e) => setForm((c) => ({ ...c, yearLow: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? "Saving..." : editingIndex ? "Save changes" : "Create index"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

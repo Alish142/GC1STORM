@@ -20,6 +20,7 @@ settings = get_settings()
 class SupportRequestInput(BaseModel):
     full_name: str
     email: str
+    phone_number: str | None = None
     topic: str
     message: str
 
@@ -54,11 +55,12 @@ def _normalize_email(value: str, field_name: str) -> str:
     return cleaned
 
 
-def _serialize_support_request(record: SupportRequest) -> dict[str, str]:
+def _serialize_support_request(record: SupportRequest) -> dict[str, str | None]:
     return {
         "id": str(record.id),
         "fullName": record.full_name,
         "email": record.email,
+        "phoneNumber": record.phone_number,
         "topic": record.topic,
         "message": record.message,
         "status": record.status,
@@ -109,6 +111,7 @@ def create_support_request(
     record = SupportRequest(
         full_name=_require_text(payload.full_name, "Full name"),
         email=_normalize_email(payload.email, "Email"),
+        phone_number=payload.phone_number.strip() if payload.phone_number and payload.phone_number.strip() else None,
         topic=_require_text(payload.topic, "Support topic"),
         message=_require_text(payload.message, "Message"),
     )
@@ -121,7 +124,7 @@ def create_support_request(
         req=req,
         resource_type="support_request",
         resource_id=str(record.id),
-        details={"topic": record.topic, "email": record.email},
+        details={"topic": record.topic, "email": record.email, "phoneNumber": record.phone_number},
     )
     return {
         "success": True,

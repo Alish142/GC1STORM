@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
 import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { toast } from "sonner";
 import { CalendarDays, Leaf } from "lucide-react";
 
 export default function ContactPage() {
-  const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
@@ -80,7 +78,6 @@ export default function ContactPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-[#212833]">Full Name</label>
                         <Input
-                          placeholder="Input"
                           value={form.fullName}
                           onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
                           className="h-14 rounded-2xl border-[#ece8df] bg-[#fcfcfb] text-base"
@@ -90,7 +87,6 @@ export default function ContactPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-[#212833]">Company Name</label>
                         <Input
-                          placeholder="Input"
                           value={form.companyName}
                           onChange={(event) => setForm((current) => ({ ...current, companyName: event.target.value }))}
                           className="h-14 rounded-2xl border-[#ece8df] bg-[#fcfcfb] text-base"
@@ -101,7 +97,6 @@ export default function ContactPage() {
                         <label className="text-sm font-semibold text-[#212833]">Email</label>
                         <Input
                           type="email"
-                          placeholder="Input"
                           value={form.email}
                           onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                           className="h-14 rounded-2xl border-[#ece8df] bg-[#fcfcfb] text-base"
@@ -111,7 +106,6 @@ export default function ContactPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-[#212833]">Phone Number</label>
                         <Input
-                          placeholder="Input"
                           value={form.phoneNumber}
                           onChange={(event) => setForm((current) => ({ ...current, phoneNumber: event.target.value }))}
                           className="h-14 rounded-2xl border-[#ece8df] bg-[#fcfcfb] text-base"
@@ -123,7 +117,6 @@ export default function ContactPage() {
                       <label className="text-sm font-semibold text-[#212833]">Message</label>
                       <Textarea
                         className="min-h-[190px] rounded-[22px] border-[#ece8df] bg-[#fcfcfb] text-base"
-                        placeholder="Input"
                         value={form.message}
                         onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
                       />
@@ -141,10 +134,6 @@ export default function ContactPage() {
                             Submit
                           </>
                         )}
-                      </Button>
-
-                      <Button variant="outline" className="h-12 rounded-full px-6" onClick={() => navigate("/about")}>
-                        Learn More
                       </Button>
                     </div>
                   </div>

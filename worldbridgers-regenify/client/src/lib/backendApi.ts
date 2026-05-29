@@ -44,6 +44,7 @@ type GraphResponse = {
 type SupportRequestPayload = {
   fullName: string;
   email: string;
+  phoneNumber?: string;
   topic: string;
   message: string;
 };
@@ -75,6 +76,47 @@ type OverviewCounts = {
   offerings: number;
   indices: number;
   documents: number;
+};
+
+type AdminIssuerPayload = {
+  name: string;
+  country: string;
+  region: string;
+  classification: string;
+  wbxLabel: boolean;
+  euTaxonomy: boolean;
+  description?: string;
+  foundedYear?: number | null;
+  assetsAmount?: number | null;
+  assetsCurrency?: string;
+};
+
+type AdminOfferingPayload = {
+  issuerId: string;
+  type: string;
+  segment: string;
+  isin: string;
+  name: string;
+  issuedAmount?: number | null;
+  currency: string;
+  listingDate?: string;
+  wbxClassification?: string;
+  coupon?: number | null;
+  lastPrice?: number | null;
+  delisted: boolean;
+};
+
+type AdminIndexPayload = {
+  type: string;
+  name: string;
+  currency: string;
+  last?: number | null;
+  changePercent?: number | null;
+  change?: number | null;
+  monthHigh?: number | null;
+  monthLow?: number | null;
+  yearHigh?: number | null;
+  yearLow?: number | null;
 };
 
 type AdminDocumentUploadPayload = {
@@ -402,13 +444,11 @@ export const backendApi = {
     lastName,
     email,
     password,
-    dateOfBirth,
   }: {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
-    dateOfBirth: string;
   }) => {
     return request<{ success: boolean; user: AuthUser }>("/api/auth/register", {
       method: "POST",
@@ -417,7 +457,6 @@ export const backendApi = {
         last_name: lastName,
         email,
         password,
-        date_of_birth: dateOfBirth,
       }),
     });
   },
@@ -461,6 +500,7 @@ export const backendApi = {
       id: string;
       fullName: string;
       email: string;
+      phoneNumber: string | null;
       topic: string;
       message: string;
       status: string;
@@ -470,6 +510,7 @@ export const backendApi = {
       body: JSON.stringify({
         full_name: payload.fullName,
         email: payload.email,
+        phone_number: payload.phoneNumber,
         topic: payload.topic,
         message: payload.message,
       }),
@@ -557,6 +598,87 @@ export const backendApi = {
     }
 
     return await res.json();
+  },
+  createIssuer: async (payload: AdminIssuerPayload) =>
+    request<{ success: boolean; issuer: unknown }>("/api/admin/issuers", {
+      ...withCsrfHeader(),
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateIssuer: async (issuerId: string, payload: AdminIssuerPayload) =>
+    request<{ success: boolean; issuer: unknown }>(`/api/admin/issuers/${issuerId}`, {
+      ...withCsrfHeader(),
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteIssuer: async (issuerId: string) => {
+    const res = await fetch(`${API_BASE}/api/admin/issuers/${issuerId}`, {
+      ...withCsrfHeader({ method: "DELETE" }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) errorMessage = payload.detail;
+      } catch {}
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+    return { success: true };
+  },
+  createOffering: async (payload: AdminOfferingPayload) =>
+    request<{ success: boolean; offering: unknown }>("/api/admin/offerings", {
+      ...withCsrfHeader(),
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateOffering: async (offeringId: string, payload: AdminOfferingPayload) =>
+    request<{ success: boolean; offering: unknown }>(`/api/admin/offerings/${offeringId}`, {
+      ...withCsrfHeader(),
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteOffering: async (offeringId: string) => {
+    const res = await fetch(`${API_BASE}/api/admin/offerings/${offeringId}`, {
+      ...withCsrfHeader({ method: "DELETE" }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) errorMessage = payload.detail;
+      } catch {}
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+    return { success: true };
+  },
+  createIndex: async (payload: AdminIndexPayload) =>
+    request<{ success: boolean; index: unknown }>("/api/admin/indices", {
+      ...withCsrfHeader(),
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateIndex: async (indexId: string, payload: AdminIndexPayload) =>
+    request<{ success: boolean; index: unknown }>(`/api/admin/indices/${indexId}`, {
+      ...withCsrfHeader(),
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  deleteIndex: async (indexId: string) => {
+    const res = await fetch(`${API_BASE}/api/admin/indices/${indexId}`, {
+      ...withCsrfHeader({ method: "DELETE" }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) errorMessage = payload.detail;
+      } catch {}
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+    return { success: true };
   },
   overview: async () => request<OverviewCounts>("/api/data/overview"),
   issuers: async (params: URLSearchParams) => {
