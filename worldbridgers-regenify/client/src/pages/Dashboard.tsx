@@ -22,7 +22,7 @@ type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; 
 type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
 type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; issuerDotColor?: string; typeDotColor?: string };
 type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
-type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; issuerDotColor?: string; typeDotColor?: string };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "issuers", label: "Issuers", icon: Building2 },
@@ -935,6 +935,24 @@ function DocumentsTab() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
 
+  const openDocument = useCallback((fileUrl?: string | null) => {
+    if (!fileUrl || typeof window === "undefined") return;
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  }, []);
+
+  const downloadDocument = useCallback((fileUrl?: string | null, fileName?: string) => {
+    if (!fileUrl || typeof document === "undefined") return;
+
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    if (fileName) link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }, []);
+
   const { data, isLoading } = useQuery<Paginated<DocumentRow>>({
     queryKey: ["documents", search, page, filters],
     queryFn: () => backendApi.documents(buildParams({
@@ -975,12 +993,26 @@ function DocumentsTab() {
     { key: "date", label: "Date", sortable: false },
     { key: "fileSize", label: "Size" },
     { key: "id", label: "Actions",
-      render: () => (
+      render: (_, row) => (
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+            onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+            disabled={!row.fileUrl}
+            aria-label={`View ${String(row.name)}`}
+          >
             <Eye className="w-3.5 h-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+            onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+            disabled={!row.fileUrl}
+            aria-label={`Download ${String(row.name)}`}
+          >
             <Download className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -1092,11 +1124,23 @@ function DocumentsTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+                  disabled={!row.fileUrl}
+                >
                   <Eye className="h-3.5 w-3.5" />
                   View
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+                  disabled={!row.fileUrl}
+                >
                   <Download className="h-3.5 w-3.5" />
                   Download
                 </Button>

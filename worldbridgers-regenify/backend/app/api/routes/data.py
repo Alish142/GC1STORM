@@ -14,6 +14,7 @@ from app.models.document_member_state import DocumentMemberState
 from app.models.issuer import Issuer
 from app.models.market_index import MarketIndex
 from app.models.offering import Offering
+from app.services.s3_documents import resolve_document_url
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -300,6 +301,7 @@ def documents(
             "memberStates": member_state_list or [],
             "date": document.document_date.isoformat() if document.document_date else "",
             "fileSize": _file_size_display(document.file_size_bytes),
+            "fileUrl": resolve_document_url(document.file_url),
             "issuerDotColor": table_dot_colors["documentIssuer"],
             "typeDotColor": table_dot_colors["documentType"],
         }
