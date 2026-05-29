@@ -646,7 +646,7 @@ export default function Home() {
 
             {[
               ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
-              ["Access", ["Log In", "Sign Up", "Support", "Onboarding"]],
+              ["Access", ["Log In", "Sign Up", "Support"]],
               ["About Us", ["Vision", "Team Members", "Themes", "Contact", "Privacy"]],
             ].map(([title, links]) => (
               <div key={title as string}>
