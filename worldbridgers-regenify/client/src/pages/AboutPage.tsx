@@ -97,21 +97,18 @@ export default function AboutPage() {
                 </div>
 
                 <div className="mt-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                  {TEAM_MEMBERS.map((member, index) => (
+                  {TEAM_MEMBERS.map((member) => (
                     <article
                       key={member.name}
-                      className="overflow-hidden rounded-[28px] border border-[#ede8df] bg-[#fcfcfb] shadow-[0_14px_38px_rgba(15,23,42,0.06)]"
+                      className="flex h-full flex-col overflow-hidden rounded-[28px] border border-[#ede8df] bg-[#fcfcfb] shadow-[0_14px_38px_rgba(15,23,42,0.06)]"
                     >
                       <div
                         className="h-56 bg-cover bg-center px-6 pt-6"
                         style={{ backgroundImage: `linear-gradient(180deg, rgba(7,16,24,0.1) 0%, rgba(7,16,24,0.28) 100%), url('${member.image}')` }}
                       >
                         <div className="flex h-full items-end rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(247,244,238,0.92)_100%)] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#98a2b3]">
-                              Pillar {index + 1}
-                            </div>
-                            <div className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#0f172a]">
+                          <div className="flex min-h-[150px] flex-col justify-end">
+                            <div className="text-2xl font-semibold tracking-[-0.03em] text-[#0f172a]">
                               {member.name}
                             </div>
                             <div className="mt-2 text-sm font-medium text-[#667085]">{member.role}</div>
@@ -119,7 +116,7 @@ export default function AboutPage() {
                         </div>
                       </div>
 
-                      <div className="px-6 py-6">
+                      <div className="flex flex-1 px-6 py-6">
                         <p className="text-[0.98rem] leading-7 text-[#5f6673]">{member.description}</p>
                       </div>
                     </article>
