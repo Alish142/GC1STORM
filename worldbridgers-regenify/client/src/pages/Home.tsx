@@ -90,10 +90,10 @@ type LandingStat = {
 };
 
 const STATS: LandingStat[] = [
-  { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
-  { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
+  { label: "Verified Issuers", value: 340, icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
+  { label: "Live Offerings", value: 1280, icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
   { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600", href: "/dashboard/indices" },
-  { label: "Structured Documents", value: 5600, suffix: "+", icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
+  { label: "Structured Documents", value: 5600, icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
 ];
 
 const PLATFORM_FEATURES = [
@@ -202,23 +202,18 @@ export default function Home() {
   const landingStatsQuery = useQuery<LandingStat[]>({
     queryKey: ["landing-stats"],
     queryFn: async () => {
-      const [issuers, offerings, indices, documents] = await Promise.all([
-        backendApi.issuers(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.offerings(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.indices(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.documents(new URLSearchParams({ page: "1", page_size: "1" })),
-      ]);
+      const overview = await backendApi.overview();
 
       return [
-        { ...STATS[0], value: issuers.total },
-        { ...STATS[1], value: offerings.total },
-        { ...STATS[2], value: indices.total },
-        { ...STATS[3], value: documents.total },
+        { ...STATS[0], value: overview.issuers },
+        { ...STATS[1], value: overview.offerings },
+        { ...STATS[2], value: overview.indices },
+        { ...STATS[3], value: overview.documents },
       ];
     },
     staleTime: 60_000,
   });
-  const displayStats = landingStatsQuery.data ?? STATS;
+  const displayStats = landingStatsQuery.data ?? STATS.map((stat) => ({ ...stat, value: 0 }));
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -547,7 +542,7 @@ export default function Home() {
                   })}
 
                     <g>
-                      <polygon points={previewHexPoints(52)} transform="translate(200 200)" fill="url(#centerGlow)" stroke="rgba(96,165,250,0.95)" strokeWidth="2.5" />
+                      <polygon points={previewHexPoints(44)} transform="translate(200 200)" fill="url(#centerGlow)" stroke="rgba(96,165,250,0.95)" strokeWidth="2.5" />
                       <circle cx="200" cy="200" r="60" fill="none" stroke="rgba(137,166,255,0.32)" strokeWidth="2" />
                     </g>
 
@@ -599,7 +594,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="bg-primary px-10 font-semibold text-white shadow-brand hover:bg-primary/90"
-                onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login")}
+                onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login?mode=create-account")}
               >
                 Get Started Today
                 <ArrowRight className="h-4 w-4" />
@@ -609,7 +604,7 @@ export default function Home() {
                 variant="outline"
                 className="px-10 font-semibold"
                 onClick={() => {
-                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
+                  window.location.href = "/contact";
                 }}
               >
                 Schedule a Demo
@@ -619,8 +614,9 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-slate-950 py-16 text-slate-400">
-        <div className="container">
+      <footer className="relative overflow-hidden bg-slate-950 py-16 text-slate-400">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(74,222,128,0.14),transparent_28%),radial-gradient(circle_at_72%_18%,rgba(96,165,250,0.12),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.1),transparent_26%)]" />
+        <div className="container relative">
           <div className="mb-12 grid gap-10 md:grid-cols-2 lg:grid-cols-5">
             <div className="lg:col-span-2">
               <div className="mb-4 flex items-center gap-3">
@@ -650,16 +646,18 @@ export default function Home() {
 
             {[
               ["Platform", ["Issuers", "Offerings", "Indices", "Documents", "Graph View"]],
-              ["Access", ["Log In", "Sign Up", "Support", "Onboarding"]],
+              ["Access", ["Log In", "Sign Up", "Support"]],
               ["About Us", ["Vision", "Team Members", "Themes", "Contact", "Privacy"]],
             ].map(([title, links]) => (
               <div key={title as string}>
-                <h4 className="mb-4 text-sm font-semibold text-white">{title as string}</h4>
+                <h4 className="mb-4 bg-gradient-to-r from-emerald-300 via-sky-300 to-amber-200 bg-clip-text text-sm font-semibold text-transparent">
+                  {title as string}
+                </h4>
                 <div className="space-y-2">
                   {(links as string[]).map((link) => (
                     <button
                       key={link}
-                      className="block text-sm transition-colors hover:text-white"
+                      className="block bg-gradient-to-r from-emerald-300 via-sky-300 to-amber-200 bg-clip-text text-sm text-transparent transition-all duration-300 hover:from-white hover:via-white hover:to-white"
                       onClick={() => {
                         navigate(FOOTER_LINKS[link] ?? "/");
                       }}

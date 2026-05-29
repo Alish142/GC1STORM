@@ -53,6 +53,7 @@ export type DocumentRecord = {
   memberStates: string[];
   date: string;
   fileSize: string;
+  fileUrl?: string | null;
   issuerDotColor?: string;
   typeDotColor?: string;
 };
@@ -123,14 +124,14 @@ export const fallbackIndices: MarketIndex[] = [
 ];
 
 export const fallbackDocuments: DocumentRecord[] = [
-  { id: "d1", type: "Offerings Documents", subType: "Prospectus Supplement", name: "EIB Climate Awareness Bond 2031 - Final Prospectus", issuer: "European Investment Bank", memberStates: ["DE", "FR", "LU", "NL"], date: "2021-03-10", fileSize: "2.4 MB" },
-  { id: "d2", type: "Offerings Documents", subType: "Annual Reports", name: "Nordic Green Capital Annual Report 2024", issuer: "Nordic Green Capital", memberStates: ["SE", "NO", "DK", "FI"], date: "2025-02-28", fileSize: "8.1 MB" },
-  { id: "d3", type: "Notices", subType: "Information Notice", name: "GreenBridge Capital - Interest Payment Notice Q1 2025", issuer: "GreenBridge Capital Partners", memberStates: ["DE", "AT"], date: "2025-01-15", fileSize: "0.3 MB" },
-  { id: "d4", type: "Offerings Documents", subType: "Public Offer", name: "Iberian Green Corp Equity Offering Circular", issuer: "Iberian Green Corp", memberStates: ["ES", "PT"], date: "2019-08-25", fileSize: "4.7 MB" },
-  { id: "d5", type: "Offerings Documents", subType: "Prospectus Supplement", name: "Pacific Carbon Certificate Base Terms", issuer: "Pacific Regenerative Trust", memberStates: ["AU", "NZ"], date: "2023-02-10", fileSize: "1.1 MB" },
-  { id: "d6", type: "Notices", subType: "Publication", name: "WBX Exchange Regulatory Update - March 2025", issuer: "Worldbridgers Exchange", memberStates: ["EU"], date: "2025-03-01", fileSize: "0.5 MB" },
-  { id: "d7", type: "Offerings Documents", subType: "Annual Reports", name: "Regenify Infrastructure Corp Annual Report 2024", issuer: "Regenify Infrastructure Corp", memberStates: ["CA"], date: "2025-03-15", fileSize: "12.3 MB" },
-  { id: "d8", type: "Notices", subType: "Publication", name: "Regenify Platform - EU Taxonomy Alignment Report 2024", issuer: "Worldbridgers Exchange", memberStates: ["EU"], date: "2024-12-15", fileSize: "2.0 MB" },
+  { id: "d1", type: "Offerings Documents", subType: "Prospectus Supplement", name: "EIB Climate Awareness Bond 2031 - Final Prospectus", issuer: "European Investment Bank", memberStates: ["DE", "FR", "LU", "NL"], date: "2021-03-10", fileSize: "2.4 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d2", type: "Offerings Documents", subType: "Annual Reports", name: "Nordic Green Capital Annual Report 2024", issuer: "Nordic Green Capital", memberStates: ["SE", "NO", "DK", "FI"], date: "2025-02-28", fileSize: "8.1 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d3", type: "Notices", subType: "Information Notice", name: "GreenBridge Capital - Interest Payment Notice Q1 2025", issuer: "GreenBridge Capital Partners", memberStates: ["DE", "AT"], date: "2025-01-15", fileSize: "0.3 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d4", type: "Offerings Documents", subType: "Public Offer", name: "Iberian Green Corp Equity Offering Circular", issuer: "Iberian Green Corp", memberStates: ["ES", "PT"], date: "2019-08-25", fileSize: "4.7 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d5", type: "Offerings Documents", subType: "Prospectus Supplement", name: "Pacific Carbon Certificate Base Terms", issuer: "Pacific Regenerative Trust", memberStates: ["AU", "NZ"], date: "2023-02-10", fileSize: "1.1 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d6", type: "Notices", subType: "Publication", name: "WBX Exchange Regulatory Update - March 2025", issuer: "Worldbridgers Exchange", memberStates: ["EU"], date: "2025-03-01", fileSize: "0.5 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d7", type: "Offerings Documents", subType: "Annual Reports", name: "Regenify Infrastructure Corp Annual Report 2024", issuer: "Regenify Infrastructure Corp", memberStates: ["CA"], date: "2025-03-15", fileSize: "12.3 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+  { id: "d8", type: "Notices", subType: "Publication", name: "Regenify Platform - EU Taxonomy Alignment Report 2024", issuer: "Worldbridgers Exchange", memberStates: ["EU"], date: "2024-12-15", fileSize: "2.0 MB", fileUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
 ];
 
 export const fallbackGraphData: { nodes: GraphNode[]; edges: GraphEdge[] } = {

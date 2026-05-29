@@ -14,6 +14,7 @@ from app.models.document_member_state import DocumentMemberState
 from app.models.issuer import Issuer
 from app.models.market_index import MarketIndex
 from app.models.offering import Offering
+from app.services.s3_documents import resolve_document_url
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -66,6 +67,19 @@ def visual_config(db: Session = Depends(get_db)):
     return get_visual_config(db)
 
 
+@router.get("/overview")
+def overview(db: Session = Depends(get_db)):
+    return {
+        "issuers": db.scalar(select(func.count()).select_from(Issuer)) or 0,
+        "offerings": db.scalar(
+            select(func.count()).select_from(Offering).where(Offering.delisted.is_(False))
+        )
+        or 0,
+        "indices": db.scalar(select(func.count()).select_from(MarketIndex)) or 0,
+        "documents": db.scalar(select(func.count()).select_from(Document)) or 0,
+    }
+
+
 @router.get("/issuers")
 def issuers(
     db: Session = Depends(get_db),
@@ -106,6 +120,7 @@ def issuers(
 
     data = [
         {
+            "id": str(row.id),
             "name": row.name,
             "country": row.country,
             "classification": row.classification,
@@ -287,6 +302,7 @@ def documents(
             "memberStates": member_state_list or [],
             "date": document.document_date.isoformat() if document.document_date else "",
             "fileSize": _file_size_display(document.file_size_bytes),
+            "fileUrl": resolve_document_url(document.file_url),
             "issuerDotColor": table_dot_colors["documentIssuer"],
             "typeDotColor": table_dot_colors["documentType"],
         }

@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     smtp_from_name: str = "Worldbridgers Regenify"
     smtp_starttls: bool = True
     smtp_use_ssl: bool = False
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    aws_region: Optional[str] = None
+    s3_documents_bucket: Optional[str] = None
+    s3_documents_prefix: str = "documents"
+    s3_presigned_url_expires_seconds: int = 900
     bootstrap_admin_email: Optional[str] = None
     bootstrap_admin_password: Optional[str] = None
     bootstrap_admin_name: str = "Platform Admin"
@@ -75,10 +81,21 @@ class Settings(BaseSettings):
             raise ValueError("SMTP_PORT must be greater than 0.")
         if self.smtp_use_ssl and self.smtp_starttls:
             raise ValueError("SMTP_USE_SSL and SMTP_STARTTLS cannot both be enabled.")
+        if self.s3_presigned_url_expires_seconds <= 0:
+            raise ValueError("S3_PRESIGNED_URL_EXPIRES_SECONDS must be greater than 0.")
 
     @property
     def smtp_enabled(self) -> bool:
         return bool(self.smtp_host and self.smtp_from_email)
+
+    @property
+    def s3_documents_enabled(self) -> bool:
+        return bool(
+            self.aws_access_key_id
+            and self.aws_secret_access_key
+            and self.aws_region
+            and self.s3_documents_bucket
+        )
 
 
 @lru_cache

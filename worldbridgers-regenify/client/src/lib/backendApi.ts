@@ -70,6 +70,23 @@ type SubmissionResponse<T> = {
   request: T;
 };
 
+type OverviewCounts = {
+  issuers: number;
+  offerings: number;
+  indices: number;
+  documents: number;
+};
+
+type AdminDocumentUploadPayload = {
+  file: File;
+  type: string;
+  name?: string;
+  subType?: string;
+  issuerId?: string;
+  documentDate?: string;
+  memberStates?: string[];
+};
+
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   tableDots: {
     issuerName: "#22c55e",
@@ -82,6 +99,16 @@ const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   },
   hoverLineColor: "#111111",
 };
+
+class ApiRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -103,7 +130,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // Keep the generic fallback when the response body is not JSON.
     }
-    throw new Error(errorMessage);
+    throw new ApiRequestError(errorMessage, res.status);
   }
 
   return (await res.json()) as T;
@@ -141,7 +168,7 @@ function withCsrfHeader(init: RequestInit = {}, cookieName = "app_csrf_token"): 
 }
 
 function isNetworkError(error: unknown) {
-  return error instanceof TypeError || error instanceof Error;
+  return error instanceof TypeError;
 }
 
 function sortData<T extends Record<string, unknown>>(rows: T[], sortBy: string | null, sortDir: "asc" | "desc") {
@@ -409,6 +436,16 @@ export const backendApi = {
       body: JSON.stringify({ token, password }),
     });
   },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return request<{ success: boolean; message: string }>("/api/auth/change-password", {
+      ...withCsrfHeader(),
+      method: "POST",
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+  },
   logout: async () => {
     try {
       return await request<{ success: boolean }>("/api/auth/logout", { method: "POST" });
@@ -481,6 +518,47 @@ export const backendApi = {
       }),
     });
   },
+  uploadAdminDocument: async (payload: AdminDocumentUploadPayload) => {
+    const formData = new FormData();
+    formData.append("file", payload.file);
+    formData.append("type", payload.type);
+    if (payload.name) {
+      formData.append("name", payload.name);
+    }
+    if (payload.subType) {
+      formData.append("sub_type", payload.subType);
+    }
+    if (payload.issuerId) {
+      formData.append("issuer_id", payload.issuerId);
+    }
+    if (payload.documentDate) {
+      formData.append("document_date", payload.documentDate);
+    }
+    if (payload.memberStates?.length) {
+      formData.append("member_states", payload.memberStates.join(","));
+    }
+
+    const res = await fetch(`${API_BASE}/api/admin/documents`, {
+      ...withCsrfHeader({ method: "POST", body: formData }),
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) {
+          errorMessage = payload.detail;
+        }
+      } catch {
+        // Keep the generic fallback when the response body is not JSON.
+      }
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+
+    return await res.json();
+  },
+  overview: async () => request<OverviewCounts>("/api/data/overview"),
   issuers: async (params: URLSearchParams) => {
     try {
       return await request<PaginatedWithVisualConfig<Issuer>>(`/api/data/issuers?${params.toString()}`);
@@ -511,11 +589,11 @@ export const backendApi = {
       throw error;
     }
   },
-  documents: async (params: URLSearchParams) => {
+  documents: async (params: URLSearchParams, options?: { allowFallback?: boolean }) => {
     try {
       return await request<PaginatedWithVisualConfig<DocumentRecord>>(`/api/data/documents?${params.toString()}`);
     } catch (error) {
-      if (isNetworkError(error)) {
+      if (options?.allowFallback !== false && isNetworkError(error)) {
         return filterDocuments(params);
       }
       throw error;
