@@ -594,7 +594,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="bg-primary px-10 font-semibold text-white shadow-brand hover:bg-primary/90"
-                onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login")}
+                onClick={() => navigate(isAuthenticated ? "/dashboard" : "/login?mode=create-account")}
               >
                 Get Started Today
                 <ArrowRight className="h-4 w-4" />
@@ -604,7 +604,7 @@ export default function Home() {
                 variant="outline"
                 className="px-10 font-semibold"
                 onClick={() => {
-                  window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
+                  window.location.href = "/contact";
                 }}
               >
                 Schedule a Demo
