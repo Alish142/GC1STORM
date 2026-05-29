@@ -70,6 +70,13 @@ type SubmissionResponse<T> = {
   request: T;
 };
 
+type OverviewCounts = {
+  issuers: number;
+  offerings: number;
+  indices: number;
+  documents: number;
+};
+
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   tableDots: {
     issuerName: "#22c55e",
@@ -82,6 +89,16 @@ const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   },
   hoverLineColor: "#111111",
 };
+
+class ApiRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -103,7 +120,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // Keep the generic fallback when the response body is not JSON.
     }
-    throw new Error(errorMessage);
+    throw new ApiRequestError(errorMessage, res.status);
   }
 
   return (await res.json()) as T;
@@ -141,7 +158,7 @@ function withCsrfHeader(init: RequestInit = {}, cookieName = "app_csrf_token"): 
 }
 
 function isNetworkError(error: unknown) {
-  return error instanceof TypeError || error instanceof Error;
+  return error instanceof TypeError;
 }
 
 function sortData<T extends Record<string, unknown>>(rows: T[], sortBy: string | null, sortDir: "asc" | "desc") {
@@ -481,6 +498,7 @@ export const backendApi = {
       }),
     });
   },
+  overview: async () => request<OverviewCounts>("/api/data/overview"),
   issuers: async (params: URLSearchParams) => {
     try {
       return await request<PaginatedWithVisualConfig<Issuer>>(`/api/data/issuers?${params.toString()}`);

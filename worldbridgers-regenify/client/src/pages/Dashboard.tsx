@@ -194,6 +194,10 @@ function numericAssets(value: string) {
 // ── Dashboard Home ────────────────────────────────────────────────────────────
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
+  const overviewQ = useQuery<{ issuers: number; offerings: number; indices: number; documents: number }>({
+    queryKey: ["dashboard", "overview"],
+    queryFn: () => backendApi.overview(),
+  });
   const issuersQ = useQuery<Paginated<IssuerRow>>({
     queryKey: ["issuers", "home"],
     queryFn: () => backendApi.issuers(buildParams({ page: 1, page_size: 3 })) as Promise<Paginated<IssuerRow>>,
@@ -214,28 +218,28 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
   const stats = [
     {
       label: "Issuers",
-      value: `${issuersQ.data?.total ?? 0}+`,
+      value: `${overviewQ.data?.issuers ?? 0}`,
       icon: Building2,
       color: "text-primary bg-primary/10",
       tab: "issuers" as TabKey,
     },
     {
       label: "Offerings",
-      value: `${offeringsQ.data?.total ?? 0}+`,
+      value: `${overviewQ.data?.offerings ?? 0}`,
       icon: Layers,
       color: "text-blue-600 bg-blue-500/10",
       tab: "offerings" as TabKey,
     },
     {
       label: "Indices",
-      value: `${indicesQ.data?.total ?? 0}`,
+      value: `${overviewQ.data?.indices ?? 0}`,
       icon: BarChart3,
       color: "text-amber-600 bg-amber-500/10",
       tab: "indices" as TabKey,
     },
     {
       label: "Documents",
-      value: `${documentsQ.data?.total ?? 0}+`,
+      value: `${overviewQ.data?.documents ?? 0}`,
       icon: FileText,
       color: "text-purple-600 bg-purple-500/10",
       tab: "documents" as TabKey,
@@ -283,7 +287,9 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
               <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${s.color}`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="text-[2rem] font-bold leading-none text-foreground">{s.value}</div>
+              <div className="text-[2rem] font-bold leading-none text-foreground">
+                {overviewQ.isLoading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : s.value}
+              </div>
               <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
               <div className="mt-2 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                 View all <ArrowRight className="w-3 h-3" />
