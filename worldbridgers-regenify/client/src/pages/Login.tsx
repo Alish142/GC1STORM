@@ -66,8 +66,10 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [createErrors, setCreateErrors] = useState<{ password?: string }>({});
   const [requestForm, setRequestForm] = useState({
     name: "",
     organization: "",
@@ -185,6 +187,7 @@ export default function Login() {
 
   const submitCreateAccount = async (event: React.FormEvent) => {
     event.preventDefault();
+    setCreateErrors({});
 
     if (
       !createForm.firstName ||
@@ -202,7 +205,9 @@ export default function Login() {
     }
 
     if (!STRONG_PASSWORD_PATTERN.test(createForm.password)) {
-      toast.error("Password must be 8+ characters with uppercase, lowercase, number, and special character.");
+      setCreateErrors({
+        password: "Password must be 8+ characters with uppercase, lowercase, number, and special character.",
+      });
       return;
     }
 
@@ -215,6 +220,9 @@ export default function Login() {
         err instanceof Error
           ? err.message.replace(/^Request failed:\s*/i, "")
           : "Unable to create account.";
+      if (/password/i.test(message)) {
+        setCreateErrors({ password: message });
+      }
       toast.error(message);
     }
   };
@@ -435,7 +443,7 @@ export default function Login() {
                     <div className="relative">
                       <Input
                         id="password"
-                        type={showPassword ? "text" : "password"}
+                        type={showLoginPassword ? "text" : "password"}
                         placeholder="Enter your password"
                         value={password}
                         disabled={isBusy}
@@ -447,10 +455,11 @@ export default function Login() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPassword((current) => !current)}
+                        onClick={() => setShowLoginPassword((current) => !current)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showLoginPassword ? "Hide password" : "Show password"}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                     {errors.password ? <p className="text-xs text-destructive">{errors.password}</p> : null}
@@ -665,19 +674,33 @@ export default function Login() {
 
                   <div className="space-y-2">
                     <Label htmlFor="create-password">Password</Label>
-                    <Input
-                      id="create-password"
-                      type="password"
-                      placeholder="Create your password"
-                      className="h-12 rounded-2xl"
-                      value={createForm.password}
-                      onChange={(event) =>
-                        setCreateForm((current) => ({ ...current, password: event.target.value }))
-                      }
-                    />
+                    <div className="relative">
+                      <Input
+                        id="create-password"
+                        type={showCreatePassword ? "text" : "password"}
+                        placeholder="Create your password"
+                        className={`h-12 rounded-2xl pr-11 ${createErrors.password ? "border-destructive" : ""}`}
+                        value={createForm.password}
+                        onChange={(event) => {
+                          setCreateForm((current) => ({ ...current, password: event.target.value }));
+                          setCreateErrors((current) => ({ ...current, password: undefined }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCreatePassword((current) => !current)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                      >
+                        {showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Use 8+ characters with uppercase, lowercase, number, and special character.
                     </p>
+                    {createErrors.password ? (
+                      <p className="text-xs text-destructive">{createErrors.password}</p>
+                    ) : null}
                   </div>
 
                   <Button type="submit" className="h-12 w-full rounded-2xl bg-primary text-white shadow-brand hover:bg-primary/90">
