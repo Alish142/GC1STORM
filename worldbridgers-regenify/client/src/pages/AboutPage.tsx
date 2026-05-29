@@ -1,7 +1,7 @@
 import PublicHeader from "@/components/PublicHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Building2, Globe2, Network, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, Globe2, Network, ShieldCheck, Sparkles, Users, Leaf } from "lucide-react";
 import { useLocation } from "wouter";
 
 const TEAM_MEMBERS = [
@@ -55,6 +55,43 @@ const CAPABILITIES = [
     icon: ShieldCheck,
     title: "Compliance-aware presentation",
     text: "Visible taxonomy alignment, WBX labels, and market context that help users interpret records with more confidence.",
+  },
+];
+
+const TEAM_PROFILES = [
+  {
+    name: "Research and Platform Strategy",
+    title: "Market narrative and public clarity",
+    text: "Shapes how the platform explains sustainable markets, why the data matters, and how visitors move from first impression into trusted exploration.",
+  },
+  {
+    name: "Data and Structuring",
+    title: "Issuer, offering, and document organisation",
+    text: "Translates complex capital-market records into cleaner tables, stronger metadata, and clearer review flows across the authenticated workspace.",
+  },
+  {
+    name: "Graph and Discovery Experience",
+    title: "Relationship intelligence and navigation",
+    text: "Designs how users uncover themes, related entities, and connected market context through graph-led interaction and discovery journeys.",
+  },
+];
+
+const THEME_AREAS = [
+  {
+    name: "Entrepreneurship",
+    description: "Highlights ventures, operators, and capital pathways that support regenerative business creation and long-term economic resilience.",
+  },
+  {
+    name: "Social Justice",
+    description: "Frames access, fairness, and inclusion as visible parts of how institutions, markets, and opportunities are evaluated.",
+  },
+  {
+    name: "Sustainable Development",
+    description: "Connects issuers and offerings to broader development outcomes so users can interpret market activity within long-range systems change.",
+  },
+  {
+    name: "Future of Work",
+    description: "Shows how labour transitions, reskilling, and next-generation industry priorities connect to regenerative capital deployment.",
   },
 ];
 
@@ -155,6 +192,55 @@ export default function AboutPage() {
                         </article>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div id="team-members" className="mt-16 rounded-[32px] border border-[#ece8df] bg-[#fbfbfa] px-8 py-10 md:px-10 md:py-12">
+                  <div className="max-w-[720px]">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ebe7de] bg-white text-[#111827]">
+                      <Users className="h-6 w-6" />
+                    </div>
+                    <h2 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#0f172a] md:text-4xl">Team Members</h2>
+                    <p className="mt-4 text-lg leading-8 text-[#5f6673]">
+                      The platform brings together strategy, market structure, and relationship design so users can understand the ecosystem through one coherent experience.
+                    </p>
+                  </div>
+
+                  <div className="mt-8 grid gap-5 md:grid-cols-3">
+                    {TEAM_PROFILES.map((profile) => (
+                      <article
+                        key={profile.name}
+                        className="rounded-[26px] border border-[#ede8df] bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]"
+                      >
+                        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#98a2b3]">{profile.title}</div>
+                        <h3 className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[#0f172a]">{profile.name}</h3>
+                        <p className="mt-3 text-[0.98rem] leading-7 text-[#5f6673]">{profile.text}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
+                <div id="themes" className="mt-16 grid gap-10 rounded-[32px] border border-[#ece8df] bg-[linear-gradient(135deg,#f7f8f3_0%,#fdfaf5_48%,#f3f7fb_100%)] px-8 py-10 md:px-10 md:py-12 lg:grid-cols-[0.9fr_1.1fr]">
+                  <div className="max-w-[420px]">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ebe7de] bg-white text-[#111827]">
+                      <Leaf className="h-6 w-6" />
+                    </div>
+                    <h2 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#0f172a] md:text-4xl">Themes</h2>
+                    <p className="mt-4 text-lg leading-8 text-[#5f6673]">
+                      Themes give the platform a connective layer beyond isolated records, helping users understand how market activity clusters around shared regenerative priorities.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-5 md:grid-cols-2">
+                    {THEME_AREAS.map((theme) => (
+                      <article
+                        key={theme.name}
+                        className="rounded-[26px] border border-[#ede8df] bg-white/88 p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm"
+                      >
+                        <h3 className="text-xl font-semibold tracking-[-0.02em] text-[#0f172a]">{theme.name}</h3>
+                        <p className="mt-3 text-[0.98rem] leading-7 text-[#5f6673]">{theme.description}</p>
+                      </article>
+                    ))}
                   </div>
                 </div>
 
