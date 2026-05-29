@@ -37,6 +37,9 @@ def _ensure_auth_schema() -> None:
         connection.execute(
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)")
         )
+        connection.execute(
+            text("ALTER TABLE support_requests ADD COLUMN IF NOT EXISTS phone_number TEXT")
+        )
 
 
 def _bootstrap_admin() -> None:

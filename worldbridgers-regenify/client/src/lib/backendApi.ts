@@ -44,6 +44,7 @@ type GraphResponse = {
 type SupportRequestPayload = {
   fullName: string;
   email: string;
+  phoneNumber?: string;
   topic: string;
   message: string;
 };
@@ -461,6 +462,7 @@ export const backendApi = {
       id: string;
       fullName: string;
       email: string;
+      phoneNumber: string | null;
       topic: string;
       message: string;
       status: string;
@@ -470,6 +472,7 @@ export const backendApi = {
       body: JSON.stringify({
         full_name: payload.fullName,
         email: payload.email,
+        phone_number: payload.phoneNumber,
         topic: payload.topic,
         message: payload.message,
       }),
