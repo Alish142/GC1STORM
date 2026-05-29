@@ -250,18 +250,13 @@ export default function Login() {
   const loginStatsQuery = useQuery({
     queryKey: ["login-left-stats"],
     queryFn: async () => {
-      const [issuers, offerings, indices, documents] = await Promise.all([
-        backendApi.issuers(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.offerings(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.indices(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.documents(new URLSearchParams({ page: "1", page_size: "1" })),
-      ]);
+      const overview = await backendApi.overview();
 
       return [
-        { value: `${issuers.total}+`, label: "Verified Issuers" },
-        { value: `${offerings.total}+`, label: "Active Offerings" },
-        { value: `${indices.total}`, label: "ESG Indices" },
-        { value: `${documents.total}+`, label: "Documents" },
+        { value: `${overview.issuers}`, label: "Verified Issuers" },
+        { value: `${overview.offerings}`, label: "Active Offerings" },
+        { value: `${overview.indices}`, label: "ESG Indices" },
+        { value: `${overview.documents}`, label: "Documents" },
       ];
     },
     staleTime: 60_000,
@@ -269,10 +264,10 @@ export default function Login() {
   const loginStats =
     loginStatsQuery.data ??
     [
-      { value: "340+", label: "Verified Issuers" },
-      { value: "1,280+", label: "Active Offerings" },
-      { value: "48", label: "ESG Indices" },
-      { value: "5,600+", label: "Documents" },
+      { value: "0", label: "Verified Issuers" },
+      { value: "0", label: "Active Offerings" },
+      { value: "0", label: "ESG Indices" },
+      { value: "0", label: "Documents" },
     ];
 
   return (

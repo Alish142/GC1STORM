@@ -90,10 +90,10 @@ type LandingStat = {
 };
 
 const STATS: LandingStat[] = [
-  { label: "Verified Issuers", value: 340, suffix: "+", icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
-  { label: "Live Offerings", value: 1280, suffix: "+", icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
+  { label: "Verified Issuers", value: 340, icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
+  { label: "Live Offerings", value: 1280, icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
   { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600", href: "/dashboard/indices" },
-  { label: "Structured Documents", value: 5600, suffix: "+", icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
+  { label: "Structured Documents", value: 5600, icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
 ];
 
 const PLATFORM_FEATURES = [
@@ -202,23 +202,18 @@ export default function Home() {
   const landingStatsQuery = useQuery<LandingStat[]>({
     queryKey: ["landing-stats"],
     queryFn: async () => {
-      const [issuers, offerings, indices, documents] = await Promise.all([
-        backendApi.issuers(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.offerings(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.indices(new URLSearchParams({ page: "1", page_size: "1" })),
-        backendApi.documents(new URLSearchParams({ page: "1", page_size: "1" })),
-      ]);
+      const overview = await backendApi.overview();
 
       return [
-        { ...STATS[0], value: issuers.total },
-        { ...STATS[1], value: offerings.total },
-        { ...STATS[2], value: indices.total },
-        { ...STATS[3], value: documents.total },
+        { ...STATS[0], value: overview.issuers },
+        { ...STATS[1], value: overview.offerings },
+        { ...STATS[2], value: overview.indices },
+        { ...STATS[3], value: overview.documents },
       ];
     },
     staleTime: 60_000,
   });
-  const displayStats = landingStatsQuery.data ?? STATS;
+  const displayStats = landingStatsQuery.data ?? STATS.map((stat) => ({ ...stat, value: 0 }));
 
   useEffect(() => {
     const timer = window.setInterval(() => {
