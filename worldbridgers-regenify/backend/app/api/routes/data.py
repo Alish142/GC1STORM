@@ -123,10 +123,15 @@ def issuers(
             "id": str(row.id),
             "name": row.name,
             "country": row.country,
+            "region": row.region,
             "classification": row.classification,
             "wbxLabel": row.wbx_label,
             "euTaxonomy": row.eu_taxonomy,
             "assets": _currency_display(row.assets_amount, row.assets_currency),
+            "assetsAmount": float(row.assets_amount) if row.assets_amount is not None else None,
+            "assetsCurrency": row.assets_currency or "",
+            "description": row.description or "",
+            "foundedYear": row.founded_year,
             "issuerNameDotColor": table_dot_colors["issuerName"],
             "wbxLabelDotColor": table_dot_colors["wbxLabel"],
         }
@@ -172,6 +177,8 @@ def offerings(
 
     data = [
         {
+            "id": str(offering.id),
+            "issuerId": str(offering.issuer_id),
             "type": offering.type,
             "segment": offering.segment,
             "issuer": issuer_name,
@@ -183,6 +190,7 @@ def offerings(
             "wbxClassification": offering.wbx_classification or "",
             "coupon": float(offering.coupon) if offering.coupon is not None else None,
             "lastPrice": float(offering.last_price) if offering.last_price is not None else 0,
+            "delisted": offering.delisted,
             "issuerDotColor": table_dot_colors["offeringIssuer"],
             "typeDotColor": table_dot_colors["offeringType"],
         }
@@ -227,6 +235,7 @@ def indices(
 
     data = [
         {
+            "id": str(row.id),
             "type": row.type,
             "name": row.name,
             "currency": row.currency,
