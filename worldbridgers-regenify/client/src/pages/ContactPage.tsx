@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import PublicHeader from "@/components/PublicHeader";
 import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { toast } from "sonner";
 import { CalendarDays, Leaf } from "lucide-react";
 
 export default function ContactPage() {
-  const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
@@ -141,10 +139,6 @@ export default function ContactPage() {
                             Submit
                           </>
                         )}
-                      </Button>
-
-                      <Button variant="outline" className="h-12 rounded-full px-6" onClick={() => navigate("/about")}>
-                        Learn More
                       </Button>
                     </div>
                   </div>
