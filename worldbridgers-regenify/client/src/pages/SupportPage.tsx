@@ -123,9 +123,6 @@ export default function SupportPage() {
                   {isSubmitting ? "Sending..." : "Send support request"}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/login?mode=create-account")}>
-                  Request platform access
-                </Button>
                 <Button variant="ghost" onClick={() => navigate("/contact")}>
                   <PhoneCall className="h-4 w-4" />
                   Request a call
