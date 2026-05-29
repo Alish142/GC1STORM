@@ -297,7 +297,7 @@ export default function Login() {
             <div className="mt-[94px] max-w-[540px]">
               <h1 className="max-w-[500px] text-[3.28rem] font-semibold leading-[1.08] tracking-[-0.03em]">
                 The intelligent platform for{" "}
-                <span className="bg-gradient-to-r from-emerald-300 to-sky-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-emerald-300 via-sky-300 via-65% to-violet-300 bg-clip-text text-transparent">
                   regenerative finance
                 </span>
               </h1>
@@ -367,7 +367,7 @@ export default function Login() {
               <div className="rounded-full bg-[#f5f3ee] p-1">
                 <div className="grid grid-cols-2 gap-1">
                   <button
-                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" || mode === "create-account" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
+                    className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
                       window.location.href = "/login";
                     }}
