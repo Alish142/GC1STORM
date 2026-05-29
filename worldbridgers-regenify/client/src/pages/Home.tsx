@@ -21,7 +21,6 @@ import {
   TrendingUp,
   Twitter,
   Linkedin,
-  Github,
   Zap,
 } from "lucide-react";
 
@@ -632,7 +631,7 @@ export default function Home() {
                 Connecting capital to regenerative impact through market intelligence, relationship discovery, and verified opportunities.
               </p>
               <div className="mt-6 flex gap-3">
-                {[Twitter, Linkedin, Github, Mail].map((Icon, index) => (
+                {[Twitter, Linkedin, Mail].map((Icon, index) => (
                   <button
                     key={index}
                     className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 transition-colors hover:bg-slate-800"
