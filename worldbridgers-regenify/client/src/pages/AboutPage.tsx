@@ -107,8 +107,8 @@ export default function AboutPage() {
                         style={{ backgroundImage: `linear-gradient(180deg, rgba(7,16,24,0.1) 0%, rgba(7,16,24,0.28) 100%), url('${member.image}')` }}
                       >
                         <div className="flex h-full items-end rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(247,244,238,0.92)_100%)] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-                          <div className="flex min-h-[150px] flex-col justify-end">
-                            <div className="text-2xl font-semibold tracking-[-0.03em] text-[#0f172a]">
+                          <div className="flex min-h-[158px] flex-col justify-end">
+                            <div className="min-h-[96px] text-2xl font-semibold tracking-[-0.03em] text-[#0f172a]">
                               {member.name}
                             </div>
                             <div className="mt-2 text-sm font-medium text-[#667085]">{member.role}</div>
