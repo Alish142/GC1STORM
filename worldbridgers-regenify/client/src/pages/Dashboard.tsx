@@ -1,28 +1,46 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardHeader from "@/components/DashboardHeader";
 import DataTable, { Column } from "@/components/DataTable";
 import SidebarFilters, { FilterGroup } from "@/components/SidebarFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { backendApi } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal,
+  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal, Upload,
 } from "lucide-react";
 import { Link } from "wouter";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TabKey = "issuers" | "offerings" | "indices" | "documents";
 type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; visualConfig?: unknown };
-type IssuerRow = { name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
+type IssuerRow = { id: string; name: string; country: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; issuerNameDotColor?: string; wbxLabelDotColor?: string };
 type OfferingRow = { type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; issuerDotColor?: string; typeDotColor?: string };
 type IndexRow = { type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
 type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
+type AdminDocumentUploadForm = {
+  type: string;
+  subType: string;
+  name: string;
+  issuerId: string;
+  documentDate: string;
+  memberStates: string;
+  file: File | null;
+};
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "issuers", label: "Issuers", icon: Building2 },
@@ -931,9 +949,21 @@ function IndicesTab() {
 
 // ── Documents Tab ─────────────────────────────────────────────────────────────
 function DocumentsTab() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isAdmin = user?.role === "admin";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [uploadForm, setUploadForm] = useState<AdminDocumentUploadForm>({
+    type: "Offerings Documents",
+    subType: "",
+    name: "",
+    issuerId: "",
+    documentDate: "",
+    memberStates: "",
+    file: null,
+  });
 
   const openDocument = useCallback((fileUrl?: string | null) => {
     if (!fileUrl || typeof window === "undefined") return;
@@ -953,7 +983,7 @@ function DocumentsTab() {
     link.remove();
   }, []);
 
-  const { data, isLoading } = useQuery<Paginated<DocumentRow>>({
+  const { data, isLoading, error } = useQuery<Paginated<DocumentRow>>({
     queryKey: ["documents", search, page, filters],
     queryFn: () => backendApi.documents(buildParams({
       search: search || undefined,
@@ -961,7 +991,48 @@ function DocumentsTab() {
       sub_types: filters.subTypes?.length ? filters.subTypes : undefined,
       page,
       page_size: 15,
-    })) as Promise<Paginated<DocumentRow>>,
+    }), { allowFallback: false }) as Promise<Paginated<DocumentRow>>,
+  });
+
+  const issuerOptionsQuery = useQuery<Paginated<IssuerRow>>({
+    queryKey: ["document-upload", "issuers"],
+    queryFn: () => backendApi.issuers(buildParams({ page: 1, page_size: 200 })) as Promise<Paginated<IssuerRow>>,
+    enabled: isAdmin,
+    staleTime: 60_000,
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: () =>
+      backendApi.uploadAdminDocument({
+        file: uploadForm.file as File,
+        type: uploadForm.type,
+        name: uploadForm.name || undefined,
+        subType: uploadForm.subType || undefined,
+        issuerId: uploadForm.issuerId || undefined,
+        documentDate: uploadForm.documentDate || undefined,
+        memberStates: uploadForm.memberStates
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      }),
+    onSuccess: () => {
+      toast.success("Document uploaded and linked.");
+      setUploadForm({
+        type: "Offerings Documents",
+        subType: "",
+        name: "",
+        issuerId: "",
+        documentDate: "",
+        memberStates: "",
+        file: null,
+      });
+      setPage(1);
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (uploadError) => {
+      toast.error(uploadError instanceof Error ? uploadError.message : "Could not upload document.");
+    },
   });
 
   const totalActive = Object.values(filters).flat().length;
@@ -1031,6 +1102,119 @@ function DocumentsTab() {
         className="hidden md:flex"
       />
       <div className="flex-1 min-w-0">
+        {isAdmin ? (
+          <div className="mb-4 rounded-[24px] border border-border bg-card p-4 shadow-card">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-foreground">Upload document</div>
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  Upload a file to S3 and create the matching metadata row so it appears in this table immediately.
+                </p>
+              </div>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">Admin only</Badge>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Type</div>
+                <Select
+                  value={uploadForm.type}
+                  onValueChange={(value) => setUploadForm((current) => ({ ...current, type: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Offerings Documents">Offerings Documents</SelectItem>
+                    <SelectItem value="Notices">Notices</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Sub Type</div>
+                <Input
+                  placeholder="Prospectus Supplement"
+                  value={uploadForm.subType}
+                  onChange={(event) => setUploadForm((current) => ({ ...current, subType: event.target.value }))}
+                />
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Name</div>
+                <Input
+                  placeholder="Displayed document title"
+                  value={uploadForm.name}
+                  onChange={(event) => setUploadForm((current) => ({ ...current, name: event.target.value }))}
+                />
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Issuer</div>
+                <Select
+                  value={uploadForm.issuerId || "__none__"}
+                  onValueChange={(value) =>
+                    setUploadForm((current) => ({ ...current, issuerId: value === "__none__" ? "" : value }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Optional issuer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No issuer</SelectItem>
+                    {(issuerOptionsQuery.data?.data ?? []).map((issuer) => (
+                      <SelectItem key={issuer.id} value={issuer.id}>
+                        {issuer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Date</div>
+                <Input
+                  type="date"
+                  value={uploadForm.documentDate}
+                  onChange={(event) => setUploadForm((current) => ({ ...current, documentDate: event.target.value }))}
+                />
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Member States</div>
+                <Input
+                  placeholder="DE, FR, LU"
+                  value={uploadForm.memberStates}
+                  onChange={(event) => setUploadForm((current) => ({ ...current, memberStates: event.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Document File</div>
+                <Input
+                  type="file"
+                  onChange={(event) =>
+                    setUploadForm((current) => ({ ...current, file: event.target.files?.[0] ?? null }))
+                  }
+                />
+              </div>
+              <Button
+                className="gap-2 bg-primary text-white hover:bg-primary/90"
+                disabled={uploadMutation.isPending || !uploadForm.file || !uploadForm.type.trim()}
+                onClick={() => uploadMutation.mutate()}
+              >
+                {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploadMutation.isPending ? "Uploading..." : "Upload Document"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {error instanceof Error
+              ? `Documents could not be loaded from the backend: ${error.message}`
+              : "Documents could not be loaded from the backend."}
+          </div>
+        ) : null}
+
         <div className="mb-3 flex items-center justify-between gap-2 md:hidden">
           <Sheet>
             <SheetTrigger asChild>

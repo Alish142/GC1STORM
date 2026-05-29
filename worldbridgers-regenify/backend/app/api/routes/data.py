@@ -120,6 +120,7 @@ def issuers(
 
     data = [
         {
+            "id": str(row.id),
             "name": row.name,
             "country": row.country,
             "classification": row.classification,
