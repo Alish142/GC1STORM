@@ -483,23 +483,6 @@ export default function Login() {
                   </Button>
                 </form>
 
-                <div className="mt-5 rounded-3xl border border-[#ebe5db] bg-[#faf8f3] p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <ShieldCheck className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-foreground">Admin access uses the same sign-in</div>
-                      <p className="mt-1 text-sm leading-7 text-muted-foreground">
-                        Admin users are redirected to the admin console after authenticating with their real account.
-                      </p>
-                      <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                        Set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` in the backend environment to provision an initial admin account.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="mt-5 text-center text-sm text-muted-foreground">
                   Don&apos;t have an account?{" "}
                   <button
