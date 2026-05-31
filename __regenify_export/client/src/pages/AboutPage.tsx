@@ -108,9 +108,6 @@ export default function AboutPage() {
                       >
                         <div className="flex h-full items-end rounded-[22px] border border-white/35 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(247,244,238,0.92)_100%)] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm">
                           <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.22em] text-[#98a2b3]">
-                              Pillar {index + 1}
-                            </div>
                             <div className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#0f172a]">
                               {member.name}
                             </div>
