@@ -193,6 +193,25 @@ function previewHexPoints(size: number) {
   }).join(" ");
 }
 
+function getBadgeGradientClass(badge: string): string {
+  switch (badge) {
+    case "Core":
+      return "gradient-text-core";
+    case "Compliance":
+      return "gradient-text-compliance";
+    case "Live":
+      return "gradient-text-live";
+    case "Global":
+      return "gradient-text-global";
+    case "Impact":
+      return "gradient-text-impact";
+    case "Exchange":
+      return "gradient-text-exchange";
+    default:
+      return "text-muted-foreground";
+  }
+}
+
 export default function Home() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
@@ -398,7 +417,7 @@ export default function Home() {
                       <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${feature.color}`}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                      <span className={`rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${getBadgeGradientClass(feature.badge)}`}>
                         {feature.badge}
                       </span>
                     </div>

@@ -396,7 +396,7 @@ export default function Login() {
               <div className="px-1 pb-1">
                 <div className="mb-8">
                   <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Account Access</div>
-                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Welcome back</h1>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight gradient-text-primary">Welcome back</h1>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
                     Sign in to continue to your workspace.
                   </p>
@@ -508,7 +508,7 @@ export default function Login() {
               <div className="px-1 pb-1">
                 <div className="mb-8">
                   <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Password Reset</div>
-                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Forgot your password?</h1>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight gradient-text-secondary">Forgot your password?</h1>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
                     Enter your account email and we&apos;ll generate a reset link. In development, you&apos;ll be redirected straight to it.
                   </p>
@@ -564,7 +564,7 @@ export default function Login() {
               <div className="px-1 pb-1">
                 <div className="mb-8">
                   <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Password Reset</div>
-                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Create a new password</h1>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight gradient-text-primary">Create a new password</h1>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
                     Choose a new password for your account. You&apos;ll be signed in once it&apos;s updated.
                   </p>
@@ -626,7 +626,7 @@ export default function Login() {
               <div className="px-1 pb-1">
                 <div className="mb-8">
                   <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Create Account</div>
-                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Create your account</h1>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight gradient-text-secondary">Create your account</h1>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
                     Start with a basic account and use your new email and password to log in again.
                   </p>
@@ -726,7 +726,7 @@ export default function Login() {
               <div className="px-1 pb-1">
                 <div className="mb-8">
                   <div className="text-xs uppercase tracking-[0.26em] text-muted-foreground">Access Request</div>
-                  <h1 className="mt-3 text-4xl font-semibold tracking-tight text-foreground">Request access</h1>
+                  <h1 className="mt-3 text-4xl font-semibold tracking-tight gradient-text-primary">Request access</h1>
                   <p className="mt-3 text-sm leading-7 text-muted-foreground">
                     Send your details and our team can review your access request.
                   </p>
