@@ -299,6 +299,9 @@ export default function AboutPage() {
                   </div>
                 </div>
 
+                <br>
+                </br>
+
                 <div
                   className="relative overflow-hidden rounded-[32px] border-2 px-8 py-10 text-center md:px-14 md:py-14 transition-all hover:shadow-xl"
                   style={{
