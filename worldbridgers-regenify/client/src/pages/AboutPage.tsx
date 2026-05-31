@@ -76,6 +76,8 @@ const TEAM_PROFILES = [
   },
 ];
 
+const VISION_CARD_BG_IMAGE = "/hero-bg-1.jpg";
+
 const THEME_AREAS = [
   {
     name: "Entrepreneurship",
@@ -244,14 +246,20 @@ export default function AboutPage() {
                   </div>
                 </div>
 
-                <div className="mt-16 rounded-[32px] border border-[#ece8df] bg-[#fbfbfa] px-8 py-10 text-center md:px-14 md:py-14">
-                  <p className="mx-auto max-w-[860px] text-2xl font-medium leading-10 tracking-[-0.03em] text-[#0f172a] md:text-[2rem]">
-                    “Worldbridgers Regenify is designed to make issuer, offering, document, and relationship
-                    intelligence easier to understand, easier to trust, and easier to explore across one unified market
-                    experience.”
-                  </p>
-                  <div className="mt-8 text-sm font-semibold uppercase tracking-[0.24em] text-[#98a2b3]">
-                    Worldbridgers Regenify
+                <div
+                  className="relative overflow-hidden rounded-[32px] border border-[#ece8df] px-8 py-10 text-center md:px-14 md:py-14"
+                  style={{ backgroundImage: `linear-gradient(180deg, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.72)), url('${VISION_CARD_BG_IMAGE}')`, backgroundSize: "cover", backgroundPosition: "center" }}
+                >
+                  <div className="absolute inset-0 bg-slate-950/50" />
+                  <div className="relative">
+                    <p className="mx-auto max-w-[860px] text-2xl font-medium leading-10 tracking-[-0.03em] text-white md:text-[2rem]">
+                      “Worldbridgers Regenify is designed to make issuer, offering, document, and relationship
+                      intelligence easier to understand, easier to trust, and easier to explore across one unified market
+                      experience.”
+                    </p>
+                    <div className="mt-8 text-sm font-semibold uppercase tracking-[0.24em] text-slate-200">
+                      Worldbridgers Regenify
+                    </div>
                   </div>
                 </div>
               </div>
