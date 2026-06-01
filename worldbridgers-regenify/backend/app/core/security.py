@@ -19,8 +19,18 @@ def _secret() -> str:
     return settings.jwt_secret
 
 
-def create_session_token(payload: dict[str, Any], expires_days: int = 7) -> str:
-    exp = datetime.now(UTC) + timedelta(days=expires_days)
+def create_session_token(
+    payload: dict[str, Any],
+    *,
+    expires_days: int | None = 7,
+    expires_seconds: int | None = None,
+) -> str:
+    if expires_seconds is not None:
+        exp = datetime.now(UTC) + timedelta(seconds=expires_seconds)
+    elif expires_days is not None:
+        exp = datetime.now(UTC) + timedelta(days=expires_days)
+    else:
+        raise ValueError("Session tokens require an expiration.")
     data = {**payload, "exp": exp}
     return jwt.encode(data, _secret(), algorithm=ALGORITHM)
 
