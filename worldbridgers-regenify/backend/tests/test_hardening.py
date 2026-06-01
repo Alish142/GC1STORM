@@ -6,6 +6,7 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest import mock
+from uuid import uuid4
 
 import jwt
 from fastapi import HTTPException
@@ -305,6 +306,221 @@ class AuthRouteTests(unittest.TestCase):
         set_cookie_headers = ",".join(res.headers.getlist("set-cookie"))
         self.assertIn("signed-token", set_cookie_headers)
         self.assertIn(f"Max-Age={expected_max_age}", set_cookie_headers)
+
+
+class _FakeAuthDb:
+    def __init__(self):
+        self.users_by_email = {}
+        self.users_by_id = {}
+        self.reset_tokens_by_hash = {}
+        self.deleted_tokens = []
+
+    def add(self, value):
+        if hasattr(value, "token_hash"):
+            self.reset_tokens_by_hash[value.token_hash] = value
+        elif hasattr(value, "email"):
+            self.users_by_email[value.email] = value
+            self.users_by_id[value.id] = value
+
+    def commit(self):
+        return None
+
+    def refresh(self, _value):
+        return None
+
+    def get(self, model, value):
+        if getattr(model, "__name__", "") == "User":
+            return self.users_by_id.get(value)
+        return None
+
+    def scalar(self, _statement):
+        return next(iter(self.reset_tokens_by_hash.values()), None)
+
+    def execute(self, _statement):
+        self.reset_tokens_by_hash.clear()
+
+    def delete(self, value):
+        if hasattr(value, "token_hash"):
+            self.deleted_tokens.append(value.token_hash)
+            self.reset_tokens_by_hash.pop(value.token_hash, None)
+
+
+class AuthLifecycleTests(unittest.TestCase):
+    def _build_request(
+        self,
+        *,
+        path: str,
+        origin: str = "https://frontend.example",
+        scheme: str = "https",
+        cookies: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Request:
+        raw_headers = [(b"origin", origin.encode("latin-1"))]
+        for key, value in (headers or {}).items():
+            raw_headers.append((key.lower().encode("latin-1"), value.encode("latin-1")))
+        if cookies:
+            cookie_header = "; ".join(f"{key}={value}" for key, value in cookies.items())
+            raw_headers.append((b"cookie", cookie_header.encode("latin-1")))
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": scheme,
+                "path": path,
+                "headers": raw_headers,
+                "client": ("127.0.0.1", 12345),
+            }
+        )
+
+    def test_full_auth_lifecycle_register_login_change_reset_logout(self) -> None:
+        auth_module = _load_module("app.api.routes.auth")
+        db = _FakeAuthDb()
+
+        def fake_get_user_by_email(_db, email):
+            return db.users_by_email.get(email)
+
+        def fake_create_or_update_user(_db, *, email, name, password_hash=None, role="user"):
+            user = db.users_by_email.get(email)
+            if user is None:
+                user = SimpleNamespace(
+                    id=uuid4(),
+                    email=email,
+                    name=name,
+                    password_hash=password_hash,
+                    role=role,
+                )
+            else:
+                user.name = name
+                user.role = role
+                if password_hash is not None:
+                    user.password_hash = password_hash
+            db.add(user)
+            return user
+
+        with mock.patch.object(auth_module, "get_user_by_email", side_effect=fake_get_user_by_email), mock.patch.object(
+            auth_module, "create_or_update_user", side_effect=fake_create_or_update_user
+        ), mock.patch.object(auth_module, "log_audit_event"):
+            register_req = self._build_request(path="/api/auth/register")
+            register_res = Response()
+            register_response = auth_module.register(
+                input_data=auth_module.RegisterInput(
+                    first_name="Casey",
+                    last_name="Example",
+                    email="casey@example.com",
+                    password="Str0ng!Pass",
+                ),
+                req=register_req,
+                res=register_res,
+                _=None,
+                db=db,
+            )
+
+            created_user = db.users_by_email["casey@example.com"]
+            self.assertTrue(register_response["success"])
+            self.assertEqual(register_response["user"]["email"], "casey@example.com")
+            self.assertTrue(auth_module.verify_password("Str0ng!Pass", created_user.password_hash))
+            self.assertIn(auth_module.COOKIE_NAME, ",".join(register_res.headers.getlist("set-cookie")))
+
+            login_req = self._build_request(path="/api/auth/login")
+            login_res = Response()
+            login_response = auth_module.login(
+                input_data=auth_module.LoginInput(
+                    email="casey@example.com",
+                    password="Str0ng!Pass",
+                    remember_me=False,
+                ),
+                req=login_req,
+                res=login_res,
+                _=None,
+                db=db,
+            )
+            self.assertTrue(login_response["success"])
+
+            me_response = auth_module.me(user=created_user)
+            self.assertEqual(me_response["email"], "casey@example.com")
+            self.assertEqual(me_response["csrfCookieName"], auth_module.CSRF_COOKIE_NAME)
+
+            change_req = self._build_request(path="/api/auth/change-password")
+            change_response = auth_module.change_password(
+                input_data=auth_module.ChangePasswordInput(
+                    current_password="Str0ng!Pass",
+                    new_password="EvenStr0nger!2",
+                ),
+                req=change_req,
+                user=created_user,
+                __=None,
+                db=db,
+            )
+            self.assertTrue(change_response["success"])
+            self.assertTrue(auth_module.verify_password("EvenStr0nger!2", created_user.password_hash))
+
+            forgot_req = self._build_request(path="/api/auth/forgot-password")
+            with mock.patch.object(auth_module, "generate_reset_token", return_value="fixed-reset-token"), mock.patch.object(
+                auth_module.settings, "smtp_host", None
+            ), mock.patch.object(auth_module.settings, "smtp_from_email", None):
+                forgot_response = auth_module.forgot_password(
+                    input_data=auth_module.ForgotPasswordInput(email="casey@example.com"),
+                    req=forgot_req,
+                    _=None,
+                    db=db,
+                )
+            self.assertEqual(forgot_response["resetToken"], "fixed-reset-token")
+            self.assertIn("mode=reset-password", forgot_response["resetUrl"])
+
+            reset_req = self._build_request(path="/api/auth/reset-password")
+            reset_res = Response()
+            reset_response = auth_module.reset_password(
+                input_data=auth_module.ResetPasswordInput(
+                    token="fixed-reset-token",
+                    password="Ult1mate!Pass",
+                ),
+                req=reset_req,
+                res=reset_res,
+                db=db,
+            )
+            self.assertTrue(reset_response["success"])
+            self.assertTrue(auth_module.verify_password("Ult1mate!Pass", created_user.password_hash))
+            stored_token = next(iter(db.reset_tokens_by_hash.values()))
+            self.assertIsNotNone(stored_token.used_at)
+
+            old_login_req = self._build_request(path="/api/auth/login")
+            with self.assertRaises(HTTPException) as old_login_error:
+                auth_module.login(
+                    input_data=auth_module.LoginInput(
+                        email="casey@example.com",
+                        password="EvenStr0nger!2",
+                        remember_me=False,
+                    ),
+                    req=old_login_req,
+                    res=Response(),
+                    _=None,
+                    db=db,
+                )
+            self.assertEqual(old_login_error.exception.status_code, 401)
+
+            new_login_response = auth_module.login(
+                input_data=auth_module.LoginInput(
+                    email="casey@example.com",
+                    password="Ult1mate!Pass",
+                    remember_me=True,
+                ),
+                req=self._build_request(path="/api/auth/login"),
+                res=Response(),
+                _=None,
+                db=db,
+            )
+            self.assertTrue(new_login_response["success"])
+
+            logout_req = self._build_request(path="/api/auth/logout")
+            logout_res = Response()
+            logout_response = auth_module.logout(
+                req=logout_req,
+                res=logout_res,
+                user=created_user,
+                db=db,
+            )
+            self.assertTrue(logout_response["success"])
+            self.assertIn(f"{auth_module.COOKIE_NAME}=\"\"", ",".join(logout_res.headers.getlist("set-cookie")))
 
 
 class SupportRouteTests(unittest.TestCase):
