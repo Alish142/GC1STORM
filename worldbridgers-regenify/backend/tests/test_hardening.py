@@ -4,6 +4,7 @@ import sys
 import time
 import unittest
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest import mock
 from uuid import uuid4
@@ -25,6 +26,7 @@ DEFAULT_ENV = {
 MODULES_TO_RESET = [
     "app.api.deps",
     "app.api.deps.auth",
+    "app.api.routes.admin",
     "app.api.routes.auth",
     "app.api.routes.support",
     "app.core.config",
@@ -584,6 +586,181 @@ class SupportRouteTests(unittest.TestCase):
         self.assertEqual(response["request"]["fullName"], "Casey Example")
         self.assertEqual(response["request"]["email"], "casey@example.com")
         self.assertEqual(response["request"]["organisation"], "Worldbridgers")
+
+
+class _FakeAdminDb:
+    def __init__(self):
+        self.issuers = {}
+        self.added = []
+        self.deleted = []
+        self.commit_called = 0
+        self.refresh_called = 0
+
+    def add(self, value):
+        self.added.append(value)
+        if hasattr(value, "classification") and hasattr(value, "country"):
+            self.issuers[value.id] = value
+
+    def commit(self):
+        self.commit_called += 1
+
+    def refresh(self, _value):
+        self.refresh_called += 1
+
+    def get(self, model, value):
+        if getattr(model, "__name__", "") == "Issuer":
+            return self.issuers.get(value)
+        return None
+
+    def delete(self, value):
+        self.deleted.append(value)
+        self.issuers.pop(value.id, None)
+
+
+class AdminRouteTests(unittest.TestCase):
+    def _build_request(self, path: str = "/api/admin/issuers") -> Request:
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": "https",
+                "path": path,
+                "headers": [(b"x-csrf-token", b"token")],
+                "client": ("127.0.0.1", 12345),
+            }
+        )
+
+    def test_require_admin_user_rejects_non_admin(self) -> None:
+        auth_deps = _load_module("app.api.deps.auth")
+
+        with self.assertRaises(HTTPException) as error:
+            auth_deps.require_admin_user(user=SimpleNamespace(role="user"))
+
+        self.assertEqual(error.exception.status_code, 403)
+
+    def test_admin_issuer_crud_flow(self) -> None:
+        admin_module = _load_module("app.api.routes.admin")
+        db = _FakeAdminDb()
+        admin_user = SimpleNamespace(id="admin-1", role="admin", email="admin@example.com")
+        req = self._build_request()
+
+        create_payload = admin_module.IssuerPayload(
+            name="  Regen Bank  ",
+            country="  Australia  ",
+            region="  APAC  ",
+            classification="  Bank  ",
+            wbxLabel=True,
+            euTaxonomy=False,
+            description="  Green issuer  ",
+            foundedYear=1999,
+            assetsAmount=Decimal("1250000.00"),
+            assetsCurrency="  AUD  ",
+        )
+
+        with mock.patch.object(admin_module, "log_audit_event"):
+            create_response = admin_module.create_issuer(
+                req=req,
+                payload=create_payload,
+                user=admin_user,
+                __=None,
+                db=db,
+            )
+
+            issuer_id = next(iter(db.issuers.keys()))
+            created_issuer = db.issuers[issuer_id]
+            self.assertTrue(create_response["success"])
+            self.assertEqual(created_issuer.name, "Regen Bank")
+            self.assertEqual(created_issuer.country, "Australia")
+            self.assertEqual(created_issuer.assets_currency, "AUD")
+
+            update_payload = admin_module.IssuerPayload(
+                name="Regen Bank International",
+                country="Australia",
+                region="Global",
+                classification="Bank",
+                wbxLabel=False,
+                euTaxonomy=True,
+                description="Updated description",
+                foundedYear=2001,
+                assetsAmount=Decimal("2250000.00"),
+                assetsCurrency="USD",
+            )
+            update_response = admin_module.update_issuer(
+                issuer_id=issuer_id,
+                req=req,
+                payload=update_payload,
+                user=admin_user,
+                __=None,
+                db=db,
+            )
+
+            self.assertTrue(update_response["success"])
+            self.assertEqual(created_issuer.name, "Regen Bank International")
+            self.assertEqual(created_issuer.region, "Global")
+            self.assertTrue(created_issuer.eu_taxonomy)
+
+            delete_response = admin_module.delete_issuer(
+                issuer_id=issuer_id,
+                req=req,
+                user=admin_user,
+                __=None,
+                db=db,
+            )
+
+        self.assertEqual(delete_response.status_code, 204)
+        self.assertEqual(db.commit_called, 3)
+        self.assertEqual(db.refresh_called, 2)
+        self.assertNotIn(issuer_id, db.issuers)
+
+    def test_update_issuer_returns_404_for_missing_record(self) -> None:
+        admin_module = _load_module("app.api.routes.admin")
+        db = _FakeAdminDb()
+        admin_user = SimpleNamespace(id="admin-1", role="admin", email="admin@example.com")
+
+        with self.assertRaises(HTTPException) as error:
+            admin_module.update_issuer(
+                issuer_id=uuid4(),
+                req=self._build_request(),
+                payload=admin_module.IssuerPayload(
+                    name="Issuer",
+                    country="AU",
+                    region="APAC",
+                    classification="Bank",
+                    wbxLabel=False,
+                    euTaxonomy=False,
+                ),
+                user=admin_user,
+                __=None,
+                db=db,
+            )
+
+        self.assertEqual(error.exception.status_code, 404)
+
+    def test_patch_visual_config_calls_update_and_audits(self) -> None:
+        admin_module = _load_module("app.api.routes.admin")
+        admin_user = SimpleNamespace(id="admin-1", role="admin", email="admin@example.com")
+        next_config = {
+            "tableDots": {"issuerName": "#123456"},
+            "hoverLineColor": "#abcdef",
+        }
+
+        with mock.patch.object(admin_module, "update_visual_config", return_value=next_config) as update_visual_config, mock.patch.object(
+            admin_module, "log_audit_event"
+        ) as log_audit_event:
+            response = admin_module.patch_visual_config(
+                req=self._build_request(path="/api/admin/visual-config"),
+                payload=admin_module.VisualConfigUpdate(
+                    tableDots={"issuerName": "#123456"},
+                    hoverLineColor="#abcdef",
+                ),
+                user=admin_user,
+                __=None,
+                db=SimpleNamespace(),
+            )
+
+        self.assertEqual(response, next_config)
+        update_visual_config.assert_called_once()
+        log_audit_event.assert_called_once()
 
 
 if __name__ == "__main__":
