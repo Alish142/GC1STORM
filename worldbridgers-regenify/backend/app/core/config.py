@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     postgres_dsn: str
+    allow_degraded_db_startup: bool = False
 
     neo4j_uri: str
     neo4j_user: str

@@ -10,6 +10,8 @@ from app.models.user import User
 import app.models  # noqa: F401
 
 settings = get_settings()
+_postgres_ready = False
+_postgres_error: str | None = None
 
 
 def _normalize_postgres_dsn(dsn: str) -> str:
@@ -71,13 +73,28 @@ def _bootstrap_admin() -> None:
 
 
 def init_postgres() -> None:
+    global _postgres_ready, _postgres_error
     try:
         Base.metadata.create_all(bind=engine)
         _ensure_auth_schema()
         _bootstrap_admin()
         with engine.connect() as connection:
             connection.execute(text("select 1"))
+        _postgres_ready = True
+        _postgres_error = None
         print("[Database] Postgres connection OK")
     except Exception as exc:
-        # Keep API running for demo mode even if SQL DB isn't reachable yet.
-        print(f"[Database] Postgres init skipped: {exc}")
+        _postgres_ready = False
+        _postgres_error = str(exc)
+        print(f"[Database] Postgres init failed: {exc}")
+        if settings.allow_degraded_db_startup:
+            return
+        raise
+
+
+def postgres_health() -> dict[str, str]:
+    status = "ok" if _postgres_ready else "error"
+    health = {"status": status}
+    if _postgres_error:
+        health["detail"] = _postgres_error
+    return health
