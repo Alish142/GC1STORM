@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { backendApi } from "@/lib/backendApi";
+import { backendApi, type RecommendationRecord } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
@@ -324,9 +324,18 @@ function indexToForm(row: IndexRow): IndexFormState {
 
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const overviewQ = useQuery<{ issuers: number; offerings: number; indices: number; documents: number }>({
     queryKey: ["dashboard", "overview"],
     queryFn: () => backendApi.overview(),
+  });
+  const healthQ = useQuery({
+    queryKey: ["dashboard", "health"],
+    queryFn: () => backendApi.health(),
+  });
+  const recommendationsQ = useQuery<{ data: RecommendationRecord[]; graphSource: "neo4j" | "mock"; generatedAt: string }>({
+    queryKey: ["dashboard", "recommendations"],
+    queryFn: () => backendApi.recommendations(),
   });
   const issuersQ = useQuery<Paginated<IssuerRow>>({
     queryKey: ["issuers", "home"],
@@ -375,6 +384,30 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
       tab: "documents" as TabKey,
     },
   ];
+  const graphSource = recommendationsQ.data?.graphSource ?? "mock";
+  const recommendationCards = recommendationsQ.data?.data ?? [];
+  const quickActions = user?.role === "admin"
+    ? [
+        { label: "Upload document", href: "/dashboard/documents" },
+        { label: "Review graph workspace", href: "/dashboard/graph" },
+        { label: "Manage platform settings", href: "/dashboard/account?view=settings" },
+      ]
+    : [
+        { label: "Open graph view", href: "/dashboard/graph" },
+        { label: "Browse documents", href: "/dashboard/documents" },
+        { label: "Review market indices", href: "/dashboard/indices" },
+      ];
+
+  const openRecommendation = (recommendation: RecommendationRecord) => {
+    const params = new URLSearchParams({
+      node: recommendation.nodeId,
+      recommended: "1",
+      label: recommendation.title,
+      reason: recommendation.reason,
+      source: recommendation.graphSource,
+    });
+    navigate(`/dashboard/graph?${params.toString()}`);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -427,6 +460,104 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
             </button>
           );
         })}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_340px]">
+        <div className="rounded-[28px] border border-[#e8e4dc] bg-white p-5 shadow-card">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-foreground">Recommended for you</div>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                Graph-guided starting points for your next jump through the protected workspace.
+              </p>
+            </div>
+            <Badge className={graphSource === "neo4j" ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-amber-100 text-amber-800 hover:bg-amber-100"}>
+              {graphSource === "neo4j" ? "Powered by live graph" : "Using curated fallback"}
+            </Badge>
+          </div>
+
+          {recommendationsQ.isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : recommendationCards.length ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              {recommendationCards.map((recommendation) => (
+                <button
+                  key={recommendation.id}
+                  onClick={() => openRecommendation(recommendation)}
+                  className="group rounded-[24px] border border-[#ebe5db] bg-[#fcfbf8] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#d8d1c4] hover:bg-white"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge variant="secondary" className="bg-primary/8 text-primary">
+                      {recommendation.category}
+                    </Badge>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                      {recommendation.nodeType}
+                    </div>
+                  </div>
+                  <div className="mt-4 text-base font-semibold leading-6 text-slate-900">
+                    {recommendation.title}
+                  </div>
+                  <p className="mt-2 text-xs leading-6 text-slate-600">
+                    {recommendation.reason}
+                  </p>
+                  <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary">
+                    Open in graph
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[22px] border border-dashed border-[#ddd7cd] bg-[#faf8f3] px-4 py-5 text-sm text-slate-500">
+              Recommendations will appear here once graph relationships are available.
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-[28px] border border-[#e8e4dc] bg-[#f9f7f1] p-5 shadow-card">
+          <div className="text-sm font-semibold text-foreground">Workspace status</div>
+          <p className="mt-1 text-xs leading-6 text-muted-foreground">
+            Transparent signals for the protected environment and the next best actions for your role.
+          </p>
+
+          <div className="mt-4 space-y-3">
+            <div className="rounded-[20px] border border-white/70 bg-white px-4 py-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">API status</div>
+              <div className="mt-2 text-sm font-semibold text-slate-900">{healthQ.data?.status ?? "loading"}</div>
+            </div>
+            <div className="rounded-[20px] border border-white/70 bg-white px-4 py-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Database</div>
+              <div className="mt-2 text-sm font-semibold text-slate-900">
+                {healthQ.data?.database?.status ?? "unknown"}
+              </div>
+              {healthQ.data?.database?.detail ? (
+                <p className="mt-1 text-xs leading-5 text-slate-500">{healthQ.data.database.detail}</p>
+              ) : null}
+            </div>
+            <div className="rounded-[20px] border border-white/70 bg-white px-4 py-3">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Graph source</div>
+              <div className="mt-2 text-sm font-semibold text-slate-900">{graphSource}</div>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Quick actions</div>
+            <div className="mt-3 space-y-2">
+              {quickActions.map((action) => (
+                <button
+                  key={action.href}
+                  onClick={() => navigate(action.href)}
+                  className="flex w-full items-center justify-between rounded-2xl border border-[#ebe5db] bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 transition-colors hover:border-[#d6d1c7] hover:bg-[#fcfbf8]"
+                >
+                  {action.label}
+                  <ArrowRight className="h-4 w-4 text-primary" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent data */}

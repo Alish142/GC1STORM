@@ -1,8 +1,9 @@
+from collections import Counter, defaultdict
+from datetime import UTC, datetime
 from decimal import Decimal
-from math import ceil
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import Select, String, asc, cast, desc, func, or_, select
+from sqlalchemy import Select, asc, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.visual_settings import get_visual_config
@@ -61,6 +62,109 @@ def _file_size_display(size_bytes: int | None) -> str:
     return f"{size_bytes} B"
 
 
+def _build_recommendations(
+    *,
+    graph_source_name: str,
+    graph_source: dict[str, list[dict]],
+    document_count: int,
+) -> list[dict[str, object]]:
+    nodes = graph_source["nodes"]
+    edges = graph_source["edges"]
+    if not nodes:
+        return []
+
+    nodes_by_id = {str(node["id"]): node for node in nodes}
+    degrees: Counter[str] = Counter()
+    neighbors: defaultdict[str, set[str]] = defaultdict(set)
+
+    for edge in edges:
+        source_id = str(edge["source"])
+        target_id = str(edge["target"])
+        if source_id not in nodes_by_id or target_id not in nodes_by_id:
+            continue
+        degrees[source_id] += 1
+        degrees[target_id] += 1
+        neighbors[source_id].add(target_id)
+        neighbors[target_id].add(source_id)
+
+    ranked_nodes = sorted(
+        nodes,
+        key=lambda node: (
+            -degrees.get(str(node["id"]), 0),
+            str(node.get("label", "")),
+        ),
+    )
+
+    recommendations: list[dict[str, object]] = []
+    used_node_ids: set[str] = set()
+
+    def add_recommendation(node: dict, *, category: str, reason: str) -> None:
+        node_id = str(node["id"])
+        if node_id in used_node_ids or len(recommendations) >= 3:
+            return
+        recommendations.append(
+            {
+                "id": f"{category}:{node_id}",
+                "category": category,
+                "title": str(node["label"]),
+                "reason": reason,
+                "nodeId": node_id,
+                "nodeType": str(node["type"]),
+                "graphSource": graph_source_name,
+            }
+        )
+        used_node_ids.add(node_id)
+
+    for node in ranked_nodes:
+        if str(node.get("type")) != "Theme":
+            continue
+        add_recommendation(
+            node,
+            category="theme",
+            reason=(
+                f"Connected to {len(neighbors.get(str(node['id']), set()))} related nodes"
+                if neighbors.get(str(node["id"]))
+                else "A strong theme to start exploring the network"
+            ),
+        )
+        if len(recommendations) >= 2:
+            break
+
+    for node in ranked_nodes:
+        if str(node.get("type")) == "Theme":
+            continue
+        connected_types = sorted(
+            {str(nodes_by_id[neighbor_id]["type"]) for neighbor_id in neighbors.get(str(node["id"]), set())}
+        )
+        add_recommendation(
+            node,
+            category="entity",
+            reason=(
+                f"Touches {', '.join(connected_types[:2])}"
+                if connected_types
+                else "Worth reviewing from the current graph"
+            ),
+        )
+        if len(recommendations) >= 3:
+            break
+
+    if document_count > 0 and recommendations:
+        anchor = recommendations[0]
+        recommendations.append(
+            {
+                "id": f"document-focus:{anchor['nodeId']}",
+                "category": "document",
+                "title": f"Track disclosures around {anchor['title']}",
+                "reason": f"{document_count} document records are available for deeper review",
+                "nodeId": anchor["nodeId"],
+                "nodeType": anchor["nodeType"],
+                "graphSource": graph_source_name,
+            }
+        )
+
+    return recommendations[:3]
+
+
 @router.get("/visual-config")
 def visual_config(db: Session = Depends(get_db)):
     return get_visual_config(db)
@@ -76,6 +180,22 @@ def overview(db: Session = Depends(get_db)):
         or 0,
         "indices": db.scalar(select(func.count()).select_from(MarketIndex)) or 0,
         "documents": db.scalar(select(func.count()).select_from(Document)) or 0,
+    }
+
+
+@router.get("/recommendations")
+def recommendations(db: Session = Depends(get_db)):
+    graph_source, graph_source_name = get_graph_view_data_or_fallback()
+    document_count = db.scalar(select(func.count()).select_from(Document)) or 0
+
+    return {
+        "data": _build_recommendations(
+            graph_source_name=graph_source_name,
+            graph_source=graph_source,
+            document_count=document_count,
+        ),
+        "graphSource": graph_source_name,
+        "generatedAt": datetime.now(UTC).isoformat(),
     }
 
 
