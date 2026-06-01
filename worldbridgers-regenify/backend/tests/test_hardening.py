@@ -23,6 +23,9 @@ DEFAULT_ENV = {
 
 MODULES_TO_RESET = [
     "app.api.deps",
+    "app.api.deps.auth",
+    "app.api.routes.auth",
+    "app.api.routes.support",
     "app.core.config",
     "app.core.security",
     "app.db",
@@ -37,6 +40,12 @@ MODULES_TO_RESET = [
 
 def _reset_modules() -> None:
     for module_name in MODULES_TO_RESET:
+        module = sys.modules.get(module_name)
+        if module_name == "app.db.neo4j" and module and hasattr(module, "close_neo4j"):
+            try:
+                module.close_neo4j()
+            except Exception:
+                pass
         sys.modules.pop(module_name, None)
 
 
@@ -201,6 +210,164 @@ class RateLimitTests(unittest.TestCase):
         self.assertEqual(len(db.added), 0)
         self.assertFalse(db.commit_called)
         self.assertTrue(db.rollback_called)
+
+
+class AuthDependencyTests(unittest.TestCase):
+    def _build_request(self, *, cookies: dict[str, str] | None = None, headers: dict[str, str] | None = None) -> Request:
+        raw_headers = []
+        for key, value in (headers or {}).items():
+            raw_headers.append((key.lower().encode("latin-1"), value.encode("latin-1")))
+        if cookies:
+            cookie_header = "; ".join(f"{key}={value}" for key, value in cookies.items())
+            raw_headers.append((b"cookie", cookie_header.encode("latin-1")))
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": "https",
+                "path": "/api/auth/change-password",
+                "headers": raw_headers,
+                "client": ("127.0.0.1", 12345),
+            }
+        )
+
+    def test_require_csrf_token_rejects_mismatch(self) -> None:
+        auth_deps = _load_module("app.api.deps.auth")
+        req = self._build_request(
+            cookies={auth_deps.CSRF_COOKIE_NAME: "cookie-token"},
+            headers={"X-CSRF-Token": "header-token"},
+        )
+
+        with self.assertRaises(HTTPException) as error:
+            auth_deps.require_csrf_token(req=req, _=SimpleNamespace(id="user-1"))
+
+        self.assertEqual(error.exception.status_code, 403)
+
+    def test_get_current_user_clears_invalid_cookie(self) -> None:
+        auth_deps = _load_module("app.api.deps.auth")
+        req = self._build_request(cookies={auth_deps.COOKIE_NAME: "bad-token"})
+        res = Response()
+
+        with mock.patch.object(auth_deps, "decode_session_token", return_value=None):
+            user = auth_deps.get_current_user(req=req, res=res, db=SimpleNamespace())
+
+        self.assertIsNone(user)
+        set_cookie_headers = ",".join(res.headers.getlist("set-cookie"))
+        self.assertIn(f"{auth_deps.COOKIE_NAME}=\"\"", set_cookie_headers)
+        self.assertIn(f"{auth_deps.CSRF_COOKIE_NAME}=\"\"", set_cookie_headers)
+
+
+class AuthRouteTests(unittest.TestCase):
+    def _build_request(self, *, origin: str = "https://frontend.example") -> Request:
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": "https",
+                "path": "/api/auth/login",
+                "headers": [(b"origin", origin.encode("latin-1"))],
+                "client": ("127.0.0.1", 12345),
+            }
+        )
+
+    def test_login_rejects_invalid_credentials(self) -> None:
+        auth_module = _load_module("app.api.routes.auth")
+        req = self._build_request()
+        res = Response()
+        input_data = auth_module.LoginInput(email="person@example.com", password="wrong", remember_me=False)
+
+        with mock.patch.object(auth_module, "get_user_by_email", return_value=None), mock.patch.object(
+            auth_module, "log_audit_event"
+        ) as log_audit_event, mock.patch.object(auth_module, "_write_session_cookie") as write_cookie:
+            with self.assertRaises(HTTPException) as error:
+                auth_module.login(input_data=input_data, req=req, res=res, _=None, db=SimpleNamespace())
+
+        self.assertEqual(error.exception.status_code, 401)
+        write_cookie.assert_not_called()
+        log_audit_event.assert_called_once()
+
+    def test_write_session_cookie_sets_matching_cookie_lifetime(self) -> None:
+        auth_module = _load_module("app.api.routes.auth")
+        req = self._build_request()
+        res = Response()
+
+        with mock.patch.object(auth_module, "create_session_token", return_value="signed-token") as create_token:
+            auth_module._write_session_cookie(
+                req,
+                res,
+                {"id": "user-1", "email": "person@example.com", "name": "Person", "role": "user"},
+                remember_me=True,
+            )
+
+        expected_max_age = auth_module.settings.remember_session_days * 24 * 60 * 60
+        create_token.assert_called_once()
+        self.assertEqual(create_token.call_args.kwargs["expires_seconds"], expected_max_age)
+        set_cookie_headers = ",".join(res.headers.getlist("set-cookie"))
+        self.assertIn("signed-token", set_cookie_headers)
+        self.assertIn(f"Max-Age={expected_max_age}", set_cookie_headers)
+
+
+class SupportRouteTests(unittest.TestCase):
+    def _build_request(self) -> Request:
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": "https",
+                "path": "/api/support/call-requests",
+                "headers": [],
+                "client": ("127.0.0.1", 12345),
+            }
+        )
+
+    def test_create_call_request_uses_authenticated_user_defaults(self) -> None:
+        support_module = _load_module("app.api.routes.support")
+        req = self._build_request()
+        payload = support_module.CallRequestInput(
+            full_name=None,
+            email=None,
+            organisation=" Worldbridgers ",
+            preferred_time=" Morning ",
+            notes=" Need a walkthrough ",
+        )
+        current_user = SimpleNamespace(
+            id="user-123",
+            name="Casey Example",
+            email="casey@example.com",
+        )
+        created_record = SimpleNamespace(
+            id="call-1",
+            user_id="user-123",
+            full_name="Casey Example",
+            email="casey@example.com",
+            organisation="Worldbridgers",
+            preferred_time="Morning",
+            notes="Need a walkthrough",
+            status="new",
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        db = SimpleNamespace(
+            add=mock.Mock(),
+            commit=mock.Mock(),
+            refresh=mock.Mock(side_effect=lambda record: record.__dict__.update(created_record.__dict__)),
+        )
+
+        with mock.patch.object(support_module, "log_audit_event") as log_audit_event:
+            response = support_module.create_call_request(
+                payload=payload,
+                req=req,
+                _=None,
+                current_user=current_user,
+                db=db,
+            )
+
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
+        log_audit_event.assert_called_once()
+        self.assertEqual(response["request"]["fullName"], "Casey Example")
+        self.assertEqual(response["request"]["email"], "casey@example.com")
+        self.assertEqual(response["request"]["organisation"], "Worldbridgers")
 
 
 if __name__ == "__main__":
