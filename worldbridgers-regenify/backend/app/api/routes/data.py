@@ -6,9 +6,8 @@ from sqlalchemy import Select, String, asc, cast, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.crud.visual_settings import get_visual_config
-from app.data.mock_data import GRAPH_DATA
 from app.db import get_db
-from app.db.neo4j import get_graph_view_data, verify_neo4j
+from app.db.neo4j import get_graph_view_data_or_fallback
 from app.models.document import Document
 from app.models.document_member_state import DocumentMemberState
 from app.models.issuer import Issuer
@@ -331,7 +330,7 @@ def graph_data(
     search: str | None = None,
 ):
     visual_config = get_visual_config(db)
-    graph_source = get_graph_view_data() if verify_neo4j() else GRAPH_DATA
+    graph_source, graph_source_name = get_graph_view_data_or_fallback()
     nodes = [*graph_source["nodes"]]
     edges = [*graph_source["edges"]]
 
@@ -349,4 +348,9 @@ def graph_data(
         node_ids = {n["id"] for n in nodes}
         edges = [e for e in edges if e["source"] in node_ids and e["target"] in node_ids]
 
-    return {"nodes": nodes, "edges": edges, "visualConfig": visual_config}
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "visualConfig": visual_config,
+        "graphSource": graph_source_name,
+    }

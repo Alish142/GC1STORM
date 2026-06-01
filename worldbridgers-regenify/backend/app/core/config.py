@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     neo4j_user: str
     neo4j_password: str
     neo4j_trust_all: bool = False
+    allow_mock_graph_fallback: bool = False
     jwt_secret: str
     session_max_age_hours: int = 12
     remember_session_days: int = 30

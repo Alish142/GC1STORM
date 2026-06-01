@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from neo4j import GraphDatabase, TrustAll
 
 from app.core.config import get_settings
@@ -195,3 +196,11 @@ def get_graph_view_data() -> dict[str, list[dict]]:
         nodes = [node for node in (record["nodes"] or []) if node]
         edges = [edge for edge in (record["edges"] or []) if edge]
         return {"nodes": nodes, "edges": edges}
+
+
+def get_graph_view_data_or_fallback() -> tuple[dict[str, list[dict]], str]:
+    if verify_neo4j():
+        return get_graph_view_data(), "neo4j"
+    if settings.allow_mock_graph_fallback:
+        return GRAPH_DATA, "mock"
+    raise HTTPException(status_code=503, detail="Graph database is unavailable.")
