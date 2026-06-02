@@ -27,11 +27,11 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { backendApi } from "@/lib/backendApi";
+import { backendApi, type RecommendationRecord } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
+  Leaf, ShieldCheck, Globe2, HelpCircle, Loader2, Settings, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; 
 type IssuerRow = { id: string; name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; assetsAmount?: number | null; assetsCurrency?: string; description?: string; foundedYear?: number | null; issuerNameDotColor?: string; wbxLabelDotColor?: string };
 type OfferingRow = { id: string; issuerId: string; type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; delisted: boolean; issuerDotColor?: string; typeDotColor?: string };
 type IndexRow = { id: string; type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
-type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuerId?: string | null; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
 type IssuerFormState = { name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assetsAmount: string; assetsCurrency: string; foundedYear: string; description: string };
 type OfferingFormState = { issuerId: string; type: string; segment: string; isin: string; name: string; issuedAmount: string; currency: string; listingDate: string; wbxClassification: string; coupon: string; lastPrice: string; delisted: boolean };
 type IndexFormState = { type: string; name: string; currency: string; last: string; changePercent: string; change: string; monthHigh: string; monthLow: string; yearHigh: string; yearLow: string };
@@ -54,6 +54,14 @@ type AdminDocumentUploadForm = {
   documentDate: string;
   memberStates: string;
   file: File | null;
+};
+type DocumentFormState = {
+  type: string;
+  subType: string;
+  name: string;
+  issuerId: string;
+  documentDate: string;
+  memberStates: string;
 };
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
@@ -324,9 +332,15 @@ function indexToForm(row: IndexRow): IndexFormState {
 
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const isAdmin = user?.role === "admin";
   const overviewQ = useQuery<{ issuers: number; offerings: number; indices: number; documents: number }>({
     queryKey: ["dashboard", "overview"],
     queryFn: () => backendApi.overview(),
+  });
+  const recommendationsQ = useQuery<{ data: RecommendationRecord[]; graphSource: "neo4j" | "mock"; generatedAt: string }>({
+    queryKey: ["dashboard", "recommendations"],
+    queryFn: () => backendApi.recommendations(),
   });
   const issuersQ = useQuery<Paginated<IssuerRow>>({
     queryKey: ["issuers", "home"],
@@ -375,6 +389,57 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
       tab: "documents" as TabKey,
     },
   ];
+  const graphSource = recommendationsQ.data?.graphSource ?? "mock";
+  const recommendationCards = recommendationsQ.data?.data ?? [];
+  const adminActions = [
+    {
+      title: "Manage issuers",
+      description: "Create or refine issuer records and classifications.",
+      icon: Building2,
+      href: "/dashboard/issuers",
+    },
+    {
+      title: "Manage offerings",
+      description: "Open the offering workspace for new listings and edits.",
+      icon: Layers,
+      href: "/dashboard/offerings",
+    },
+    {
+      title: "Manage indices",
+      description: "Update benchmarks, market values, and index coverage.",
+      icon: BarChart3,
+      href: "/dashboard/indices",
+    },
+    {
+      title: "Manage documents",
+      description: "Review document records, file access, and publishing flow.",
+      icon: FileText,
+      href: "/dashboard/documents",
+    },
+    {
+      title: "Manage visualisation",
+      description: "Adjust table dots and visual workspace presentation.",
+      icon: Settings,
+      href: "/dashboard/account?view=settings",
+    },
+    {
+      title: "Review support",
+      description: "Jump into support and follow-up workflows for users.",
+      icon: HelpCircle,
+      href: "/dashboard/account?view=support",
+    },
+  ];
+
+  const openRecommendation = (recommendation: RecommendationRecord) => {
+    const params = new URLSearchParams({
+      node: recommendation.nodeId,
+      recommended: "1",
+      label: recommendation.title,
+      reason: recommendation.reason,
+      source: recommendation.graphSource,
+    });
+    navigate(`/dashboard/graph?${params.toString()}`);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -404,7 +469,7 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
             <button
               key={i}
               onClick={() => onTabChange(s.tab)}
-              className={`group rounded-[24px] border p-5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
+              className={`group rounded-[22px] border px-5 py-4 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
                 s.label === "Issuers"
                   ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
                   : s.label === "Offerings"
@@ -414,19 +479,147 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
                       : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"
               }`}
             >
-              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${s.color}`}>
-                <Icon className="w-5 h-5" />
+              <div className="flex items-start justify-between gap-4">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${s.color}`}>
+                  <Icon className="w-4.5 h-4.5" />
+                </div>
+                <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
+                  Open
+                </div>
               </div>
-              <div className="text-[2rem] font-bold leading-none text-foreground">
+              <div className="mt-5 text-[2.1rem] font-semibold leading-none text-foreground">
                 {overviewQ.isLoading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : s.value}
               </div>
-              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
-              <div className="mt-2 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-1.5 text-sm text-muted-foreground">{s.label}</div>
+              <div className="mt-3 flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
                 View all <ArrowRight className="w-3 h-3" />
               </div>
             </button>
           );
         })}
+      </div>
+
+      {isAdmin ? (
+        <div className="rounded-[28px] border border-[#d7dee7] bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fc_100%)] px-4 py-4 shadow-[0_16px_34px_rgba(15,23,42,0.06)] sm:px-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Admin tools
+              </div>
+              <h2 className="mt-2 text-lg font-semibold text-slate-950">Workspace control</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Fast paths into the core admin workflows without crowding the main dashboard.
+              </p>
+            </div>
+            <Badge className="border border-slate-200 bg-white text-slate-700 hover:bg-white">
+              Admin only
+            </Badge>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {adminActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.title}
+                  onClick={() => navigate(action.href)}
+                  className="group rounded-[22px] border border-slate-200 bg-white/90 px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_14px_28px_rgba(15,23,42,0.08)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </div>
+                  <div className="mt-4 text-sm font-semibold text-slate-950">
+                    {action.title}
+                  </div>
+                  <p className="mt-1 text-xs leading-6 text-slate-600">
+                    {action.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="relative overflow-hidden rounded-[32px] border border-[#dfe7df] bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.10),_transparent_24%),linear-gradient(180deg,#fdfdf9_0%,#f7f6f0_100%)] p-5 shadow-[0_24px_60px_rgba(20,31,24,0.08)]">
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-500 shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+              <Network className="h-3.5 w-3.5 text-primary" />
+              Graph-guided recommendations
+            </div>
+            <div className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+              Recommended for you
+            </div>
+            <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
+              Curated starting points that turn the protected workspace into a guided discovery flow instead of a static dashboard.
+            </p>
+          </div>
+          <Badge className={graphSource === "neo4j" ? "border border-emerald-200 bg-white/80 text-primary hover:bg-white/80" : "border border-amber-200 bg-white/80 text-amber-800 hover:bg-white/80"}>
+            {graphSource === "neo4j" ? "Powered by live graph" : "Using curated fallback"}
+          </Badge>
+        </div>
+
+        {recommendationsQ.isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : recommendationCards.length ? (
+          <div className="grid gap-4 xl:grid-cols-[1.08fr_0.96fr_0.96fr]">
+            {recommendationCards.map((recommendation, index) => (
+              <button
+                key={recommendation.id}
+                onClick={() => openRecommendation(recommendation)}
+                className={`group relative overflow-hidden rounded-[28px] border p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(20,31,24,0.10)] ${
+                  index === 0
+                    ? "border-[#d8eadc] bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(241,249,243,0.96)_100%)]"
+                    : index === 1
+                      ? "border-[#e3e1d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(248,247,241,0.98)_100%)]"
+                      : "border-[#dce5ee] bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(243,247,252,0.98)_100%)]"
+                }`}
+              >
+                <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/60 to-transparent opacity-80" />
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge
+                      variant="secondary"
+                      className={`border-0 ${
+                        recommendation.category === "theme"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : recommendation.category === "entity"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {recommendation.category}
+                    </Badge>
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                      {recommendation.nodeType}
+                    </div>
+                  </div>
+                  <div className="mt-10 text-lg font-semibold leading-7 text-slate-950">
+                    {recommendation.title}
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    {recommendation.reason}
+                  </p>
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">
+                    Open in graph
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[24px] border border-dashed border-[#ddd7cd] bg-white/70 px-5 py-6 text-sm text-slate-500 backdrop-blur-sm">
+            Recommendations will appear here once graph relationships are available.
+          </div>
+        )}
       </div>
 
       {/* Recent data */}
@@ -620,6 +813,27 @@ function IssuersTab() {
   };
 
   const totalActive = Object.values(filters).flat().length;
+  const issuerRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const issuer = row as unknown as IssuerRow;
+        return [
+          {
+            label: "Edit issuer",
+            onSelect: () => openEdit(issuer),
+          },
+          {
+            label: "Delete issuer",
+            onSelect: () => {
+              if (window.confirm(`Delete issuer "${issuer.name}"? This also removes linked offerings.`)) {
+                deleteMutation.mutate(issuer.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     {
@@ -768,6 +982,7 @@ function IssuersTab() {
           isLoading={isLoading}
           searchPlaceholder="Search issuers by name, country..."
           emptyMessage="No issuers found."
+          rowContextMenu={issuerRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -949,6 +1164,31 @@ function OfferingsTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
+  const offeringRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const offering = row as unknown as OfferingRow;
+        return [
+          {
+            label: "Edit offering",
+            onSelect: () => {
+              setEditingOffering(offering);
+              setForm(offeringToForm(offering));
+              setDialogOpen(true);
+            },
+          },
+          {
+            label: "Delete offering",
+            onSelect: () => {
+              if (window.confirm(`Delete offering "${offering.name}"?`)) {
+                deleteMutation.mutate(offering.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
@@ -981,13 +1221,13 @@ function OfferingsTab() {
     columns.push({
       key: "id",
       label: "Actions",
-      className: "text-right",
+      className: "w-[88px] text-center",
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => {
               const offering = row as unknown as OfferingRow;
               setEditingOffering(offering);
@@ -1098,6 +1338,7 @@ function OfferingsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search by name, ISIN, issuer..."
           emptyMessage="No offerings found."
+          rowContextMenu={offeringRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1146,6 +1387,39 @@ function OfferingsTab() {
                   {row.coupon !== null ? `${Number(row.coupon).toFixed(3)}%` : "—"}
                 </span>
               </div>
+              {isAdmin ? (
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    onClick={() => {
+                      const offering = row as unknown as OfferingRow;
+                      setEditingOffering(offering);
+                      setForm(offeringToForm(offering));
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      const offering = row as unknown as OfferingRow;
+                      if (window.confirm(`Delete offering "${offering.name}"?`)) {
+                        deleteMutation.mutate(offering.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                </div>
+              ) : null}
             </div>
           )}
         />
@@ -1267,6 +1541,31 @@ function IndicesTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
+  const indexRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const index = row as unknown as IndexRow;
+        return [
+          {
+            label: "Edit index",
+            onSelect: () => {
+              setEditingIndex(index);
+              setForm(indexToForm(index));
+              setDialogOpen(true);
+            },
+          },
+          {
+            label: "Delete index",
+            onSelect: () => {
+              if (window.confirm(`Delete index "${index.name}"?`)) {
+                deleteMutation.mutate(index.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
@@ -1418,6 +1717,7 @@ function IndicesTab() {
           isLoading={isLoading}
           searchPlaceholder="Search indices by name or type..."
           emptyMessage="No indices found."
+          rowContextMenu={indexRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1496,6 +1796,8 @@ function DocumentsTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<DocumentRow | null>(null);
   const [uploadForm, setUploadForm] = useState<AdminDocumentUploadForm>({
     type: "Offerings Documents",
     subType: "",
@@ -1504,6 +1806,14 @@ function DocumentsTab() {
     documentDate: "",
     memberStates: "",
     file: null,
+  });
+  const [form, setForm] = useState<DocumentFormState>({
+    type: "Offerings Documents",
+    subType: "",
+    name: "",
+    issuerId: "",
+    documentDate: "",
+    memberStates: "",
   });
 
   const openDocument = useCallback((fileUrl?: string | null) => {
@@ -1576,7 +1886,102 @@ function DocumentsTab() {
     },
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingDocument) {
+        throw new Error("Document is not selected for editing.");
+      }
+      return backendApi.updateDocument(editingDocument.id, {
+        type: form.type,
+        subType: form.subType || undefined,
+        name: form.name,
+        issuerId: form.issuerId || undefined,
+        documentDate: form.documentDate || undefined,
+        memberStates: form.memberStates
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Document updated.");
+      setDialogOpen(false);
+      setEditingDocument(null);
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not update document.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (documentId: string) => backendApi.deleteDocument(documentId),
+    onSuccess: () => {
+      toast.success("Document deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not delete document.");
+    },
+  });
+
   const totalActive = Object.values(filters).flat().length;
+  const documentRowContextMenu = (row: Record<string, unknown>) => {
+    const document = row as unknown as DocumentRow;
+    if (isAdmin) {
+      return [
+        {
+          label: "Edit document",
+          onSelect: () => {
+            setEditingDocument(document);
+            setForm({
+              type: document.type,
+              subType: document.subType,
+              name: document.name,
+              issuerId: document.issuerId ?? "",
+              documentDate: document.date,
+              memberStates: document.memberStates.join(", "),
+            });
+            setDialogOpen(true);
+          },
+        },
+        {
+          label: "Delete document",
+          onSelect: () => {
+            if (window.confirm(`Delete document "${document.name}"?`)) {
+              deleteMutation.mutate(document.id);
+            }
+          },
+          destructive: true,
+          disabled: deleteMutation.isPending,
+        },
+        {
+          label: "Open document",
+          onSelect: () => openDocument(document.fileUrl ?? undefined),
+          disabled: !document.fileUrl,
+        },
+        {
+          label: "Download document",
+          onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
+          disabled: !document.fileUrl,
+        },
+      ];
+    }
+
+    return [
+      {
+        label: "Open document",
+        onSelect: () => openDocument(document.fileUrl ?? undefined),
+        disabled: !document.fileUrl,
+      },
+      {
+        label: "Download document",
+        onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
+        disabled: !document.fileUrl,
+      },
+    ];
+  };
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type",
@@ -1604,33 +2009,80 @@ function DocumentsTab() {
     },
     { key: "date", label: "Date", sortable: false },
     { key: "fileSize", label: "Size" },
-    { key: "id", label: "Actions",
-      render: (_, row) => (
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-            onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
-            disabled={!row.fileUrl}
-            aria-label={`View ${String(row.name)}`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-            onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
-            disabled={!row.fileUrl}
-            aria-label={`Download ${String(row.name)}`}
-          >
-            <Download className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      )
-    },
   ];
+
+  columns.push({
+    key: "id",
+    label: "Actions",
+    className: isAdmin ? "w-[88px] text-center" : "w-[120px] text-center",
+    render: (_, row) => (
+      <div className="flex items-center justify-center gap-1">
+        {isAdmin ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                const document = row as unknown as DocumentRow;
+                setEditingDocument(document);
+                setForm({
+                  type: document.type,
+                  subType: document.subType,
+                  name: document.name,
+                  issuerId: document.issuerId ?? "",
+                  documentDate: document.date,
+                  memberStates: document.memberStates.join(", "),
+                });
+                setDialogOpen(true);
+              }}
+              aria-label={`Edit ${String(row.name)}`}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                const document = row as unknown as DocumentRow;
+                if (window.confirm(`Delete document "${document.name}"?`)) {
+                  deleteMutation.mutate(document.id);
+                }
+              }}
+              aria-label={`Delete ${String(row.name)}`}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+              disabled={!row.fileUrl}
+              aria-label={`View ${String(row.name)}`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+              disabled={!row.fileUrl}
+              aria-label={`Download ${String(row.name)}`}
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
+    ),
+  });
 
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
@@ -1809,6 +2261,7 @@ function DocumentsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search documents by name, type..."
           emptyMessage="No documents found."
+          rowContextMenu={documentRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1849,30 +2302,131 @@ function DocumentsTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 text-xs"
-                  onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
-                  disabled={!row.fileUrl}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  View
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 text-xs"
-                  onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
-                  disabled={!row.fileUrl}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </Button>
+                {isAdmin ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => {
+                        const document = row as unknown as DocumentRow;
+                        setEditingDocument(document);
+                        setForm({
+                          type: document.type,
+                          subType: document.subType,
+                          name: document.name,
+                          issuerId: document.issuerId ?? "",
+                          documentDate: document.date,
+                          memberStates: document.memberStates.join(", "),
+                        });
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        const document = row as unknown as DocumentRow;
+                        if (window.confirm(`Delete document "${document.name}"?`)) {
+                          deleteMutation.mutate(document.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+                      disabled={!row.fileUrl}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+                      disabled={!row.fileUrl}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
         />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit document</DialogTitle>
+              <DialogDescription>Update the document metadata stored in the platform.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Offerings Documents">Offerings Documents</SelectItem>
+                    <SelectItem value="Notices">Notices</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Sub Type</Label>
+                <Input value={form.subType} onChange={(event) => setForm((current) => ({ ...current, subType: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Issuer</Label>
+                <Select value={form.issuerId || "__none__"} onValueChange={(value) => setForm((current) => ({ ...current, issuerId: value === "__none__" ? "" : value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Optional issuer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No issuer</SelectItem>
+                    {(issuerOptionsQuery.data?.data ?? []).map((issuer) => (
+                      <SelectItem key={issuer.id} value={issuer.id}>{issuer.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input type="date" value={form.documentDate} onChange={(event) => setForm((current) => ({ ...current, documentDate: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Member States</Label>
+                <Input value={form.memberStates} onChange={(event) => setForm((current) => ({ ...current, memberStates: event.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
@@ -1904,7 +2458,7 @@ export default function Dashboard() {
 
       <div className="flex-1 flex flex-col">
         {/* Tab navigation */}
-        <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
+        <div className="sticky top-[65px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
           <div className="container">
             <div className="grid grid-cols-3 gap-1.5 py-2 md:flex md:items-center md:gap-1 md:overflow-x-auto md:py-1.5">
               <button

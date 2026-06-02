@@ -109,3 +109,17 @@ def resolve_document_url(storage_ref: str | None) -> str | None:
         Params={"Bucket": bucket, "Key": key},
         ExpiresIn=settings.s3_presigned_url_expires_seconds,
     )
+
+
+def delete_document_storage(storage_ref: str | None) -> bool:
+    if not storage_ref:
+        return False
+
+    parsed = _parse_storage_ref(storage_ref)
+    if not parsed or not s3_documents_enabled():
+        return False
+
+    bucket, key = parsed
+    client = _get_s3_client()
+    client.delete_object(Bucket=bucket, Key=key)
+    return True

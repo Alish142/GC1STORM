@@ -10,6 +10,14 @@ from sqlalchemy.orm import Session
 from app.api.deps.auth import require_admin_user, require_csrf_token, require_role
 from app.crud.visual_settings import get_visual_config, update_visual_config
 from app.db import get_db
+from app.db.neo4j import (
+    delete_index_node,
+    delete_issuer_node,
+    delete_offering_node,
+    upsert_index_node,
+    upsert_issuer_node,
+    upsert_offering_node,
+)
 from app.models.audit_log import AuditLog
 from app.models.document import Document
 from app.models.document_member_state import DocumentMemberState
@@ -18,7 +26,12 @@ from app.models.market_index import MarketIndex
 from app.models.offering import Offering
 from app.models.user import User
 from app.services.audit import log_audit_event
-from app.services.s3_documents import resolve_document_url, s3_documents_enabled, upload_document_bytes
+from app.services.s3_documents import (
+    delete_document_storage,
+    resolve_document_url,
+    s3_documents_enabled,
+    upload_document_bytes,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -79,6 +92,19 @@ class IndexPayload(BaseModel):
     month_low: Decimal | None = Field(default=None, alias="monthLow")
     year_high: Decimal | None = Field(default=None, alias="yearHigh")
     year_low: Decimal | None = Field(default=None, alias="yearLow")
+
+    model_config = {
+        "populate_by_name": True,
+    }
+
+
+class DocumentPayload(BaseModel):
+    type: str
+    sub_type: str | None = Field(default=None, alias="subType")
+    name: str
+    issuer_id: UUID | None = Field(default=None, alias="issuerId")
+    document_date: date | None = Field(default=None, alias="documentDate")
+    member_states: list[str] = Field(default_factory=list, alias="memberStates")
 
     model_config = {
         "populate_by_name": True,
@@ -165,6 +191,33 @@ def _parse_member_states(member_states: str | None) -> list[str]:
     return values
 
 
+def _clean_member_states(values: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        cleaned = value.strip().upper()
+        if cleaned and cleaned not in seen:
+            normalized.append(cleaned)
+            seen.add(cleaned)
+    return normalized
+
+
+def _serialize_document(row: Document, issuer_name: str | None, member_states: list[str]) -> dict[str, object]:
+    return {
+        "id": str(row.id),
+        "type": row.type,
+        "subType": row.sub_type or "",
+        "name": row.name,
+        "issuerId": str(row.issuer_id) if row.issuer_id else None,
+        "issuer": issuer_name or "—",
+        "memberStates": member_states,
+        "date": row.document_date.isoformat() if row.document_date else "",
+        "fileSize": row.file_size_bytes,
+        "fileUrl": resolve_document_url(row.file_url),
+        "storageRef": row.file_url,
+    }
+
+
 @router.post("/issuers")
 def create_issuer(
     req: Request,
@@ -189,6 +242,7 @@ def create_issuer(
     db.add(issuer)
     db.commit()
     db.refresh(issuer)
+    upsert_issuer_node(issuer)
 
     log_audit_event(
         db,
@@ -229,6 +283,7 @@ def update_issuer(
     db.add(issuer)
     db.commit()
     db.refresh(issuer)
+    upsert_issuer_node(issuer)
 
     log_audit_event(
         db,
@@ -257,6 +312,7 @@ def delete_issuer(
     issuer_name = issuer.name
     db.delete(issuer)
     db.commit()
+    delete_issuer_node(str(issuer_id))
     log_audit_event(
         db,
         action="admin.issuer.deleted",
@@ -299,6 +355,7 @@ def create_offering(
     db.add(offering)
     db.commit()
     db.refresh(offering)
+    upsert_offering_node(offering, issuer=issuer)
 
     log_audit_event(
         db,
@@ -344,6 +401,7 @@ def update_offering(
     db.add(offering)
     db.commit()
     db.refresh(offering)
+    upsert_offering_node(offering, issuer=issuer)
 
     log_audit_event(
         db,
@@ -372,6 +430,7 @@ def delete_offering(
     offering_name = offering.name
     db.delete(offering)
     db.commit()
+    delete_offering_node(str(offering_id))
     log_audit_event(
         db,
         action="admin.offering.deleted",
@@ -408,6 +467,7 @@ def create_index(
     db.add(index)
     db.commit()
     db.refresh(index)
+    upsert_index_node(index)
 
     log_audit_event(
         db,
@@ -448,6 +508,7 @@ def update_index(
     db.add(index)
     db.commit()
     db.refresh(index)
+    upsert_index_node(index)
 
     log_audit_event(
         db,
@@ -476,6 +537,7 @@ def delete_index(
     index_name = index.name
     db.delete(index)
     db.commit()
+    delete_index_node(str(index_id))
     log_audit_event(
         db,
         action="admin.index.deleted",
@@ -606,20 +668,101 @@ async def upload_document(
 
     return {
         "success": True,
-        "document": {
-            "id": str(document.id),
-            "type": document.type,
-            "subType": document.sub_type or "",
+        "document": _serialize_document(document, issuer.name if issuer is not None else None, parsed_member_states),
+    }
+
+
+@router.patch("/documents/{document_id}")
+def update_document(
+    document_id: UUID,
+    req: Request,
+    payload: DocumentPayload,
+    user: User = Depends(require_admin_user),
+    __: None = Depends(require_csrf_token),
+    db: Session = Depends(get_db),
+):
+    document = db.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    issuer: Issuer | None = None
+    if payload.issuer_id is not None:
+        issuer = db.get(Issuer, payload.issuer_id)
+        if issuer is None:
+            raise HTTPException(status_code=404, detail="Issuer not found.")
+
+    document.type = _clean_required_text(payload.type, "Document type")
+    document.sub_type = _clean_optional_text(payload.sub_type)
+    document.name = _clean_required_text(payload.name, "Document name")
+    document.issuer_id = issuer.id if issuer is not None else None
+    document.document_date = payload.document_date
+    document.updated_at = _timestamp_now()
+    db.add(document)
+
+    db.query(DocumentMemberState).filter(DocumentMemberState.document_id == document.id).delete()
+    member_states = _clean_member_states(payload.member_states)
+    for country_code in member_states:
+        db.add(
+            DocumentMemberState(
+                id=uuid4(),
+                document_id=document.id,
+                country_code=country_code,
+            )
+        )
+
+    db.commit()
+    db.refresh(document)
+
+    log_audit_event(
+        db,
+        action="admin.document.updated",
+        req=req,
+        actor_user=user,
+        resource_type="document",
+        resource_id=str(document.id),
+        details={
             "name": document.name,
             "issuerId": str(document.issuer_id) if document.issuer_id else None,
-            "issuer": issuer.name if issuer is not None else None,
-            "memberStates": parsed_member_states,
-            "date": document.document_date.isoformat() if document.document_date else "",
-            "fileSize": document.file_size_bytes,
-            "fileUrl": resolve_document_url(document.file_url),
-            "storageRef": document.file_url,
+            "memberStates": ",".join(member_states),
         },
+    )
+
+    return {
+        "success": True,
+        "document": _serialize_document(document, issuer.name if issuer is not None else None, member_states),
     }
+
+
+@router.delete("/documents/{document_id}")
+def delete_document(
+    document_id: UUID,
+    req: Request,
+    user: User = Depends(require_admin_user),
+    __: None = Depends(require_csrf_token),
+    db: Session = Depends(get_db),
+):
+    document = db.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    document_name = document.name
+    storage_ref = document.file_url
+
+    db.delete(document)
+    db.commit()
+
+    delete_document_storage(storage_ref)
+
+    log_audit_event(
+        db,
+        action="admin.document.deleted",
+        req=req,
+        actor_user=user,
+        resource_type="document",
+        resource_id=str(document_id),
+        details={"name": document_name, "storageRef": storage_ref},
+    )
+    return Response(status_code=204)
 
 
 @router.get("/audit-logs")

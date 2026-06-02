@@ -13,11 +13,13 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     postgres_dsn: str
+    allow_degraded_db_startup: bool = False
 
     neo4j_uri: str
     neo4j_user: str
     neo4j_password: str
     neo4j_trust_all: bool = False
+    allow_mock_graph_fallback: bool = False
     jwt_secret: str
     session_max_age_hours: int = 12
     remember_session_days: int = 30

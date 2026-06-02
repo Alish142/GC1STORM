@@ -7,6 +7,7 @@ from app.models.issuer import Issuer
 from app.models.market_index import MarketIndex
 from app.models.offering import Offering
 from app.models.password_reset_token import PasswordResetToken
+from app.models.rate_limit_event import RateLimitEvent
 from app.models.support_request import SupportRequest
 from app.models.theme import Theme
 from app.models.user import User
@@ -22,6 +23,7 @@ __all__ = [
     "MarketIndex",
     "Offering",
     "PasswordResetToken",
+    "RateLimitEvent",
     "SupportRequest",
     "Theme",
     "User",

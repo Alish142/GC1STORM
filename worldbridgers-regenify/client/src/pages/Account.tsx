@@ -21,11 +21,9 @@ import {
   CheckCircle2,
   HelpCircle,
   Leaf,
-  Loader2,
   Mail,
   Settings,
   ShieldCheck,
-  Upload,
   User,
 } from "lucide-react";
 
@@ -64,19 +62,38 @@ type VisualConfig = {
   hoverLineColor: string;
 };
 
-type IssuerOption = {
+type SupportRequestRecord = {
   id: string;
-  name: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+  topic: string;
+  message: string;
+  status: string;
+  createdAt: string;
 };
 
-type DocumentUploadForm = {
-  type: string;
-  subType: string;
-  name: string;
-  issuerId: string;
-  documentDate: string;
-  memberStates: string;
-  file: File | null;
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
+type CallRequestRecord = {
+  id: string;
+  userId: string | null;
+  fullName: string | null;
+  email: string | null;
+  organisation: string | null;
+  preferredTime: string | null;
+  notes: string;
+  status: string;
+  createdAt: string;
 };
 
 type ContactRequestRecord = {
@@ -133,6 +150,14 @@ function getView(search: string): AccountView {
   return "profile";
 }
 
+function formatSubmittedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString();
+}
+
 export default function Account() {
   const [location, navigate] = useLocation();
   const { user } = useAuth();
@@ -155,15 +180,6 @@ export default function Account() {
     confirmPassword: "",
   });
   const [visualDraft, setVisualDraft] = useState<VisualConfig | null>(null);
-  const [documentUploadForm, setDocumentUploadForm] = useState<DocumentUploadForm>({
-    type: "Offerings Documents",
-    subType: "",
-    name: "",
-    issuerId: "",
-    documentDate: "",
-    memberStates: "",
-    file: null,
-  });
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
   const isAdmin = user?.role === "admin";
 
@@ -197,12 +213,25 @@ export default function Account() {
     staleTime: 60_000,
   });
 
-  const issuerOptionsQuery = useQuery<{ data: IssuerOption[] }>({
-    queryKey: ["admin", "issuer-options"],
-    queryFn: () =>
-      backendApi.issuers(new URLSearchParams({ page: "1", page_size: "200" })) as Promise<{ data: IssuerOption[] }>,
-    enabled: isAdmin && view === "settings",
-    staleTime: 60_000,
+  const supportInboxQuery = useQuery<{ data: SupportRequestRecord[] }>({
+    queryKey: ["admin", "support-requests"],
+    queryFn: () => backendApi.listSupportRequests(),
+    enabled: isAdmin && view === "support",
+    staleTime: 30_000,
+  });
+
+  const contactInboxQuery = useQuery<{ data: ContactRequestRecord[] }>({
+    queryKey: ["admin", "contact-requests"],
+    queryFn: () => backendApi.listContactRequests(),
+    enabled: isAdmin && view === "support",
+    staleTime: 30_000,
+  });
+
+  const callInboxQuery = useQuery<{ data: CallRequestRecord[] }>({
+    queryKey: ["admin", "call-requests"],
+    queryFn: () => backendApi.listCallRequests(),
+    enabled: isAdmin && view === "support",
+    staleTime: 30_000,
   });
 
   const visualConfigMutation = useMutation({
@@ -272,39 +301,6 @@ export default function Account() {
     },
   });
 
-  const documentUploadMutation = useMutation({
-    mutationFn: () =>
-      backendApi.uploadAdminDocument({
-        file: documentUploadForm.file as File,
-        type: documentUploadForm.type,
-        name: documentUploadForm.name || undefined,
-        subType: documentUploadForm.subType || undefined,
-        issuerId: documentUploadForm.issuerId || undefined,
-        documentDate: documentUploadForm.documentDate || undefined,
-        memberStates: documentUploadForm.memberStates
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-      }),
-    onSuccess: () => {
-      toast.success("Document uploaded to S3.");
-      setDocumentUploadForm({
-        type: "Offerings Documents",
-        subType: "",
-        name: "",
-        issuerId: "",
-        documentDate: "",
-        memberStates: "",
-        file: null,
-      });
-      void queryClient.invalidateQueries({ queryKey: ["documents"] });
-      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Could not upload document.");
-    },
-  });
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     setView(getView(window.location.search));
@@ -359,8 +355,6 @@ export default function Account() {
       };
     });
   };
-
-  const issuerOptions = issuerOptionsQuery.data?.data ?? [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -657,178 +651,219 @@ export default function Account() {
                       </Button>
                     </div>
                   </div>
-
-                  {isAdmin ? (
-                    <div className="rounded-3xl border border-border bg-card p-6">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <h2 className="text-lg font-semibold">Document uploads</h2>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Upload a document to S3, save the record in the platform database, and make it available on the Documents page.
-                          </p>
-                        </div>
-                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
-                          S3 Storage
-                        </Badge>
-                      </div>
-
-                      <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Document type</label>
-                          <Select
-                            value={documentUploadForm.type}
-                            onValueChange={(value) => setDocumentUploadForm((current) => ({ ...current, type: value }))}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select document type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Offerings Documents">Offerings Documents</SelectItem>
-                              <SelectItem value="Notices">Notices</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Sub type</label>
-                          <Input
-                            placeholder="Prospectus Supplement"
-                            value={documentUploadForm.subType}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, subType: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Display name</label>
-                          <Input
-                            placeholder="Document title shown in the table"
-                            value={documentUploadForm.name}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, name: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Document date</label>
-                          <Input
-                            type="date"
-                            value={documentUploadForm.documentDate}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, documentDate: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Issuer</label>
-                          <Select
-                            value={documentUploadForm.issuerId || "__none__"}
-                            onValueChange={(value) =>
-                              setDocumentUploadForm((current) => ({
-                                ...current,
-                                issuerId: value === "__none__" ? "" : value,
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Optional issuer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">No issuer</SelectItem>
-                              {issuerOptions.map((issuer) => (
-                                <SelectItem key={issuer.id} value={issuer.id}>
-                                  {issuer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Member states</label>
-                          <Input
-                            placeholder="DE, FR, LU"
-                            value={documentUploadForm.memberStates}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, memberStates: event.target.value }))
-                            }
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <label className="mb-2 block text-sm font-medium text-foreground">PDF or document file</label>
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            setDocumentUploadForm((current) => ({
-                              ...current,
-                              file: event.target.files?.[0] ?? null,
-                            }))
-                          }
-                        />
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          Files upload directly to your configured S3 bucket, then become available in the Documents dashboard.
-                        </p>
-                      </div>
-
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-sm text-muted-foreground">
-                          {documentUploadForm.file ? `Ready to upload: ${documentUploadForm.file.name}` : "Choose a file to upload."}
-                        </div>
-                        <Button
-                          className="gap-2 bg-primary text-white hover:bg-primary/90"
-                          disabled={
-                            documentUploadMutation.isPending ||
-                            !documentUploadForm.file ||
-                            !documentUploadForm.type.trim()
-                          }
-                          onClick={() => documentUploadMutation.mutate()}
-                        >
-                          {documentUploadMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4" />
-                          )}
-                          {documentUploadMutation.isPending ? "Uploading..." : "Upload document"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               )}
 
               {view === "support" && (
                 <div className="space-y-4">
-                  <div className="rounded-3xl border border-border bg-card p-6">
-                    <h2 className="text-lg font-semibold">Email support</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Send a support request about platform access, documents, onboarding, or data questions.
-                    </p>
-                    <div className="mt-5 space-y-4">
-                      <Input
-                        placeholder="Support subject"
-                        value={supportEmailForm.subject}
-                        onChange={(event) => setSupportEmailForm((current) => ({ ...current, subject: event.target.value }))}
-                      />
-                      <Textarea
-                        className="min-h-[140px]"
-                        placeholder="Describe the issue or request"
-                        value={supportEmailForm.message}
-                        onChange={(event) => setSupportEmailForm((current) => ({ ...current, message: event.target.value }))}
-                      />
-                      <Button
-                        className="bg-primary text-white hover:bg-primary/90"
-                        disabled={supportRequestMutation.isPending}
-                        onClick={() => supportRequestMutation.mutate()}
-                      >
-                        {supportRequestMutation.isPending ? "Sending..." : "Email support"}
-                      </Button>
-                    </div>
-                  </div>
+                  {isAdmin ? (
+                    <>
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h2 className="text-lg font-semibold">Incoming support inbox</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Review the support, contact, and call requests submitted through the platform.
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              void supportInboxQuery.refetch();
+                              void contactInboxQuery.refetch();
+                              void callInboxQuery.refetch();
+                            }}
+                          >
+                            Refresh inbox
+                          </Button>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 md:grid-cols-3">
+                          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
+                            <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Support</div>
+                            <div className="mt-2 text-2xl font-semibold text-foreground">
+                              {supportInboxQuery.data?.data.length ?? 0}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
+                            <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Contact</div>
+                            <div className="mt-2 text-2xl font-semibold text-foreground">
+                              {contactInboxQuery.data?.data.length ?? 0}
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3">
+                            <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Call requests</div>
+                            <div className="mt-2 text-2xl font-semibold text-foreground">
+                              {callInboxQuery.data?.data.length ?? 0}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold">Support requests</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Messages sent from the protected support form.
+                            </p>
+                          </div>
+                          <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
+                            {supportInboxQuery.data?.data.length ?? 0} total
+                          </Badge>
+                        </div>
+                        <div className="mt-5 space-y-3">
+                          {supportInboxQuery.isLoading ? (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              Loading support requests...
+                            </div>
+                          ) : supportInboxQuery.data?.data.length ? (
+                            supportInboxQuery.data.data.map((request) => (
+                              <div key={request.id} className="rounded-2xl border border-border bg-muted/20 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <div className="text-sm font-semibold text-foreground">{request.topic}</div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      {request.fullName} · {request.email}
+                                      {request.phoneNumber ? ` · ${request.phoneNumber}` : ""}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary">{request.status}</Badge>
+                                    <span className="text-xs text-muted-foreground">{formatSubmittedAt(request.createdAt)}</span>
+                                  </div>
+                                </div>
+                                <p className="mt-3 text-sm leading-6 text-foreground/85">{request.message}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              No support requests have been submitted yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold">Contact requests</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Enquiries submitted from the public contact form.
+                            </p>
+                          </div>
+                          <Badge className="bg-blue-500/10 text-blue-700 hover:bg-blue-500/10">
+                            {contactInboxQuery.data?.data.length ?? 0} total
+                          </Badge>
+                        </div>
+                        <div className="mt-5 space-y-3">
+                          {contactInboxQuery.isLoading ? (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              Loading contact requests...
+                            </div>
+                          ) : contactInboxQuery.data?.data.length ? (
+                            contactInboxQuery.data.data.map((request) => (
+                              <div key={request.id} className="rounded-2xl border border-border bg-muted/20 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <div className="text-sm font-semibold text-foreground">{request.fullName}</div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      {request.email}
+                                      {request.companyName ? ` · ${request.companyName}` : ""}
+                                      {request.phoneNumber ? ` · ${request.phoneNumber}` : ""}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary">{request.status}</Badge>
+                                    <span className="text-xs text-muted-foreground">{formatSubmittedAt(request.createdAt)}</span>
+                                  </div>
+                                </div>
+                                <p className="mt-3 text-sm leading-6 text-foreground/85">{request.message}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              No contact requests have been submitted yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-lg font-semibold">Call requests</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Follow-up calls requested through the authenticated workspace.
+                            </p>
+                          </div>
+                          <Badge className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/10">
+                            {callInboxQuery.data?.data.length ?? 0} total
+                          </Badge>
+                        </div>
+                        <div className="mt-5 space-y-3">
+                          {callInboxQuery.isLoading ? (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              Loading call requests...
+                            </div>
+                          ) : callInboxQuery.data?.data.length ? (
+                            callInboxQuery.data.data.map((request) => (
+                              <div key={request.id} className="rounded-2xl border border-border bg-muted/20 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <div className="text-sm font-semibold text-foreground">
+                                      {request.fullName ?? "Workspace user"}
+                                    </div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      {request.email ?? "No email provided"}
+                                      {request.organisation ? ` · ${request.organisation}` : ""}
+                                      {request.preferredTime ? ` · ${request.preferredTime}` : ""}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary">{request.status}</Badge>
+                                    <span className="text-xs text-muted-foreground">{formatSubmittedAt(request.createdAt)}</span>
+                                  </div>
+                                </div>
+                                <p className="mt-3 text-sm leading-6 text-foreground/85">{request.notes}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                              No call requests have been submitted yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <h2 className="text-lg font-semibold">Email support</h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Send a support request about platform access, documents, onboarding, or data questions.
+                        </p>
+                        <div className="mt-5 space-y-4">
+                          <Input
+                            placeholder="Support subject"
+                            value={supportEmailForm.subject}
+                            onChange={(event) => setSupportEmailForm((current) => ({ ...current, subject: event.target.value }))}
+                          />
+                          <Textarea
+                            className="min-h-[140px]"
+                            placeholder="Describe the issue or request"
+                            value={supportEmailForm.message}
+                            onChange={(event) => setSupportEmailForm((current) => ({ ...current, message: event.target.value }))}
+                          />
+                          <Button
+                            className="bg-primary text-white hover:bg-primary/90"
+                            disabled={supportRequestMutation.isPending}
+                            onClick={() => supportRequestMutation.mutate()}
+                          >
+                            {supportRequestMutation.isPending ? "Sending..." : "Email support"}
+                          </Button>
+                        </div>
+                      </div>
 
                   <div className="rounded-3xl border border-border bg-card p-6">
                     <h2 className="text-lg font-semibold">Request call</h2>
@@ -861,7 +896,6 @@ export default function Account() {
                       </Button>
                     </div>
                   </div>
-
                 </div>
               )}
             </section>
@@ -887,9 +921,15 @@ export default function Account() {
                   <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
                     <span className="flex items-center gap-2">
                       <Bell className="h-4 w-4 text-primary" />
-                      Alerts
+                      {view === "support" && isAdmin ? "Inbox items" : "Alerts"}
                     </span>
-                    <span className="font-medium text-foreground">3 active</span>
+                    <span className="font-medium text-foreground">
+                      {view === "support" && isAdmin
+                        ? (supportInboxQuery.data?.data.length ?? 0) +
+                          (contactInboxQuery.data?.data.length ?? 0) +
+                          (callInboxQuery.data?.data.length ?? 0)
+                        : "3 active"}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl bg-card px-4 py-3">
                     <span className="flex items-center gap-2">

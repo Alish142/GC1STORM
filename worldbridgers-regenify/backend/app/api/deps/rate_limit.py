@@ -1,12 +1,11 @@
-from collections import deque
 from datetime import UTC, datetime, timedelta
-from threading import Lock
 
-from fastapi import HTTPException, Request, Response
+from fastapi import Depends, HTTPException, Request, Response
+from sqlalchemy import delete, select, text
+from sqlalchemy.orm import Session
 
-
-_RATE_LIMIT_WINDOWS: dict[str, deque[datetime]] = {}
-_RATE_LIMIT_LOCK = Lock()
+from app.db import get_db
+from app.models.rate_limit_event import RateLimitEvent
 
 
 def _get_client_ip(req: Request) -> str:
@@ -28,19 +27,37 @@ def rate_limit(*, scope: str, limit: int, window_seconds: int):
 
     window = timedelta(seconds=window_seconds)
 
-    def dependency(req: Request, res: Response) -> None:
+    def dependency(req: Request, res: Response, db: Session = Depends(get_db)) -> None:
         now = datetime.now(UTC)
         cutoff = now - window
         client_ip = _get_client_ip(req)
         key = f"{scope}:{client_ip}"
 
-        with _RATE_LIMIT_LOCK:
-            attempts = _RATE_LIMIT_WINDOWS.setdefault(key, deque())
-            while attempts and attempts[0] <= cutoff:
-                attempts.popleft()
+        try:
+            # Serialize updates per scope/client across app instances.
+            db.execute(
+                text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+                {"lock_key": key},
+            )
+            db.execute(
+                delete(RateLimitEvent).where(
+                    RateLimitEvent.scope == scope,
+                    RateLimitEvent.client_key == client_ip,
+                    RateLimitEvent.created_at <= cutoff,
+                )
+            )
+            attempts = db.scalars(
+                select(RateLimitEvent)
+                .where(
+                    RateLimitEvent.scope == scope,
+                    RateLimitEvent.client_key == client_ip,
+                )
+                .order_by(RateLimitEvent.created_at.asc())
+            ).all()
 
             if len(attempts) >= limit:
-                retry_after = max(1, int((attempts[0] + window - now).total_seconds()))
+                retry_after = max(1, int((attempts[0].created_at + window - now).total_seconds()))
+                db.rollback()
                 res.headers["Retry-After"] = str(retry_after)
                 raise HTTPException(
                     status_code=429,
@@ -48,6 +65,18 @@ def rate_limit(*, scope: str, limit: int, window_seconds: int):
                     headers={"Retry-After": str(retry_after)},
                 )
 
-            attempts.append(now)
+            db.add(
+                RateLimitEvent(
+                    scope=scope,
+                    client_key=client_ip,
+                    created_at=now,
+                )
+            )
+            db.commit()
+        except HTTPException:
+            raise
+        except Exception:
+            db.rollback()
+            raise
 
     return dependency

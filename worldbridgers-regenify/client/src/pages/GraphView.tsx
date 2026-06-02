@@ -10,6 +10,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
+  BarChart3,
   Building2,
   ChevronRight,
   Globe2,
@@ -25,7 +26,7 @@ import {
 interface GraphNode {
   id: string;
   label: string;
-  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme";
+  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme" | "Offering" | "Index";
   region?: string;
   description?: string;
   value?: number;
@@ -47,6 +48,8 @@ const NODE_CONFIG: Record<GraphNode["type"], { color: string; fill: string; icon
   Project: { color: "#d0661b", fill: "#fff0e5", icon: Layers },
   Market: { color: "#2b8b8b", fill: "#e7f7f7", icon: Globe2 },
   Theme: { color: "#30384a", fill: "#f2f4f8", icon: Network },
+  Offering: { color: "#5b6ee1", fill: "#eef1ff", icon: Layers },
+  Index: { color: "#b7791f", fill: "#fff5df", icon: BarChart3 },
 };
 
 const CENTER_IMAGES: Record<GraphNode["type"], string> = {
@@ -56,6 +59,8 @@ const CENTER_IMAGES: Record<GraphNode["type"], string> = {
   Project: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
   Market: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
   Theme: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80",
+  Offering: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+  Index: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
 };
 
 const NODE_TRANSITION = "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)";
@@ -212,10 +217,12 @@ export default function GraphView() {
     requestedNodeId && filteredNodes.some((node) => node.id === requestedNodeId) ? requestedNodeId : null;
   const defaultSelectedId = selectedId && filteredNodes.some((node) => node.id === selectedId)
     ? selectedId
-    : querySelectedId ?? filteredNodes[0]?.id ?? "";
+    : querySelectedId && selectedId === null
+      ? querySelectedId
+      : filteredNodes[0]?.id ?? "";
 
   useEffect(() => {
-    if (querySelectedId && querySelectedId !== selectedId) {
+    if (selectedId === null && querySelectedId) {
       setSelectedId(querySelectedId);
     }
   }, [querySelectedId, selectedId]);
@@ -367,6 +374,8 @@ export default function GraphView() {
             {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic."}
             {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas."}
             {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes."}
+            {selectedNode.type === "Offering" && "This offering node represents an investable instrument linked back to its issuer in the protected market workspace."}
+            {selectedNode.type === "Index" && "This index node gives a benchmark-level view of how the market or theme is performing inside the platform."}
           </div>
         </div>
 
@@ -475,7 +484,6 @@ export default function GraphView() {
             </Button>
           </div>
         </div>
-
         <div className="min-h-0 flex-1 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(490px,0.94fr)] 2xl:grid-cols-[minmax(0,1.68fr)_minmax(560px,1fr)]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
             <div className="min-h-[62vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3 xl:px-4 xl:py-4">

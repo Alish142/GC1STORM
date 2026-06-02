@@ -114,7 +114,7 @@ def _session_max_age_seconds(remember_me: bool) -> int:
 
 def _write_session_cookie(req: Request, res: Response, user_payload: dict, *, remember_me: bool) -> None:
     max_age = _session_max_age_seconds(remember_me)
-    token = create_session_token(user_payload)
+    token = create_session_token(user_payload, expires_seconds=max_age)
     secure = is_secure_cookie(req)
     res.set_cookie(
         key=COOKIE_NAME,

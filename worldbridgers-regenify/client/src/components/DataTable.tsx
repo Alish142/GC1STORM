@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +19,13 @@ export interface Column<T> {
   className?: string;
 }
 
+export interface RowContextMenuAction<T> {
+  label: string;
+  onSelect: (row: T) => void;
+  disabled?: boolean;
+  destructive?: boolean;
+}
+
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
@@ -34,6 +42,7 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   searchPlaceholder?: string;
   mobileCardRender?: (row: T, index: number) => React.ReactNode;
+  rowContextMenu?: (row: T, index: number) => RowContextMenuAction<T>[] | null;
 }
 
 export default function DataTable<T extends Record<string, unknown>>({
@@ -52,16 +61,25 @@ export default function DataTable<T extends Record<string, unknown>>({
   emptyMessage = "No results found.",
   searchPlaceholder = "Search...",
   mobileCardRender,
+  rowContextMenu,
 }: DataTableProps<T>) {
   const totalPages = Math.ceil(total / pageSize);
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    row: T;
+    index: number;
+  } | null>(null);
 
   const SortIcon = ({ col }: { col: string }) => {
-    if (sortBy !== col) return <ChevronsUpDown className="w-3 h-3 text-muted-foreground/50" />;
-    return sortDir === "asc"
-      ? <ChevronUp className="w-3 h-3 text-primary" />
-      : <ChevronDown className="w-3 h-3 text-primary" />;
+    if (sortBy !== col) return <ChevronsUpDown className="h-3 w-3 text-muted-foreground/50" />;
+    return sortDir === "asc" ? (
+      <ChevronUp className="h-3 w-3 text-primary" />
+    ) : (
+      <ChevronDown className="h-3 w-3 text-primary" />
+    );
   };
 
   const getHeaderAlignmentClass = (className?: string) => {
@@ -70,8 +88,40 @@ export default function DataTable<T extends Record<string, unknown>>({
     return "";
   };
 
+  const getRowActions = (row: T, index: number) => rowContextMenu?.(row, index) ?? [];
+
+  const openContextMenu = (event: React.MouseEvent, row: T, index: number) => {
+    const actions = getRowActions(row, index);
+    if (!actions.length) {
+      return;
+    }
+
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      row,
+      index,
+    });
+  };
+
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
+
+    return () => {
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [contextMenu]);
+
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="relative flex h-full flex-col gap-3">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -104,14 +154,14 @@ export default function DataTable<T extends Record<string, unknown>>({
           ) : mobileCardRender ? (
             <div className="divide-y divide-border/60">
               {data.map((row, i) => (
-                <div key={i} className="p-4">
+                <div key={i} className="p-4" onContextMenu={(event) => openContextMenu(event, row, i)}>
                   {mobileCardRender(row, i)}
                 </div>
               ))}
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full text-sm">
+              <table className="min-w-max w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
                     {columns.map((col) => (
@@ -133,6 +183,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                     <tr
                       key={i}
                       className="group border-b border-border/50 transition-colors last:border-0 hover:bg-muted/30"
+                      onContextMenu={(event) => openContextMenu(event, row, i)}
                     >
                       {columns.map((col) => (
                         <td key={String(col.key)} className={`px-4 py-3 text-sm text-foreground/80 ${col.className ?? ""}`}>
@@ -151,7 +202,7 @@ export default function DataTable<T extends Record<string, unknown>>({
       </div>
 
       <div className="hidden flex-1 overflow-auto rounded-xl border border-border bg-card scrollbar-thin md:block">
-        <table className="w-full text-sm">
+        <table className="min-w-max w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {columns.map((col) => (
@@ -195,6 +246,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 <tr
                   key={i}
                   className="group border-b border-border/50 transition-colors last:border-0 hover:bg-muted/30"
+                  onContextMenu={(event) => openContextMenu(event, row, i)}
                 >
                   {columns.map((col) => (
                     <td key={String(col.key)} className={`px-4 py-3 text-sm text-foreground/80 ${col.className ?? ""}`}>
@@ -209,6 +261,44 @@ export default function DataTable<T extends Record<string, unknown>>({
           </tbody>
         </table>
       </div>
+
+      {contextMenu ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close row actions"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
+            onClick={() => setContextMenu(null)}
+          />
+          <div
+            className="fixed z-50 min-w-48 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <div className="px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Row actions
+            </div>
+            <div className="my-1 h-px bg-border" />
+            {getRowActions(contextMenu.row, contextMenu.index).map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={action.disabled}
+                className={`flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  action.destructive
+                    ? "text-destructive hover:bg-destructive/10 disabled:text-destructive/40"
+                    : "text-foreground hover:bg-muted disabled:text-muted-foreground/50"
+                }`}
+                onClick={() => {
+                  setContextMenu(null);
+                  action.onSelect(contextMenu.row);
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <div className="flex shrink-0 flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>{total > 0 ? `Showing ${start}–${end} of ${total} results` : "No results"}</span>

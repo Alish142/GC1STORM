@@ -39,6 +39,23 @@ type GraphResponse = {
   nodes: GraphNode[];
   edges: GraphEdge[];
   visualConfig: VisualConfig;
+  graphSource?: "neo4j" | "mock";
+};
+
+export type RecommendationRecord = {
+  id: string;
+  category: "theme" | "entity" | "document";
+  title: string;
+  reason: string;
+  nodeId: string;
+  nodeType: string;
+  graphSource: "neo4j" | "mock";
+};
+
+type RecommendationResponse = {
+  data: RecommendationRecord[];
+  graphSource: "neo4j" | "mock";
+  generatedAt: string;
 };
 
 type SupportRequestPayload = {
@@ -80,6 +97,40 @@ type SubmissionResponse<T> = {
   success: boolean;
   requestId: string;
   request: T;
+};
+
+type SupportRequestRecord = {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+  topic: string;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
+type CallRequestRecord = {
+  id: string;
+  userId: string | null;
+  fullName: string | null;
+  email: string | null;
+  organisation: string | null;
+  preferredTime: string | null;
+  notes: string;
+  status: string;
+  createdAt: string;
 };
 
 type OverviewCounts = {
@@ -134,6 +185,15 @@ type AdminDocumentUploadPayload = {
   file: File;
   type: string;
   name?: string;
+  subType?: string;
+  issuerId?: string;
+  documentDate?: string;
+  memberStates?: string[];
+};
+
+type AdminDocumentPayload = {
+  type: string;
+  name: string;
   subType?: string;
   issuerId?: string;
   documentDate?: string;
@@ -430,13 +490,110 @@ function filterGraph(params: URLSearchParams): GraphResponse {
     nodes,
     edges,
     visualConfig: DEFAULT_VISUAL_CONFIG,
+    graphSource: "mock",
+  };
+}
+
+function buildFallbackRecommendations(): RecommendationResponse {
+  const degrees = new Map<string, number>();
+  const neighbors = new Map<string, Set<string>>();
+  const nodesById = new Map(fallbackGraphData.nodes.map((node) => [node.id, node]));
+
+  for (const edge of fallbackGraphData.edges) {
+    degrees.set(edge.source, (degrees.get(edge.source) ?? 0) + 1);
+    degrees.set(edge.target, (degrees.get(edge.target) ?? 0) + 1);
+
+    const sourceNeighbors = neighbors.get(edge.source) ?? new Set<string>();
+    sourceNeighbors.add(edge.target);
+    neighbors.set(edge.source, sourceNeighbors);
+
+    const targetNeighbors = neighbors.get(edge.target) ?? new Set<string>();
+    targetNeighbors.add(edge.source);
+    neighbors.set(edge.target, targetNeighbors);
+  }
+
+  const ranked = [...fallbackGraphData.nodes].sort((left, right) => {
+    const degreeDiff = (degrees.get(right.id) ?? 0) - (degrees.get(left.id) ?? 0);
+    return degreeDiff !== 0 ? degreeDiff : left.label.localeCompare(right.label);
+  });
+
+  const recommendations: RecommendationRecord[] = [];
+  const usedNodeIds = new Set<string>();
+  const addRecommendation = (node: GraphNode, category: RecommendationRecord["category"], reason: string) => {
+    if (usedNodeIds.has(node.id) || recommendations.length >= 3) {
+      return;
+    }
+    recommendations.push({
+      id: `${category}:${node.id}`,
+      category,
+      title: node.label,
+      reason,
+      nodeId: node.id,
+      nodeType: node.type,
+      graphSource: "mock",
+    });
+    usedNodeIds.add(node.id);
+  };
+
+  for (const node of ranked) {
+    if (node.type !== "Theme") {
+      continue;
+    }
+    addRecommendation(
+      node,
+      "theme",
+      neighbors.get(node.id)?.size
+        ? `Connected to ${neighbors.get(node.id)?.size ?? 0} related nodes`
+        : "A strong theme to start exploring the network",
+    );
+    if (recommendations.length >= 2) {
+      break;
+    }
+  }
+
+  for (const node of ranked) {
+    if (node.type === "Theme") {
+      continue;
+    }
+    const connectedTypes = [...(neighbors.get(node.id) ?? new Set<string>())]
+      .map((neighborId) => nodesById.get(neighborId)?.type)
+      .filter((value): value is string => Boolean(value));
+    addRecommendation(
+      node,
+      "entity",
+      connectedTypes.length
+        ? `Touches ${[...new Set(connectedTypes)].slice(0, 2).join(", ")}`
+        : "Worth reviewing from the current graph",
+    );
+    if (recommendations.length >= 3) {
+      break;
+    }
+  }
+
+  if (fallbackDocuments.length > 0 && recommendations.length > 0) {
+    const anchor = recommendations[0];
+    recommendations.push({
+      id: `document-focus:${anchor.nodeId}`,
+      category: "document",
+      title: `Track disclosures around ${anchor.title}`,
+      reason: `${fallbackDocuments.length} fallback documents are available for review`,
+      nodeId: anchor.nodeId,
+      nodeType: anchor.nodeType,
+      graphSource: "mock",
+    });
+  }
+
+  return {
+    data: recommendations.slice(0, 3),
+    graphSource: "mock",
+    generatedAt: new Date().toISOString(),
   };
 }
 
 export const backendApi = {
   health: async () => {
     try {
-      return await request<{ status: string }>("/api/health");
+      return await request<{ status: string; database?: { status: string; detail?: string } }>("/api/health");
     } catch {
       return { status: "frontend-fallback" };
     }
@@ -507,16 +664,7 @@ export const backendApi = {
     }
   },
   createSupportRequest: async (payload: SupportRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      fullName: string;
-      email: string;
-      phoneNumber: string | null;
-      topic: string;
-      message: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/support-requests", {
+    return request<SubmissionResponse<SupportRequestRecord>>("/api/support/support-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -528,16 +676,7 @@ export const backendApi = {
     });
   },
   createContactRequest: async (payload: ContactRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      fullName: string;
-      companyName: string | null;
-      email: string;
-      phoneNumber: string | null;
-      message: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/contact-requests", {
+    return request<SubmissionResponse<ContactRequestRecord>>("/api/support/contact-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -584,17 +723,7 @@ export const backendApi = {
     });
   },
   createCallRequest: async (payload: CallRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      userId: string | null;
-      fullName: string | null;
-      email: string | null;
-      organisation: string | null;
-      preferredTime: string | null;
-      notes: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/call-requests", {
+    return request<SubmissionResponse<CallRequestRecord>>("/api/support/call-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -604,6 +733,15 @@ export const backendApi = {
         notes: payload.notes,
       }),
     });
+  },
+  listSupportRequests: async () => {
+    return request<{ data: SupportRequestRecord[] }>("/api/support/support-requests");
+  },
+  listContactRequests: async () => {
+    return request<{ data: ContactRequestRecord[] }>("/api/support/contact-requests");
+  },
+  listCallRequests: async () => {
+    return request<{ data: CallRequestRecord[] }>("/api/support/call-requests");
   },
   uploadAdminDocument: async (payload: AdminDocumentUploadPayload) => {
     const formData = new FormData();
@@ -644,6 +782,34 @@ export const backendApi = {
     }
 
     return await res.json();
+  },
+  updateDocument: async (documentId: string, payload: AdminDocumentPayload) =>
+    request<{ success: boolean; document: unknown }>(`/api/admin/documents/${documentId}`, {
+      ...withCsrfHeader(),
+      method: "PATCH",
+      body: JSON.stringify({
+        type: payload.type,
+        name: payload.name,
+        subType: payload.subType,
+        issuerId: payload.issuerId,
+        documentDate: payload.documentDate,
+        memberStates: payload.memberStates ?? [],
+      }),
+    }),
+  deleteDocument: async (documentId: string) => {
+    const res = await fetch(`${API_BASE}/api/admin/documents/${documentId}`, {
+      ...withCsrfHeader({ method: "DELETE" }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) errorMessage = payload.detail;
+      } catch {}
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+    return { success: true };
   },
   createIssuer: async (payload: AdminIssuerPayload) =>
     request<{ success: boolean; issuer: unknown }>("/api/admin/issuers", {
@@ -773,6 +939,16 @@ export const backendApi = {
     } catch (error) {
       if (isNetworkError(error)) {
         return filterGraph(params);
+      }
+      throw error;
+    }
+  },
+  recommendations: async () => {
+    try {
+      return await request<RecommendationResponse>("/api/data/recommendations");
+    } catch (error) {
+      if (isNetworkError(error)) {
+        return buildFallbackRecommendations();
       }
       throw error;
     }
