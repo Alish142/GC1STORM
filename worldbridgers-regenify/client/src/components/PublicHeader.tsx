@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { publicHighlights, publicNavigation } from "@/lib/navigation";
-import { ChevronDown, Menu, X, Leaf, User, Wallet, Settings, HelpCircle, LogOut } from "lucide-react";
+import { ChevronDown, Menu, X, Leaf, User, Settings, HelpCircle, LogOut } from "lucide-react";
 
 function resolveAuthenticatedHref(href: string, isAuthenticated: boolean) {
   if (!isAuthenticated) {
@@ -171,9 +171,6 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=profile"; }}>
                     <User className="h-3.5 w-3.5" /> Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=portfolio"; }}>
-                    <Wallet className="h-3.5 w-3.5" /> My WBX Portfolio
                   </DropdownMenuItem>
                   <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=settings"; }}>
                     <Settings className="h-3.5 w-3.5" /> Settings

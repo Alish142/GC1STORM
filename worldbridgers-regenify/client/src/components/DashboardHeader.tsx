@@ -17,7 +17,6 @@ import {
   Settings,
   LogOut,
   HelpCircle,
-  Wallet,
   Menu,
   X,
 } from "lucide-react";
@@ -35,7 +34,7 @@ export default function DashboardHeader() {
       { href: "/dashboard/offerings", match: ["offering", "offerings", "bond", "bonds"] },
       { href: "/dashboard/indices", match: ["index", "indices", "benchmark"] },
       { href: "/dashboard/graph", match: ["graph", "relationship", "theme", "themes"] },
-      { href: "/dashboard/account?view=profile", match: ["account", "profile", "settings", "support", "portfolio"] },
+      { href: "/dashboard/account?view=profile", match: ["account", "profile", "settings", "support"] },
     ],
     []
   );
@@ -167,9 +166,6 @@ export default function DashboardHeader() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=profile")}>
                   <User className="w-3.5 h-3.5" /> Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=portfolio")}>
-                  <Wallet className="w-3.5 h-3.5" /> My WBX Portfolio
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=settings")}>
                   <Settings className="w-3.5 h-3.5" /> Settings

@@ -158,11 +158,6 @@ export const dashboardNavigation: NavigationGroup[] = [
         icon: User,
       },
       {
-        label: "Portfolio",
-        href: "/dashboard/account?view=portfolio",
-        icon: Wallet,
-      },
-      {
         label: "Settings",
         href: "/dashboard/account?view=settings",
         icon: Settings,
