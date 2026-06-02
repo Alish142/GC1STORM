@@ -1927,48 +1927,61 @@ function DocumentsTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
-  const documentRowContextMenu = isAdmin
-    ? (row: Record<string, unknown>) => {
-        const document = row as unknown as DocumentRow;
-        return [
-          {
-            label: "Edit document",
-            onSelect: () => {
-              setEditingDocument(document);
-              setForm({
-                type: document.type,
-                subType: document.subType,
-                name: document.name,
-                issuerId: document.issuerId ?? "",
-                documentDate: document.date,
-                memberStates: document.memberStates.join(", "),
-              });
-              setDialogOpen(true);
-            },
+  const documentRowContextMenu = (row: Record<string, unknown>) => {
+    const document = row as unknown as DocumentRow;
+    if (isAdmin) {
+      return [
+        {
+          label: "Edit document",
+          onSelect: () => {
+            setEditingDocument(document);
+            setForm({
+              type: document.type,
+              subType: document.subType,
+              name: document.name,
+              issuerId: document.issuerId ?? "",
+              documentDate: document.date,
+              memberStates: document.memberStates.join(", "),
+            });
+            setDialogOpen(true);
           },
-          {
-            label: "Delete document",
-            onSelect: () => {
-              if (window.confirm(`Delete document "${document.name}"?`)) {
-                deleteMutation.mutate(document.id);
-              }
-            },
-            destructive: true,
-            disabled: deleteMutation.isPending,
+        },
+        {
+          label: "Delete document",
+          onSelect: () => {
+            if (window.confirm(`Delete document "${document.name}"?`)) {
+              deleteMutation.mutate(document.id);
+            }
           },
-          {
-            label: "Open document",
-            onSelect: () => openDocument(document.fileUrl ?? undefined),
-            disabled: !document.fileUrl,
-          },
-          {
-            label: "Download document",
-            onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
-            disabled: !document.fileUrl,
-          },
-        ];
-      }
-    : undefined;
+          destructive: true,
+          disabled: deleteMutation.isPending,
+        },
+        {
+          label: "Open document",
+          onSelect: () => openDocument(document.fileUrl ?? undefined),
+          disabled: !document.fileUrl,
+        },
+        {
+          label: "Download document",
+          onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
+          disabled: !document.fileUrl,
+        },
+      ];
+    }
+
+    return [
+      {
+        label: "Open document",
+        onSelect: () => openDocument(document.fileUrl ?? undefined),
+        disabled: !document.fileUrl,
+      },
+      {
+        label: "Download document",
+        onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
+        disabled: !document.fileUrl,
+      },
+    ];
+  };
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type",
@@ -1998,53 +2011,78 @@ function DocumentsTab() {
     { key: "fileSize", label: "Size" },
   ];
 
-  if (isAdmin) {
-    columns.push({
-      key: "id",
-      label: "Actions",
-      className: "w-[88px] text-center",
-      render: (_, row) => (
-        <div className="flex items-center justify-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              const document = row as unknown as DocumentRow;
-              setEditingDocument(document);
-              setForm({
-                type: document.type,
-                subType: document.subType,
-                name: document.name,
-                issuerId: document.issuerId ?? "",
-                documentDate: document.date,
-                memberStates: document.memberStates.join(", "),
-              });
-              setDialogOpen(true);
-            }}
-            aria-label={`Edit ${String(row.name)}`}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-            disabled={deleteMutation.isPending}
-            onClick={() => {
-              const document = row as unknown as DocumentRow;
-              if (window.confirm(`Delete document "${document.name}"?`)) {
-                deleteMutation.mutate(document.id);
-              }
-            }}
-            aria-label={`Delete ${String(row.name)}`}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      ),
-    });
-  }
+  columns.push({
+    key: "id",
+    label: "Actions",
+    className: isAdmin ? "w-[88px] text-center" : "w-[120px] text-center",
+    render: (_, row) => (
+      <div className="flex items-center justify-center gap-1">
+        {isAdmin ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                const document = row as unknown as DocumentRow;
+                setEditingDocument(document);
+                setForm({
+                  type: document.type,
+                  subType: document.subType,
+                  name: document.name,
+                  issuerId: document.issuerId ?? "",
+                  documentDate: document.date,
+                  memberStates: document.memberStates.join(", "),
+                });
+                setDialogOpen(true);
+              }}
+              aria-label={`Edit ${String(row.name)}`}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                const document = row as unknown as DocumentRow;
+                if (window.confirm(`Delete document "${document.name}"?`)) {
+                  deleteMutation.mutate(document.id);
+                }
+              }}
+              aria-label={`Delete ${String(row.name)}`}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+              disabled={!row.fileUrl}
+              aria-label={`View ${String(row.name)}`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+              disabled={!row.fileUrl}
+              aria-label={`Download ${String(row.name)}`}
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+          </>
+        )}
+      </div>
+    ),
+  });
 
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
