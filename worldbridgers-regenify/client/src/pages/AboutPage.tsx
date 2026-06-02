@@ -90,21 +90,24 @@ const CAPABILITIES = [
 
 const TEAM_PROFILES = [
   {
-    name: "Research and Platform Strategy",
-    title: "Market narrative and public clarity",
-    text: "Shapes how the platform explains sustainable markets, why the data matters, and how visitors move from first impression into trusted exploration.",
+    name: "Jane Smith",
+    title: "Platform Strategy",
+    text: "Leads product direction and market positioning for Regenify.",
+    initials: "JS",
     color: COLORS.emerald,
   },
   {
-    name: "Data and Structuring",
-    title: "Issuer, offering, and document organisation",
-    text: "Translates complex capital-market records into cleaner tables, stronger metadata, and clearer review flows across the authenticated workspace.",
+    name: "John Doe",
+    title: "Data & Market Structuring",
+    text: "Shapes issuer, offering, and document data into a usable platform model.",
+    initials: "JD",
     color: COLORS.oceanBlue,
   },
   {
-    name: "Graph and Discovery Experience",
-    title: "Relationship intelligence and navigation",
-    text: "Designs how users uncover themes, related entities, and connected market context through graph-led interaction and discovery journeys.",
+    name: "Alex Lee",
+    title: "Relationship Intelligence",
+    text: "Designs graph discovery and connected market navigation experiences.",
+    initials: "AL",
     color: COLORS.purpleSage,
   },
 ];
@@ -251,7 +254,7 @@ export default function AboutPage() {
                     </div>
                     <h2 className="mt-6 text-3xl font-semibold tracking-[-0.04em] md:text-4xl" style={{ color: COLORS.purpleSage }}>Team Members</h2>
                     <p className="mt-4 text-lg leading-8 text-[#5f6673]">
-                      The platform brings together strategy, market structure, and relationship design so users can understand the ecosystem through one coherent experience.
+                      The team behind Regenify brings together platform strategy, market structuring, and relationship intelligence to create one connected experience for users.
                     </p>
                   </div>
 
@@ -266,6 +269,15 @@ export default function AboutPage() {
                           {profile.title}
                         </div>
                         <h3 className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[#0f172a]">{profile.name}</h3>
+                        <div
+                          className="mt-4 flex h-32 w-32 items-center justify-center rounded-[28px] text-3xl font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.14)]"
+                          style={{
+                            background: "linear-gradient(135deg, #d1d5db, #9ca3af)",
+                          }}
+                          aria-label={`${profile.name} placeholder portrait`}
+                        >
+                          {profile.initials}
+                        </div>
                         <p className="mt-3 text-[0.98rem] leading-7 text-[#5f6673]">{profile.text}</p>
                       </article>
                     ))}
