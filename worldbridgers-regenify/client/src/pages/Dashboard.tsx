@@ -1166,13 +1166,13 @@ function OfferingsTab() {
     columns.push({
       key: "id",
       label: "Actions",
-      className: "text-right",
+      className: "w-[88px] text-center",
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => {
               const offering = row as unknown as OfferingRow;
               setEditingOffering(offering);
@@ -1331,6 +1331,39 @@ function OfferingsTab() {
                   {row.coupon !== null ? `${Number(row.coupon).toFixed(3)}%` : "—"}
                 </span>
               </div>
+              {isAdmin ? (
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs"
+                    onClick={() => {
+                      const offering = row as unknown as OfferingRow;
+                      setEditingOffering(offering);
+                      setForm(offeringToForm(offering));
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => {
+                      const offering = row as unknown as OfferingRow;
+                      if (window.confirm(`Delete offering "${offering.name}"?`)) {
+                        deleteMutation.mutate(offering.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                </div>
+              ) : null}
             </div>
           )}
         />
@@ -1789,13 +1822,13 @@ function DocumentsTab() {
     },
     { key: "date", label: "Date", sortable: false },
     { key: "fileSize", label: "Size" },
-    { key: "id", label: "Actions",
+    { key: "id", label: "Actions", className: "w-[88px] text-center",
       render: (_, row) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
             disabled={!row.fileUrl}
             aria-label={`View ${String(row.name)}`}
@@ -1805,7 +1838,7 @@ function DocumentsTab() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
             disabled={!row.fileUrl}
             aria-label={`Download ${String(row.name)}`}
