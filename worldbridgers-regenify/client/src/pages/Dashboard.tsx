@@ -447,54 +447,79 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
         })}
       </div>
 
-      <div className="rounded-[28px] border border-[#e8e4dc] bg-white p-5 shadow-card">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-sm font-semibold text-foreground">Recommended for you</div>
-            <p className="mt-1 text-xs leading-6 text-muted-foreground">
-              Graph-guided starting points for your next jump through the protected workspace.
+      <div className="relative overflow-hidden rounded-[32px] border border-[#dfe7df] bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.10),_transparent_24%),linear-gradient(180deg,#fdfdf9_0%,#f7f6f0_100%)] p-5 shadow-[0_24px_60px_rgba(20,31,24,0.08)]">
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-slate-500 shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+              <Network className="h-3.5 w-3.5 text-primary" />
+              Graph-guided recommendations
+            </div>
+            <div className="mt-4 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+              Recommended for you
+            </div>
+            <p className="mt-2 max-w-xl text-sm leading-7 text-slate-600">
+              Curated starting points that turn the protected workspace into a guided discovery flow instead of a static dashboard.
             </p>
           </div>
-          <Badge className={graphSource === "neo4j" ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-amber-100 text-amber-800 hover:bg-amber-100"}>
+          <Badge className={graphSource === "neo4j" ? "border border-emerald-200 bg-white/80 text-primary hover:bg-white/80" : "border border-amber-200 bg-white/80 text-amber-800 hover:bg-white/80"}>
             {graphSource === "neo4j" ? "Powered by live graph" : "Using curated fallback"}
           </Badge>
         </div>
 
         {recommendationsQ.isLoading ? (
-          <div className="flex items-center justify-center py-10">
+          <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : recommendationCards.length ? (
-          <div className="grid gap-3 md:grid-cols-3">
-            {recommendationCards.map((recommendation) => (
+          <div className="grid gap-4 xl:grid-cols-[1.08fr_0.96fr_0.96fr]">
+            {recommendationCards.map((recommendation, index) => (
               <button
                 key={recommendation.id}
                 onClick={() => openRecommendation(recommendation)}
-                className="group rounded-[24px] border border-[#ebe5db] bg-[#fcfbf8] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#d8d1c4] hover:bg-white"
+                className={`group relative overflow-hidden rounded-[28px] border p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(20,31,24,0.10)] ${
+                  index === 0
+                    ? "border-[#d8eadc] bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(241,249,243,0.96)_100%)]"
+                    : index === 1
+                      ? "border-[#e3e1d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(248,247,241,0.98)_100%)]"
+                      : "border-[#dce5ee] bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(243,247,252,0.98)_100%)]"
+                }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <Badge variant="secondary" className="bg-primary/8 text-primary">
-                    {recommendation.category}
-                  </Badge>
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                    {recommendation.nodeType}
+                <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/60 to-transparent opacity-80" />
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge
+                      variant="secondary"
+                      className={`border-0 ${
+                        recommendation.category === "theme"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : recommendation.category === "entity"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {recommendation.category}
+                    </Badge>
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                      {recommendation.nodeType}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 text-base font-semibold leading-6 text-slate-900">
-                  {recommendation.title}
-                </div>
-                <p className="mt-2 text-xs leading-6 text-slate-600">
-                  {recommendation.reason}
-                </p>
-                <div className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                  Open in graph
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  <div className="mt-10 text-lg font-semibold leading-7 text-slate-950">
+                    {recommendation.title}
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">
+                    {recommendation.reason}
+                  </p>
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">
+                    Open in graph
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </div>
                 </div>
               </button>
             ))}
           </div>
         ) : (
-          <div className="rounded-[22px] border border-dashed border-[#ddd7cd] bg-[#faf8f3] px-4 py-5 text-sm text-slate-500">
+          <div className="rounded-[24px] border border-dashed border-[#ddd7cd] bg-white/70 px-5 py-6 text-sm text-slate-500 backdrop-blur-sm">
             Recommendations will appear here once graph relationships are available.
           </div>
         )}
