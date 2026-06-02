@@ -657,7 +657,9 @@ class AdminRouteTests(unittest.TestCase):
             assetsCurrency="  AUD  ",
         )
 
-        with mock.patch.object(admin_module, "log_audit_event"):
+        with mock.patch.object(admin_module, "log_audit_event"), mock.patch.object(
+            admin_module, "upsert_issuer_node"
+        ) as upsert_issuer_node, mock.patch.object(admin_module, "delete_issuer_node") as delete_issuer_node:
             create_response = admin_module.create_issuer(
                 req=req,
                 payload=create_payload,
@@ -672,6 +674,7 @@ class AdminRouteTests(unittest.TestCase):
             self.assertEqual(created_issuer.name, "Regen Bank")
             self.assertEqual(created_issuer.country, "Australia")
             self.assertEqual(created_issuer.assets_currency, "AUD")
+            upsert_issuer_node.assert_called_once()
 
             update_payload = admin_module.IssuerPayload(
                 name="Regen Bank International",
@@ -698,6 +701,7 @@ class AdminRouteTests(unittest.TestCase):
             self.assertEqual(created_issuer.name, "Regen Bank International")
             self.assertEqual(created_issuer.region, "Global")
             self.assertTrue(created_issuer.eu_taxonomy)
+            self.assertEqual(upsert_issuer_node.call_count, 2)
 
             delete_response = admin_module.delete_issuer(
                 issuer_id=issuer_id,
@@ -711,6 +715,7 @@ class AdminRouteTests(unittest.TestCase):
         self.assertEqual(db.commit_called, 3)
         self.assertEqual(db.refresh_called, 2)
         self.assertNotIn(issuer_id, db.issuers)
+        delete_issuer_node.assert_called_once_with(str(issuer_id))
 
     def test_update_issuer_returns_404_for_missing_record(self) -> None:
         admin_module = _load_module("app.api.routes.admin")

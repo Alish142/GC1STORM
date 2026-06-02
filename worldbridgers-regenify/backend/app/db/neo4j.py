@@ -1,9 +1,16 @@
+from decimal import Decimal
 from fastapi import HTTPException
 from neo4j import GraphDatabase, TrustAll
+from typing import TYPE_CHECKING
 
 from app.core.config import get_settings
 from app.data.mock_data import GRAPH_DATA
 from app.data.primary_themes import PRIMARY_THEME_RELATIONSHIPS, PRIMARY_THEMES
+
+if TYPE_CHECKING:
+    from app.models.issuer import Issuer
+    from app.models.market_index import MarketIndex
+    from app.models.offering import Offering
 
 settings = get_settings()
 
@@ -204,3 +211,101 @@ def get_graph_view_data_or_fallback() -> tuple[dict[str, list[dict]], str]:
     if settings.allow_mock_graph_fallback:
         return GRAPH_DATA, "mock"
     raise HTTPException(status_code=503, detail="Graph database is unavailable.")
+
+
+def _to_float(value: Decimal | None) -> float | None:
+    return float(value) if value is not None else None
+
+
+def upsert_issuer_node(issuer: "Issuer") -> None:
+    with driver.session() as session:
+        session.run(
+            """
+            MERGE (n:Entity:Issuer {id: $id})
+            SET n.label = $label,
+                n.type = 'Issuer',
+                n.region = $region,
+                n.description = $description,
+                n.country = $country,
+                n.value = $value
+            """,
+            id=str(issuer.id),
+            label=issuer.name,
+            region=issuer.region,
+            description=issuer.description,
+            country=issuer.country,
+            value=_to_float(issuer.assets_amount),
+        )
+
+
+def delete_issuer_node(issuer_id: str) -> None:
+    with driver.session() as session:
+        session.run("MATCH (n {id: $id}) DETACH DELETE n", id=issuer_id)
+
+
+def upsert_offering_node(offering: "Offering", *, issuer: "Issuer") -> None:
+    with driver.session() as session:
+        session.run(
+            """
+            MERGE (issuer:Entity:Issuer {id: $issuer_id})
+            SET issuer.label = $issuer_label,
+                issuer.type = 'Issuer',
+                issuer.region = $issuer_region,
+                issuer.description = $issuer_description,
+                issuer.country = $issuer_country,
+                issuer.value = $issuer_value
+            MERGE (offering:Entity:Offering {id: $offering_id})
+            SET offering.label = $offering_label,
+                offering.type = 'Offering',
+                offering.region = $issuer_region,
+                offering.description = $offering_description,
+                offering.country = $issuer_country,
+                offering.value = $offering_value
+            MERGE (issuer)-[r:ISSUES {id: $relationship_id}]->(offering)
+            SET r.label = 'ISSUES',
+                r.weight = $relationship_weight
+            """,
+            issuer_id=str(issuer.id),
+            issuer_label=issuer.name,
+            issuer_region=issuer.region,
+            issuer_description=issuer.description,
+            issuer_country=issuer.country,
+            issuer_value=_to_float(issuer.assets_amount),
+            offering_id=str(offering.id),
+            offering_label=offering.name,
+            offering_description=" | ".join(
+                part for part in [offering.segment, offering.wbx_classification, offering.type] if part
+            ),
+            offering_value=_to_float(offering.issued_amount),
+            relationship_id=f"issuer-{issuer.id}-offering-{offering.id}",
+            relationship_weight=1 if offering.delisted else 2,
+        )
+
+
+def delete_offering_node(offering_id: str) -> None:
+    with driver.session() as session:
+        session.run("MATCH (n {id: $id}) DETACH DELETE n", id=offering_id)
+
+
+def upsert_index_node(index: "MarketIndex") -> None:
+    with driver.session() as session:
+        session.run(
+            """
+            MERGE (n:Entity:Index {id: $id})
+            SET n.label = $label,
+                n.type = 'Index',
+                n.region = 'Global',
+                n.description = $description,
+                n.country = NULL,
+                n.value = $value
+            """,
+            id=str(index.id),
+            label=index.name,
+            description=f"{index.type} benchmark in {index.currency}",
+            value=_to_float(index.last),
+        )
+
+
+def delete_index_node(index_id: str) -> None:
+    with driver.session() as session:
+        session.run("MATCH (n {id: $id}) DETACH DELETE n", id=index_id)

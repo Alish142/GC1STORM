@@ -61,7 +61,7 @@ export type DocumentRecord = {
 export type GraphNode = {
   id: string;
   label: string;
-  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme";
+  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme" | "Offering" | "Index";
   region?: string;
   description?: string;
   value?: number;

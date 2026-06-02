@@ -25,7 +25,7 @@ import {
 interface GraphNode {
   id: string;
   label: string;
-  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme";
+  type: "Issuer" | "Investor" | "Opportunity" | "Project" | "Market" | "Theme" | "Offering" | "Index";
   region?: string;
   description?: string;
   value?: number;
@@ -47,6 +47,8 @@ const NODE_CONFIG: Record<GraphNode["type"], { color: string; fill: string; icon
   Project: { color: "#d0661b", fill: "#fff0e5", icon: Layers },
   Market: { color: "#2b8b8b", fill: "#e7f7f7", icon: Globe2 },
   Theme: { color: "#30384a", fill: "#f2f4f8", icon: Network },
+  Offering: { color: "#5b6ee1", fill: "#eef1ff", icon: Layers },
+  Index: { color: "#b7791f", fill: "#fff5df", icon: BarChart3 },
 };
 
 const CENTER_IMAGES: Record<GraphNode["type"], string> = {
@@ -56,6 +58,8 @@ const CENTER_IMAGES: Record<GraphNode["type"], string> = {
   Project: "https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?auto=format&fit=crop&w=1200&q=80",
   Market: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
   Theme: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80",
+  Offering: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
+  Index: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
 };
 
 const NODE_TRANSITION = "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)";
@@ -381,6 +385,8 @@ export default function GraphView() {
             {selectedNode.type === "Theme" && "This theme highlights how companies and instruments cluster around a shared sustainability or transition topic."}
             {selectedNode.type === "Opportunity" && "This opportunity node shows where companies or themes align with investable or strategic growth areas."}
             {selectedNode.type === "Project" && "This project node reveals execution-level links between issuers, markets, and impact themes."}
+            {selectedNode.type === "Offering" && "This offering node represents an investable instrument linked back to its issuer in the protected market workspace."}
+            {selectedNode.type === "Index" && "This index node gives a benchmark-level view of how the market or theme is performing inside the platform."}
           </div>
         </div>
 

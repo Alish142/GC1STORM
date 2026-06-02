@@ -10,6 +10,14 @@ from sqlalchemy.orm import Session
 from app.api.deps.auth import require_admin_user, require_csrf_token, require_role
 from app.crud.visual_settings import get_visual_config, update_visual_config
 from app.db import get_db
+from app.db.neo4j import (
+    delete_index_node,
+    delete_issuer_node,
+    delete_offering_node,
+    upsert_index_node,
+    upsert_issuer_node,
+    upsert_offering_node,
+)
 from app.models.audit_log import AuditLog
 from app.models.document import Document
 from app.models.document_member_state import DocumentMemberState
@@ -189,6 +197,7 @@ def create_issuer(
     db.add(issuer)
     db.commit()
     db.refresh(issuer)
+    upsert_issuer_node(issuer)
 
     log_audit_event(
         db,
@@ -229,6 +238,7 @@ def update_issuer(
     db.add(issuer)
     db.commit()
     db.refresh(issuer)
+    upsert_issuer_node(issuer)
 
     log_audit_event(
         db,
@@ -257,6 +267,7 @@ def delete_issuer(
     issuer_name = issuer.name
     db.delete(issuer)
     db.commit()
+    delete_issuer_node(str(issuer_id))
     log_audit_event(
         db,
         action="admin.issuer.deleted",
@@ -299,6 +310,7 @@ def create_offering(
     db.add(offering)
     db.commit()
     db.refresh(offering)
+    upsert_offering_node(offering, issuer=issuer)
 
     log_audit_event(
         db,
@@ -344,6 +356,7 @@ def update_offering(
     db.add(offering)
     db.commit()
     db.refresh(offering)
+    upsert_offering_node(offering, issuer=issuer)
 
     log_audit_event(
         db,
@@ -372,6 +385,7 @@ def delete_offering(
     offering_name = offering.name
     db.delete(offering)
     db.commit()
+    delete_offering_node(str(offering_id))
     log_audit_event(
         db,
         action="admin.offering.deleted",
@@ -408,6 +422,7 @@ def create_index(
     db.add(index)
     db.commit()
     db.refresh(index)
+    upsert_index_node(index)
 
     log_audit_event(
         db,
@@ -448,6 +463,7 @@ def update_index(
     db.add(index)
     db.commit()
     db.refresh(index)
+    upsert_index_node(index)
 
     log_audit_event(
         db,
@@ -476,6 +492,7 @@ def delete_index(
     index_name = index.name
     db.delete(index)
     db.commit()
+    delete_index_node(str(index_id))
     log_audit_event(
         db,
         action="admin.index.deleted",
