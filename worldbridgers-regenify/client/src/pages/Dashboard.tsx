@@ -42,7 +42,7 @@ type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number; 
 type IssuerRow = { id: string; name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assets: string; assetsAmount?: number | null; assetsCurrency?: string; description?: string; foundedYear?: number | null; issuerNameDotColor?: string; wbxLabelDotColor?: string };
 type OfferingRow = { id: string; issuerId: string; type: string; segment: string; issuer: string; isin: string; name: string; issuedAmount: number; currency: string; listingDate: string; wbxClassification: string; coupon: number | null; lastPrice: number; delisted: boolean; issuerDotColor?: string; typeDotColor?: string };
 type IndexRow = { id: string; type: string; name: string; currency: string; last: number; changePercent: number; change: number; monthHigh: number; monthLow: number; yearHigh: number; yearLow: number; typeDotColor?: string };
-type DocumentRow = { id: string; type: string; subType: string; name: string; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
+type DocumentRow = { id: string; type: string; subType: string; name: string; issuerId?: string | null; issuer: string; memberStates: string[]; date: string; fileSize: string; fileUrl?: string | null; issuerDotColor?: string; typeDotColor?: string };
 type IssuerFormState = { name: string; country: string; region: string; classification: string; wbxLabel: boolean; euTaxonomy: boolean; assetsAmount: string; assetsCurrency: string; foundedYear: string; description: string };
 type OfferingFormState = { issuerId: string; type: string; segment: string; isin: string; name: string; issuedAmount: string; currency: string; listingDate: string; wbxClassification: string; coupon: string; lastPrice: string; delisted: boolean };
 type IndexFormState = { type: string; name: string; currency: string; last: string; changePercent: string; change: string; monthHigh: string; monthLow: string; yearHigh: string; yearLow: string };
@@ -54,6 +54,14 @@ type AdminDocumentUploadForm = {
   documentDate: string;
   memberStates: string;
   file: File | null;
+};
+type DocumentFormState = {
+  type: string;
+  subType: string;
+  name: string;
+  issuerId: string;
+  documentDate: string;
+  memberStates: string;
 };
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
@@ -1788,6 +1796,8 @@ function DocumentsTab() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<DocumentRow | null>(null);
   const [uploadForm, setUploadForm] = useState<AdminDocumentUploadForm>({
     type: "Offerings Documents",
     subType: "",
@@ -1796,6 +1806,14 @@ function DocumentsTab() {
     documentDate: "",
     memberStates: "",
     file: null,
+  });
+  const [form, setForm] = useState<DocumentFormState>({
+    type: "Offerings Documents",
+    subType: "",
+    name: "",
+    issuerId: "",
+    documentDate: "",
+    memberStates: "",
   });
 
   const openDocument = useCallback((fileUrl?: string | null) => {
@@ -1868,19 +1886,89 @@ function DocumentsTab() {
     },
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingDocument) {
+        throw new Error("Document is not selected for editing.");
+      }
+      return backendApi.updateDocument(editingDocument.id, {
+        type: form.type,
+        subType: form.subType || undefined,
+        name: form.name,
+        issuerId: form.issuerId || undefined,
+        documentDate: form.documentDate || undefined,
+        memberStates: form.memberStates
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Document updated.");
+      setDialogOpen(false);
+      setEditingDocument(null);
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not update document.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (documentId: string) => backendApi.deleteDocument(documentId),
+    onSuccess: () => {
+      toast.success("Document deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["documents"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not delete document.");
+    },
+  });
+
   const totalActive = Object.values(filters).flat().length;
-  const documentRowContextMenu = (row: Record<string, unknown>) => [
-    {
-      label: "Open document",
-      onSelect: () => openDocument((row.fileUrl as string | null | undefined) ?? undefined),
-      disabled: !row.fileUrl,
-    },
-    {
-      label: "Download document",
-      onSelect: () => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name)),
-      disabled: !row.fileUrl,
-    },
-  ];
+  const documentRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const document = row as unknown as DocumentRow;
+        return [
+          {
+            label: "Edit document",
+            onSelect: () => {
+              setEditingDocument(document);
+              setForm({
+                type: document.type,
+                subType: document.subType,
+                name: document.name,
+                issuerId: document.issuerId ?? "",
+                documentDate: document.date,
+                memberStates: document.memberStates.join(", "),
+              });
+              setDialogOpen(true);
+            },
+          },
+          {
+            label: "Delete document",
+            onSelect: () => {
+              if (window.confirm(`Delete document "${document.name}"?`)) {
+                deleteMutation.mutate(document.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+          {
+            label: "Open document",
+            onSelect: () => openDocument(document.fileUrl ?? undefined),
+            disabled: !document.fileUrl,
+          },
+          {
+            label: "Download document",
+            onSelect: () => downloadDocument(document.fileUrl ?? undefined, document.name),
+            disabled: !document.fileUrl,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type",
@@ -1908,33 +1996,55 @@ function DocumentsTab() {
     },
     { key: "date", label: "Date", sortable: false },
     { key: "fileSize", label: "Size" },
-    { key: "id", label: "Actions", className: "w-[88px] text-center",
+  ];
+
+  if (isAdmin) {
+    columns.push({
+      key: "id",
+      label: "Actions",
+      className: "w-[88px] text-center",
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
-            disabled={!row.fileUrl}
-            aria-label={`View ${String(row.name)}`}
+            onClick={() => {
+              const document = row as unknown as DocumentRow;
+              setEditingDocument(document);
+              setForm({
+                type: document.type,
+                subType: document.subType,
+                name: document.name,
+                issuerId: document.issuerId ?? "",
+                documentDate: document.date,
+                memberStates: document.memberStates.join(", "),
+              });
+              setDialogOpen(true);
+            }}
+            aria-label={`Edit ${String(row.name)}`}
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Pencil className="w-3.5 h-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
-            disabled={!row.fileUrl}
-            aria-label={`Download ${String(row.name)}`}
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              const document = row as unknown as DocumentRow;
+              if (window.confirm(`Delete document "${document.name}"?`)) {
+                deleteMutation.mutate(document.id);
+              }
+            }}
+            aria-label={`Delete ${String(row.name)}`}
           >
-            <Download className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
-      )
-    },
-  ];
+      ),
+    });
+  }
 
   return (
     <div className="flex h-full flex-col gap-4 md:flex-row">
@@ -2154,30 +2264,131 @@ function DocumentsTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 text-xs"
-                  onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
-                  disabled={!row.fileUrl}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  View
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 text-xs"
-                  onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
-                  disabled={!row.fileUrl}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </Button>
+                {isAdmin ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => {
+                        const document = row as unknown as DocumentRow;
+                        setEditingDocument(document);
+                        setForm({
+                          type: document.type,
+                          subType: document.subType,
+                          name: document.name,
+                          issuerId: document.issuerId ?? "",
+                          documentDate: document.date,
+                          memberStates: document.memberStates.join(", "),
+                        });
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs text-destructive hover:text-destructive"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        const document = row as unknown as DocumentRow;
+                        if (window.confirm(`Delete document "${document.name}"?`)) {
+                          deleteMutation.mutate(document.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => openDocument((row.fileUrl as string | null | undefined) ?? undefined)}
+                      disabled={!row.fileUrl}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name))}
+                      disabled={!row.fileUrl}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
         />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit document</DialogTitle>
+              <DialogDescription>Update the document metadata stored in the platform.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Offerings Documents">Offerings Documents</SelectItem>
+                    <SelectItem value="Notices">Notices</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Sub Type</Label>
+                <Input value={form.subType} onChange={(event) => setForm((current) => ({ ...current, subType: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Issuer</Label>
+                <Select value={form.issuerId || "__none__"} onValueChange={(value) => setForm((current) => ({ ...current, issuerId: value === "__none__" ? "" : value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Optional issuer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">No issuer</SelectItem>
+                    {(issuerOptionsQuery.data?.data ?? []).map((issuer) => (
+                      <SelectItem key={issuer.id} value={issuer.id}>{issuer.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input type="date" value={form.documentDate} onChange={(event) => setForm((current) => ({ ...current, documentDate: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Member States</Label>
+                <Input value={form.memberStates} onChange={(event) => setForm((current) => ({ ...current, memberStates: event.target.value }))} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+                {saveMutation.isPending ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

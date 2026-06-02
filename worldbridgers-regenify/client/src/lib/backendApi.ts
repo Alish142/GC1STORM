@@ -180,6 +180,15 @@ type AdminDocumentUploadPayload = {
   memberStates?: string[];
 };
 
+type AdminDocumentPayload = {
+  type: string;
+  name: string;
+  subType?: string;
+  issuerId?: string;
+  documentDate?: string;
+  memberStates?: string[];
+};
+
 const DEFAULT_VISUAL_CONFIG: VisualConfig = {
   tableDots: {
     issuerName: "#22c55e",
@@ -727,6 +736,34 @@ export const backendApi = {
     }
 
     return await res.json();
+  },
+  updateDocument: async (documentId: string, payload: AdminDocumentPayload) =>
+    request<{ success: boolean; document: unknown }>(`/api/admin/documents/${documentId}`, {
+      ...withCsrfHeader(),
+      method: "PATCH",
+      body: JSON.stringify({
+        type: payload.type,
+        name: payload.name,
+        subType: payload.subType,
+        issuerId: payload.issuerId,
+        documentDate: payload.documentDate,
+        memberStates: payload.memberStates ?? [],
+      }),
+    }),
+  deleteDocument: async (documentId: string) => {
+    const res = await fetch(`${API_BASE}/api/admin/documents/${documentId}`, {
+      ...withCsrfHeader({ method: "DELETE" }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      let errorMessage = `Request failed: ${res.status} ${res.statusText}`;
+      try {
+        const payload = (await res.json()) as { detail?: string };
+        if (payload?.detail) errorMessage = payload.detail;
+      } catch {}
+      throw new ApiRequestError(errorMessage, res.status);
+    }
+    return { success: true };
   },
   createIssuer: async (payload: AdminIssuerPayload) =>
     request<{ success: boolean; issuer: unknown }>("/api/admin/issuers", {

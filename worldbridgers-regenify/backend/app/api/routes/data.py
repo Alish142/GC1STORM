@@ -426,6 +426,7 @@ def documents(
             "type": document.type,
             "subType": document.sub_type or "",
             "name": document.name,
+            "issuerId": str(document.issuer_id) if document.issuer_id else None,
             "issuer": issuer_name or "—",
             "memberStates": member_state_list or [],
             "date": document.document_date.isoformat() if document.document_date else "",
