@@ -10,6 +10,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
+  BarChart3,
   Building2,
   ChevronRight,
   Globe2,
