@@ -19,12 +19,24 @@ import {
   Settings,
   LogOut,
   HelpCircle,
+  Wallet,
   Menu,
   X,
   Mail,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { dashboardNavigation, dashboardQuickLinks } from "@/lib/navigation";
+
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
 
 export default function DashboardHeader() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);

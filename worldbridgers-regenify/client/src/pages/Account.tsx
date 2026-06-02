@@ -83,7 +83,7 @@ type ContactRequestRecord = {
   status: string;
   createdAt: string;
 };
-
+ 
 type CallRequestRecord = {
   id: string;
   userId: string | null;
@@ -96,16 +96,6 @@ type CallRequestRecord = {
   createdAt: string;
 };
 
-type ContactRequestRecord = {
-  id: string;
-  fullName: string;
-  companyName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  message: string;
-  status: string;
-  createdAt: string;
-};
 
 const TABLE_DOT_FIELDS = [
   {
@@ -865,37 +855,39 @@ export default function Account() {
                         </div>
                       </div>
 
-                  <div className="rounded-3xl border border-border bg-card p-6">
-                    <h2 className="text-lg font-semibold">Request call</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Ask for a follow-up call about structuring offerings, investor workflows, or platform guidance.
-                    </p>
-                    <div className="mt-5 space-y-4">
-                      <Input
-                        placeholder="Organisation"
-                        value={callRequestForm.organisation}
-                        onChange={(event) => setCallRequestForm((current) => ({ ...current, organisation: event.target.value }))}
-                      />
-                      <Input
-                        placeholder="Preferred time or timezone"
-                        value={callRequestForm.preferredTime}
-                        onChange={(event) => setCallRequestForm((current) => ({ ...current, preferredTime: event.target.value }))}
-                      />
-                      <Textarea
-                        className="min-h-[140px]"
-                        placeholder="What would you like to discuss?"
-                        value={callRequestForm.notes}
-                        onChange={(event) => setCallRequestForm((current) => ({ ...current, notes: event.target.value }))}
-                      />
-                      <Button
-                        variant="outline"
-                        disabled={callRequestMutation.isPending}
-                        onClick={() => callRequestMutation.mutate()}
-                      >
-                        {callRequestMutation.isPending ? "Sending..." : "Request call"}
-                      </Button>
-                    </div>
-                  </div>
+                      <div className="rounded-3xl border border-border bg-card p-6">
+                        <h2 className="text-lg font-semibold">Request call</h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Ask for a follow-up call about structuring offerings, investor workflows, or platform guidance.
+                        </p>
+                        <div className="mt-5 space-y-4">
+                          <Input
+                            placeholder="Organisation"
+                            value={callRequestForm.organisation}
+                            onChange={(event) => setCallRequestForm((current) => ({ ...current, organisation: event.target.value }))}
+                          />
+                          <Input
+                            placeholder="Preferred time or timezone"
+                            value={callRequestForm.preferredTime}
+                            onChange={(event) => setCallRequestForm((current) => ({ ...current, preferredTime: event.target.value }))}
+                          />
+                          <Textarea
+                            className="min-h-[140px]"
+                            placeholder="What would you like to discuss?"
+                            value={callRequestForm.notes}
+                            onChange={(event) => setCallRequestForm((current) => ({ ...current, notes: event.target.value }))}
+                          />
+                          <Button
+                            variant="outline"
+                            disabled={callRequestMutation.isPending}
+                            onClick={() => callRequestMutation.mutate()}
+                          >
+                            {callRequestMutation.isPending ? "Sending..." : "Request call"}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </section>

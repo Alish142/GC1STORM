@@ -110,16 +110,6 @@ type SupportRequestRecord = {
   createdAt: string;
 };
 
-type ContactRequestRecord = {
-  id: string;
-  fullName: string;
-  companyName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  message: string;
-  status: string;
-  createdAt: string;
-};
 
 type CallRequestRecord = {
   id: string;
@@ -555,9 +545,9 @@ function buildFallbackRecommendations(): RecommendationResponse {
     if (node.type === "Theme") {
       continue;
     }
-    const connectedTypes = [...(neighbors.get(node.id) ?? new Set<string>())]
+    const connectedTypes = ([...(neighbors.get(node.id) ?? new Set<string>())]
       .map((neighborId) => nodesById.get(neighborId)?.type)
-      .filter((value): value is string => Boolean(value));
+      .filter(Boolean) as string[]);
     addRecommendation(
       node,
       "entity",
@@ -707,9 +697,6 @@ export const backendApi = {
         message: payload.message || "I would like to schedule a demo of Worldbridgers Regenify.",
       }),
     });
-  },
-  listContactRequests: async () => {
-    return request<{ data: ContactRequestRecord[] }>("/api/support/contact-requests");
   },
   deleteContactRequest: async (id: string) => {
     return request<{ success: boolean }>(`/api/support/contact-requests/${id}`, {
