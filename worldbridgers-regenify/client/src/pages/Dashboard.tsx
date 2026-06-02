@@ -31,7 +31,7 @@ import { backendApi, type RecommendationRecord } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, Loader2, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
+  Leaf, ShieldCheck, Globe2, HelpCircle, Loader2, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -325,6 +325,7 @@ function indexToForm(row: IndexRow): IndexFormState {
 function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const isAdmin = user?.role === "admin";
   const overviewQ = useQuery<{ issuers: number; offerings: number; indices: number; documents: number }>({
     queryKey: ["dashboard", "overview"],
     queryFn: () => backendApi.overview(),
@@ -382,6 +383,32 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
   ];
   const graphSource = recommendationsQ.data?.graphSource ?? "mock";
   const recommendationCards = recommendationsQ.data?.data ?? [];
+  const adminActions = [
+    {
+      title: "Manage issuers",
+      description: "Create or refine issuer records and classifications.",
+      icon: Building2,
+      href: "/dashboard/issuers",
+    },
+    {
+      title: "Manage offerings",
+      description: "Open the offering workspace for new listings and edits.",
+      icon: Layers,
+      href: "/dashboard/offerings",
+    },
+    {
+      title: "Manage indices",
+      description: "Update benchmarks, market values, and index coverage.",
+      icon: BarChart3,
+      href: "/dashboard/indices",
+    },
+    {
+      title: "Review support",
+      description: "Jump into support and follow-up workflows for users.",
+      icon: HelpCircle,
+      href: "/dashboard/account?view=support",
+    },
+  ];
 
   const openRecommendation = (recommendation: RecommendationRecord) => {
     const params = new URLSearchParams({
@@ -451,6 +478,51 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
           );
         })}
       </div>
+
+      {isAdmin ? (
+        <div className="rounded-[28px] border border-[#d7dee7] bg-[linear-gradient(180deg,#ffffff_0%,#f7f9fc_100%)] px-4 py-4 shadow-[0_16px_34px_rgba(15,23,42,0.06)] sm:px-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Admin tools
+              </div>
+              <h2 className="mt-2 text-lg font-semibold text-slate-950">Workspace control</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Fast paths into the core admin workflows without crowding the main dashboard.
+              </p>
+            </div>
+            <Badge className="border border-slate-200 bg-white text-slate-700 hover:bg-white">
+              Admin only
+            </Badge>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-4">
+            {adminActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.title}
+                  onClick={() => navigate(action.href)}
+                  className="group rounded-[22px] border border-slate-200 bg-white/90 px-4 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_14px_28px_rgba(15,23,42,0.08)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </div>
+                  <div className="mt-4 text-sm font-semibold text-slate-950">
+                    {action.title}
+                  </div>
+                  <p className="mt-1 text-xs leading-6 text-slate-600">
+                    {action.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="relative overflow-hidden rounded-[32px] border border-[#dfe7df] bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.16),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.10),_transparent_24%),linear-gradient(180deg,#fdfdf9_0%,#f7f6f0_100%)] p-5 shadow-[0_24px_60px_rgba(20,31,24,0.08)]">
         <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
