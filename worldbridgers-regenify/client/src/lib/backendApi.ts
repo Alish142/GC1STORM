@@ -88,6 +88,40 @@ type SubmissionResponse<T> = {
   request: T;
 };
 
+type SupportRequestRecord = {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+  topic: string;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
+type CallRequestRecord = {
+  id: string;
+  userId: string | null;
+  fullName: string | null;
+  email: string | null;
+  organisation: string | null;
+  preferredTime: string | null;
+  notes: string;
+  status: string;
+  createdAt: string;
+};
+
 type OverviewCounts = {
   issuers: number;
   offerings: number;
@@ -610,16 +644,7 @@ export const backendApi = {
     }
   },
   createSupportRequest: async (payload: SupportRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      fullName: string;
-      email: string;
-      phoneNumber: string | null;
-      topic: string;
-      message: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/support-requests", {
+    return request<SubmissionResponse<SupportRequestRecord>>("/api/support/support-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -631,16 +656,7 @@ export const backendApi = {
     });
   },
   createContactRequest: async (payload: ContactRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      fullName: string;
-      companyName: string | null;
-      email: string;
-      phoneNumber: string | null;
-      message: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/contact-requests", {
+    return request<SubmissionResponse<ContactRequestRecord>>("/api/support/contact-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -652,17 +668,7 @@ export const backendApi = {
     });
   },
   createCallRequest: async (payload: CallRequestPayload) => {
-    return request<SubmissionResponse<{
-      id: string;
-      userId: string | null;
-      fullName: string | null;
-      email: string | null;
-      organisation: string | null;
-      preferredTime: string | null;
-      notes: string;
-      status: string;
-      createdAt: string;
-    }>>("/api/support/call-requests", {
+    return request<SubmissionResponse<CallRequestRecord>>("/api/support/call-requests", {
       method: "POST",
       body: JSON.stringify({
         full_name: payload.fullName,
@@ -672,6 +678,15 @@ export const backendApi = {
         notes: payload.notes,
       }),
     });
+  },
+  listSupportRequests: async () => {
+    return request<{ data: SupportRequestRecord[] }>("/api/support/support-requests");
+  },
+  listContactRequests: async () => {
+    return request<{ data: ContactRequestRecord[] }>("/api/support/contact-requests");
+  },
+  listCallRequests: async () => {
+    return request<{ data: CallRequestRecord[] }>("/api/support/call-requests");
   },
   uploadAdminDocument: async (payload: AdminDocumentUploadPayload) => {
     const formData = new FormData();
