@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { backendApi } from "@/lib/backendApi";
 import {
   Search,
   ChevronDown,
@@ -20,15 +22,38 @@ import {
   Wallet,
   Menu,
   X,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { dashboardNavigation, dashboardQuickLinks } from "@/lib/navigation";
+
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
 
 export default function DashboardHeader() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const contactRequestsQuery = useQuery({
+    queryKey: ["admin", "contact-requests", "count"],
+    queryFn: () => backendApi.listContactRequests(),
+    enabled: user?.role === "admin",
+    staleTime: 10_000,
+    refetchInterval: 5_000,
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
+  });
+  const contactRequestCount = (contactRequestsQuery.data as { data: ContactRequestRecord[] } | undefined)?.data.length ?? 0;
+
   const searchSuggestions = useMemo(
     () => [
       { href: "/dashboard/issuers", match: ["issuer", "issuers"] },
@@ -184,10 +209,18 @@ export default function DashboardHeader() {
                 <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=portfolio")}>
                   <Wallet className="w-3.5 h-3.5" /> My WBX Portfolio
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=settings")}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=settings")}> 
                   <Settings className="w-3.5 h-3.5" /> Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=support")}>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/demo-requests")}> 
+                  <Mail className="w-3.5 h-3.5" /> Demo Requests
+                  {contactRequestCount > 0 ? (
+                    <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      {contactRequestCount}
+                    </span>
+                  ) : null}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=support")}> 
                   <HelpCircle className="w-3.5 h-3.5" /> Help & Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

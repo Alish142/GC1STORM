@@ -79,6 +79,17 @@ type DocumentUploadForm = {
   file: File | null;
 };
 
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
 const TABLE_DOT_FIELDS = [
   {
     section: "Issuers page",
@@ -155,6 +166,29 @@ export default function Account() {
   });
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
   const isAdmin = user?.role === "admin";
+
+  const contactRequestsQuery = useQuery({
+    queryKey: ["admin", "contact-requests"],
+    queryFn: () => backendApi.listContactRequests(),
+    enabled: isAdmin && view === "support",
+    staleTime: 60_000,
+  });
+
+  const contactRequestsData = contactRequestsQuery.data as { data: ContactRequestRecord[] } | undefined;
+  const supportRequestCount = contactRequestsData?.data.length ?? 0;
+
+  const deleteRequestMutation = useMutation({
+    mutationFn: (id: string) => backendApi.deleteContactRequest(id),
+    onSuccess: () => {
+      toast.success("Request deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["admin", "contact-requests"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Could not delete request.");
+    },
+  });
+
+  const isDemoRequest = (message: string) => /demo|schedule\s+a\s+demo|demo request/i.test(message);
 
   const visualConfigQuery = useQuery<VisualConfig>({
     queryKey: ["admin", "visual-config"],
@@ -385,7 +419,12 @@ export default function Account() {
                     }`}
                   >
                     <Icon className="h-4 w-4" />
-                    {tab.label}
+                    <span>{tab.label}</span>
+                    {tab.key === "support" && isAdmin && supportRequestCount > 0 ? (
+                      <Badge className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-semibold text-white">
+                        {supportRequestCount}
+                      </Badge>
+                    ) : null}
                   </button>
                 );
               })}
@@ -822,6 +861,7 @@ export default function Account() {
                       </Button>
                     </div>
                   </div>
+
                 </div>
               )}
             </section>

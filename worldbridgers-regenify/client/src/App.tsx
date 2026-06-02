@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import GraphView from "./pages/GraphView";
 import Logout from "./pages/Logout";
 import Account from "./pages/Account";
+import DemoRequests from "./pages/DemoRequests";
 import Admin from "./pages/Admin";
 import PlatformFeaturePage from "./pages/PlatformFeaturePage";
 import AboutPage from "./pages/AboutPage";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/dashboard/documents" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/dashboard/graph" component={() => <ProtectedRoute component={GraphView} />} />
       <Route path="/dashboard/account" component={() => <ProtectedRoute component={Account} />} />
+      <Route path="/dashboard/demo-requests" component={() => <ProtectedRoute component={DemoRequests} allowedRoles={["admin"]} redirectTo="/dashboard" />} />
       <Route path="/admin" component={() => <ProtectedRoute component={Admin} allowedRoles={["admin"]} redirectTo="/dashboard" />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
