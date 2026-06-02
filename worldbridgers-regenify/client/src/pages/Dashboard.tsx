@@ -805,6 +805,27 @@ function IssuersTab() {
   };
 
   const totalActive = Object.values(filters).flat().length;
+  const issuerRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const issuer = row as unknown as IssuerRow;
+        return [
+          {
+            label: "Edit issuer",
+            onSelect: () => openEdit(issuer),
+          },
+          {
+            label: "Delete issuer",
+            onSelect: () => {
+              if (window.confirm(`Delete issuer "${issuer.name}"? This also removes linked offerings.`)) {
+                deleteMutation.mutate(issuer.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     {
@@ -953,6 +974,7 @@ function IssuersTab() {
           isLoading={isLoading}
           searchPlaceholder="Search issuers by name, country..."
           emptyMessage="No issuers found."
+          rowContextMenu={issuerRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1134,6 +1156,31 @@ function OfferingsTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
+  const offeringRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const offering = row as unknown as OfferingRow;
+        return [
+          {
+            label: "Edit offering",
+            onSelect: () => {
+              setEditingOffering(offering);
+              setForm(offeringToForm(offering));
+              setDialogOpen(true);
+            },
+          },
+          {
+            label: "Delete offering",
+            onSelect: () => {
+              if (window.confirm(`Delete offering "${offering.name}"?`)) {
+                deleteMutation.mutate(offering.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
@@ -1283,6 +1330,7 @@ function OfferingsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search by name, ISIN, issuer..."
           emptyMessage="No offerings found."
+          rowContextMenu={offeringRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1485,6 +1533,31 @@ function IndicesTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
+  const indexRowContextMenu = isAdmin
+    ? (row: Record<string, unknown>) => {
+        const index = row as unknown as IndexRow;
+        return [
+          {
+            label: "Edit index",
+            onSelect: () => {
+              setEditingIndex(index);
+              setForm(indexToForm(index));
+              setDialogOpen(true);
+            },
+          },
+          {
+            label: "Delete index",
+            onSelect: () => {
+              if (window.confirm(`Delete index "${index.name}"?`)) {
+                deleteMutation.mutate(index.id);
+              }
+            },
+            destructive: true,
+            disabled: deleteMutation.isPending,
+          },
+        ];
+      }
+    : undefined;
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type", sortable: true,
@@ -1636,6 +1709,7 @@ function IndicesTab() {
           isLoading={isLoading}
           searchPlaceholder="Search indices by name or type..."
           emptyMessage="No indices found."
+          rowContextMenu={indexRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -1795,6 +1869,18 @@ function DocumentsTab() {
   });
 
   const totalActive = Object.values(filters).flat().length;
+  const documentRowContextMenu = (row: Record<string, unknown>) => [
+    {
+      label: "Open document",
+      onSelect: () => openDocument((row.fileUrl as string | null | undefined) ?? undefined),
+      disabled: !row.fileUrl,
+    },
+    {
+      label: "Download document",
+      onSelect: () => downloadDocument((row.fileUrl as string | null | undefined) ?? undefined, String(row.name)),
+      disabled: !row.fileUrl,
+    },
+  ];
 
   const columns: Column<Record<string, unknown>>[] = [
     { key: "type", label: "Type",
@@ -2027,6 +2113,7 @@ function DocumentsTab() {
           isLoading={isLoading}
           searchPlaceholder="Search documents by name, type..."
           emptyMessage="No documents found."
+          rowContextMenu={documentRowContextMenu}
           mobileCardRender={(row) => (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">

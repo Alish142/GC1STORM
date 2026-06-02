@@ -1,4 +1,12 @@
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import {
   ChevronUp,
@@ -18,6 +26,13 @@ export interface Column<T> {
   className?: string;
 }
 
+export interface RowContextMenuAction<T> {
+  label: string;
+  onSelect: (row: T) => void;
+  disabled?: boolean;
+  destructive?: boolean;
+}
+
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
@@ -34,6 +49,7 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   searchPlaceholder?: string;
   mobileCardRender?: (row: T, index: number) => React.ReactNode;
+  rowContextMenu?: (row: T, index: number) => RowContextMenuAction<T>[] | null;
 }
 
 export default function DataTable<T extends Record<string, unknown>>({
@@ -52,6 +68,7 @@ export default function DataTable<T extends Record<string, unknown>>({
   emptyMessage = "No results found.",
   searchPlaceholder = "Search...",
   mobileCardRender,
+  rowContextMenu,
 }: DataTableProps<T>) {
   const totalPages = Math.ceil(total / pageSize);
   const start = (page - 1) * pageSize + 1;
@@ -68,6 +85,36 @@ export default function DataTable<T extends Record<string, unknown>>({
     if (className?.includes("text-right")) return "justify-end";
     if (className?.includes("text-center")) return "justify-center";
     return "";
+  };
+
+  const wrapWithContextMenu = (row: T, index: number, child: React.ReactElement) => {
+    const actions = rowContextMenu?.(row, index) ?? [];
+    if (!actions.length) {
+      return child;
+    }
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{child}</ContextMenuTrigger>
+        <ContextMenuContent className="w-48 rounded-xl border-border p-1.5">
+          <ContextMenuLabel className="px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Row actions
+          </ContextMenuLabel>
+          <ContextMenuSeparator />
+          {actions.map((action) => (
+            <ContextMenuItem
+              key={action.label}
+              disabled={action.disabled}
+              variant={action.destructive ? "destructive" : "default"}
+              className="rounded-lg"
+              onSelect={() => action.onSelect(row)}
+            >
+              {action.label}
+            </ContextMenuItem>
+          ))}
+        </ContextMenuContent>
+      </ContextMenu>
+    );
   };
 
   return (
@@ -103,11 +150,15 @@ export default function DataTable<T extends Record<string, unknown>>({
             </div>
           ) : mobileCardRender ? (
             <div className="divide-y divide-border/60">
-              {data.map((row, i) => (
-                <div key={i} className="p-4">
-                  {mobileCardRender(row, i)}
-                </div>
-              ))}
+              {data.map((row, i) =>
+                wrapWithContextMenu(
+                  row,
+                  i,
+                  <div key={i} className="p-4">
+                    {mobileCardRender(row, i)}
+                  </div>
+                )
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
@@ -130,6 +181,8 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </thead>
                 <tbody>
                   {data.map((row, i) => (
+                    <ContextMenu key={i}>
+                      <ContextMenuTrigger asChild>
                     <tr
                       key={i}
                       className="group border-b border-border/50 transition-colors last:border-0 hover:bg-muted/30"
@@ -142,6 +195,27 @@ export default function DataTable<T extends Record<string, unknown>>({
                         </td>
                       ))}
                     </tr>
+                      </ContextMenuTrigger>
+                      {(rowContextMenu?.(row, i) ?? []).length ? (
+                        <ContextMenuContent className="w-48 rounded-xl border-border p-1.5">
+                          <ContextMenuLabel className="px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                            Row actions
+                          </ContextMenuLabel>
+                          <ContextMenuSeparator />
+                          {(rowContextMenu?.(row, i) ?? []).map((action) => (
+                            <ContextMenuItem
+                              key={action.label}
+                              disabled={action.disabled}
+                              variant={action.destructive ? "destructive" : "default"}
+                              className="rounded-lg"
+                              onSelect={() => action.onSelect(row)}
+                            >
+                              {action.label}
+                            </ContextMenuItem>
+                          ))}
+                        </ContextMenuContent>
+                      ) : null}
+                    </ContextMenu>
                   ))}
                 </tbody>
               </table>
@@ -192,6 +266,8 @@ export default function DataTable<T extends Record<string, unknown>>({
               </tr>
             ) : (
               data.map((row, i) => (
+                <ContextMenu key={i}>
+                  <ContextMenuTrigger asChild>
                 <tr
                   key={i}
                   className="group border-b border-border/50 transition-colors last:border-0 hover:bg-muted/30"
@@ -204,6 +280,27 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </td>
                   ))}
                 </tr>
+                  </ContextMenuTrigger>
+                  {(rowContextMenu?.(row, i) ?? []).length ? (
+                    <ContextMenuContent className="w-48 rounded-xl border-border p-1.5">
+                      <ContextMenuLabel className="px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                        Row actions
+                      </ContextMenuLabel>
+                      <ContextMenuSeparator />
+                      {(rowContextMenu?.(row, i) ?? []).map((action) => (
+                        <ContextMenuItem
+                          key={action.label}
+                          disabled={action.disabled}
+                          variant={action.destructive ? "destructive" : "default"}
+                          className="rounded-lg"
+                          onSelect={() => action.onSelect(row)}
+                        >
+                          {action.label}
+                        </ContextMenuItem>
+                      ))}
+                    </ContextMenuContent>
+                  ) : null}
+                </ContextMenu>
               ))
             )}
           </tbody>
