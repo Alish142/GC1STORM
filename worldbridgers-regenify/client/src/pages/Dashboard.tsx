@@ -31,7 +31,7 @@ import { backendApi, type RecommendationRecord } from "@/lib/backendApi";
 import {
   Building2, Layers, BarChart3, FileText, Network,
   TrendingUp, TrendingDown, Download, Eye, ArrowRight,
-  Leaf, ShieldCheck, Globe2, HelpCircle, Loader2, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
+  Leaf, ShieldCheck, Globe2, HelpCircle, Loader2, Settings, SlidersHorizontal, Upload, Pencil, Plus, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -403,6 +403,18 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
       href: "/dashboard/indices",
     },
     {
+      title: "Manage documents",
+      description: "Review document records, file access, and publishing flow.",
+      icon: FileText,
+      href: "/dashboard/documents",
+    },
+    {
+      title: "Manage visualisation",
+      description: "Adjust table dots and visual workspace presentation.",
+      icon: Settings,
+      href: "/dashboard/account?view=settings",
+    },
+    {
       title: "Review support",
       description: "Jump into support and follow-up workflows for users.",
       icon: HelpCircle,
@@ -496,7 +508,7 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
             </Badge>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-4">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {adminActions.map((action) => {
               const Icon = action.icon;
               return (
