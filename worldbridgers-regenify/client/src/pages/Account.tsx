@@ -21,11 +21,9 @@ import {
   CheckCircle2,
   HelpCircle,
   Leaf,
-  Loader2,
   Mail,
   Settings,
   ShieldCheck,
-  Upload,
   User,
 } from "lucide-react";
 
@@ -62,21 +60,6 @@ const ACCOUNT_TABS: {
 type VisualConfig = {
   tableDots: Record<string, string>;
   hoverLineColor: string;
-};
-
-type IssuerOption = {
-  id: string;
-  name: string;
-};
-
-type DocumentUploadForm = {
-  type: string;
-  subType: string;
-  name: string;
-  issuerId: string;
-  documentDate: string;
-  memberStates: string;
-  file: File | null;
 };
 
 const TABLE_DOT_FIELDS = [
@@ -144,29 +127,12 @@ export default function Account() {
     confirmPassword: "",
   });
   const [visualDraft, setVisualDraft] = useState<VisualConfig | null>(null);
-  const [documentUploadForm, setDocumentUploadForm] = useState<DocumentUploadForm>({
-    type: "Offerings Documents",
-    subType: "",
-    name: "",
-    issuerId: "",
-    documentDate: "",
-    memberStates: "",
-    file: null,
-  });
   const activeTab = ACCOUNT_TABS.find((tab) => tab.key === view) ?? ACCOUNT_TABS[0];
   const isAdmin = user?.role === "admin";
 
   const visualConfigQuery = useQuery<VisualConfig>({
     queryKey: ["admin", "visual-config"],
     queryFn: () => backendApi.adminVisualConfig(),
-    enabled: isAdmin && view === "settings",
-    staleTime: 60_000,
-  });
-
-  const issuerOptionsQuery = useQuery<{ data: IssuerOption[] }>({
-    queryKey: ["admin", "issuer-options"],
-    queryFn: () =>
-      backendApi.issuers(new URLSearchParams({ page: "1", page_size: "200" })) as Promise<{ data: IssuerOption[] }>,
     enabled: isAdmin && view === "settings",
     staleTime: 60_000,
   });
@@ -238,39 +204,6 @@ export default function Account() {
     },
   });
 
-  const documentUploadMutation = useMutation({
-    mutationFn: () =>
-      backendApi.uploadAdminDocument({
-        file: documentUploadForm.file as File,
-        type: documentUploadForm.type,
-        name: documentUploadForm.name || undefined,
-        subType: documentUploadForm.subType || undefined,
-        issuerId: documentUploadForm.issuerId || undefined,
-        documentDate: documentUploadForm.documentDate || undefined,
-        memberStates: documentUploadForm.memberStates
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-      }),
-    onSuccess: () => {
-      toast.success("Document uploaded to S3.");
-      setDocumentUploadForm({
-        type: "Offerings Documents",
-        subType: "",
-        name: "",
-        issuerId: "",
-        documentDate: "",
-        memberStates: "",
-        file: null,
-      });
-      void queryClient.invalidateQueries({ queryKey: ["documents"] });
-      void queryClient.invalidateQueries({ queryKey: ["dashboard", "overview"] });
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Could not upload document.");
-    },
-  });
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     setView(getView(window.location.search));
@@ -325,8 +258,6 @@ export default function Account() {
       };
     });
   };
-
-  const issuerOptions = issuerOptionsQuery.data?.data ?? [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -618,147 +549,6 @@ export default function Account() {
                       </Button>
                     </div>
                   </div>
-
-                  {isAdmin ? (
-                    <div className="rounded-3xl border border-border bg-card p-6">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <h2 className="text-lg font-semibold">Document uploads</h2>
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Upload a document to S3, save the record in the platform database, and make it available on the Documents page.
-                          </p>
-                        </div>
-                        <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
-                          S3 Storage
-                        </Badge>
-                      </div>
-
-                      <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Document type</label>
-                          <Select
-                            value={documentUploadForm.type}
-                            onValueChange={(value) => setDocumentUploadForm((current) => ({ ...current, type: value }))}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select document type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Offerings Documents">Offerings Documents</SelectItem>
-                              <SelectItem value="Notices">Notices</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Sub type</label>
-                          <Input
-                            placeholder="Prospectus Supplement"
-                            value={documentUploadForm.subType}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, subType: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Display name</label>
-                          <Input
-                            placeholder="Document title shown in the table"
-                            value={documentUploadForm.name}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, name: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Document date</label>
-                          <Input
-                            type="date"
-                            value={documentUploadForm.documentDate}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, documentDate: event.target.value }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Issuer</label>
-                          <Select
-                            value={documentUploadForm.issuerId || "__none__"}
-                            onValueChange={(value) =>
-                              setDocumentUploadForm((current) => ({
-                                ...current,
-                                issuerId: value === "__none__" ? "" : value,
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Optional issuer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">No issuer</SelectItem>
-                              {issuerOptions.map((issuer) => (
-                                <SelectItem key={issuer.id} value={issuer.id}>
-                                  {issuer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-foreground">Member states</label>
-                          <Input
-                            placeholder="DE, FR, LU"
-                            value={documentUploadForm.memberStates}
-                            onChange={(event) =>
-                              setDocumentUploadForm((current) => ({ ...current, memberStates: event.target.value }))
-                            }
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <label className="mb-2 block text-sm font-medium text-foreground">PDF or document file</label>
-                        <Input
-                          type="file"
-                          onChange={(event) =>
-                            setDocumentUploadForm((current) => ({
-                              ...current,
-                              file: event.target.files?.[0] ?? null,
-                            }))
-                          }
-                        />
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          Files upload directly to your configured S3 bucket, then become available in the Documents dashboard.
-                        </p>
-                      </div>
-
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-sm text-muted-foreground">
-                          {documentUploadForm.file ? `Ready to upload: ${documentUploadForm.file.name}` : "Choose a file to upload."}
-                        </div>
-                        <Button
-                          className="gap-2 bg-primary text-white hover:bg-primary/90"
-                          disabled={
-                            documentUploadMutation.isPending ||
-                            !documentUploadForm.file ||
-                            !documentUploadForm.type.trim()
-                          }
-                          onClick={() => documentUploadMutation.mutate()}
-                        >
-                          {documentUploadMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4" />
-                          )}
-                          {documentUploadMutation.isPending ? "Uploading..." : "Upload document"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               )}
 
