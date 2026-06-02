@@ -2000,7 +2000,7 @@ export default function Dashboard() {
 
       <div className="flex-1 flex flex-col">
         {/* Tab navigation */}
-        <div className="sticky top-[73px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
+        <div className="sticky top-[65px] z-40 border-b border-[#334658] bg-[#2d3b49] shadow-[0_10px_32px_rgba(15,23,42,0.12)]">
           <div className="container">
             <div className="grid grid-cols-3 gap-1.5 py-2 md:flex md:items-center md:gap-1 md:overflow-x-auto md:py-1.5">
               <button

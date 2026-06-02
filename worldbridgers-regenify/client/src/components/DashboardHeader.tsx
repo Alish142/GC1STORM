@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { dashboardNavigation, dashboardQuickLinks } from "@/lib/navigation";
+import { dashboardNavigation } from "@/lib/navigation";
 
 export default function DashboardHeader() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -54,9 +54,9 @@ export default function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#dde2ea] bg-white/96 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-md">
       <div className="container">
-        <div className="flex items-center justify-between gap-4 py-4">
+        <div className="flex items-center justify-between gap-4 py-3">
           {/* Logo */}
-          <Link href="/" className="mr-4 flex shrink-0 items-center gap-3">
+          <Link href="/" className="mr-2 flex shrink-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-brand">
               <Leaf className="h-4 w-4 text-white" />
             </div>
@@ -101,19 +101,6 @@ export default function DashboardHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ))}
-
-            {/* Quick links */}
-            <div className="ml-3 flex items-center gap-1 border-l border-[#e1e6ee] pl-3">
-              {dashboardQuickLinks.map((link, i) => (
-                <Link
-                  key={i}
-                  href={link.href}
-                  className="rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </nav>
 
           {/* Right actions */}
@@ -138,7 +125,7 @@ export default function DashboardHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="hidden h-11 items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2 sm:flex sm:min-w-[220px] lg:min-w-[300px]">
+            <div className="hidden h-11 items-center rounded-2xl border border-[#dce2ea] bg-[#f7f9fc] pl-3 pr-2 sm:flex sm:min-w-[220px] lg:min-w-[260px] xl:min-w-[300px]">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchValue}
