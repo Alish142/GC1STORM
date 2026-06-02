@@ -43,10 +43,11 @@ export default function DashboardHeader() {
   const [searchValue, setSearchValue] = useState("");
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const contactRequestsQuery = useQuery({
     queryKey: ["admin", "contact-requests", "count"],
     queryFn: () => backendApi.listContactRequests(),
-    enabled: user?.role === "admin",
+    enabled: isAdmin,
     staleTime: 10_000,
     refetchInterval: 5_000,
     refetchOnWindowFocus: true,
@@ -212,14 +213,16 @@ export default function DashboardHeader() {
                 <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=settings")}> 
                   <Settings className="w-3.5 h-3.5" /> Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/demo-requests")}> 
-                  <Mail className="w-3.5 h-3.5" /> Demo Requests
-                  {contactRequestCount > 0 ? (
-                    <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                      {contactRequestCount}
-                    </span>
-                  ) : null}
-                </DropdownMenuItem>
+                {isAdmin ? (
+                  <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/demo-requests")}> 
+                    <Mail className="w-3.5 h-3.5" /> Demo Requests
+                    {contactRequestCount > 0 ? (
+                      <span className="ml-auto inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        {contactRequestCount}
+                      </span>
+                    ) : null}
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem className="text-sm gap-2.5" onClick={() => navigate("/dashboard/account?view=support")}> 
                   <HelpCircle className="w-3.5 h-3.5" /> Help & Support
                 </DropdownMenuItem>
