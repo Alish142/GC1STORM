@@ -179,7 +179,7 @@ function hexPoints(size: number) {
 }
 
 export default function GraphView() {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -211,30 +211,18 @@ export default function GraphView() {
   });
 
   const filteredNodes = data?.nodes ?? [];
-  const recommendationContext = useMemo(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("recommended") !== "1") {
-      return null;
-    }
-    return {
-      label: params.get("label"),
-      reason: params.get("reason"),
-      source: params.get("source"),
-    };
-  }, [location]);
   const requestedNodeId =
     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("node") : null;
   const querySelectedId =
     requestedNodeId && filteredNodes.some((node) => node.id === requestedNodeId) ? requestedNodeId : null;
   const defaultSelectedId = selectedId && filteredNodes.some((node) => node.id === selectedId)
     ? selectedId
-    : querySelectedId ?? filteredNodes[0]?.id ?? "";
+    : querySelectedId && selectedId === null
+      ? querySelectedId
+      : filteredNodes[0]?.id ?? "";
 
   useEffect(() => {
-    if (querySelectedId && querySelectedId !== selectedId) {
+    if (selectedId === null && querySelectedId) {
       setSelectedId(querySelectedId);
     }
   }, [querySelectedId, selectedId]);
@@ -496,28 +484,6 @@ export default function GraphView() {
             </Button>
           </div>
         </div>
-
-        {recommendationContext ? (
-          <div className="mb-3 rounded-[26px] border border-[#e8e4dc] bg-[#fbfaf6] px-4 py-3 shadow-[0_10px_28px_rgba(20,31,24,0.04)]">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Opened from recommendation</div>
-                <div className="mt-1 text-sm font-semibold text-slate-900">
-                  {recommendationContext.label ?? "Recommended graph path"}
-                </div>
-                {recommendationContext.reason ? (
-                  <p className="mt-1 text-xs leading-6 text-slate-600">{recommendationContext.reason}</p>
-                ) : null}
-              </div>
-              {recommendationContext.source ? (
-                <Badge className={recommendationContext.source === "neo4j" ? "bg-primary/10 text-primary hover:bg-primary/10" : "bg-amber-100 text-amber-800 hover:bg-amber-100"}>
-                  {recommendationContext.source === "neo4j" ? "Live graph source" : "Curated fallback source"}
-                </Badge>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
         <div className="min-h-0 flex-1 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(490px,0.94fr)] 2xl:grid-cols-[minmax(0,1.68fr)_minmax(560px,1fr)]">
           <section className="flex min-h-0 flex-col overflow-hidden rounded-[34px] border border-[#e8e4dc] bg-white shadow-[0_18px_48px_rgba(20,31,24,0.06)]">
             <div className="min-h-[62vh] flex-1 bg-[radial-gradient(circle_at_center,_#fdfdfb_0%,_#f6f5f1_62%,_#f1eee8_100%)] px-1 py-1 sm:min-h-0 sm:px-3 sm:py-3 xl:px-4 xl:py-4">
