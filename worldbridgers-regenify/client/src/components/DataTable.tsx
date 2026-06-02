@@ -111,7 +111,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             </div>
           ) : (
             <div className="overflow-x-auto scrollbar-thin">
-              <table className="w-full text-sm">
+              <table className="min-w-max w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40">
                     {columns.map((col) => (
@@ -151,7 +151,7 @@ export default function DataTable<T extends Record<string, unknown>>({
       </div>
 
       <div className="hidden flex-1 overflow-auto rounded-xl border border-border bg-card scrollbar-thin md:block">
-        <table className="w-full text-sm">
+        <table className="min-w-max w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40">
               {columns.map((col) => (
