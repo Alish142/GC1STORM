@@ -422,7 +422,7 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
             <button
               key={i}
               onClick={() => onTabChange(s.tab)}
-              className={`group rounded-[24px] border p-5 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
+              className={`group rounded-[22px] border px-5 py-4 text-left shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
                 s.label === "Issuers"
                   ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
                   : s.label === "Offerings"
@@ -432,14 +432,19 @@ function DashboardHome({ onTabChange }: { onTabChange: (tab: TabKey) => void }) 
                       : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"
               }`}
             >
-              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${s.color}`}>
-                <Icon className="w-5 h-5" />
+              <div className="flex items-start justify-between gap-4">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${s.color}`}>
+                  <Icon className="w-4.5 h-4.5" />
+                </div>
+                <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 opacity-0 transition-opacity group-hover:opacity-100">
+                  Open
+                </div>
               </div>
-              <div className="text-[2rem] font-bold leading-none text-foreground">
+              <div className="mt-5 text-[2.1rem] font-semibold leading-none text-foreground">
                 {overviewQ.isLoading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : s.value}
               </div>
-              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
-              <div className="mt-2 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="mt-1.5 text-sm text-muted-foreground">{s.label}</div>
+              <div className="mt-3 flex items-center gap-1 text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
                 View all <ArrowRight className="w-3 h-3" />
               </div>
             </button>
