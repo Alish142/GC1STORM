@@ -83,16 +83,50 @@ type LandingStat = {
   label: string;
   value: number;
   suffix?: string;
+  eyebrow: string;
+  description: string;
   icon: typeof Building2;
   color: string;
   href: string;
 };
 
 const STATS: LandingStat[] = [
-  { label: "Verified Issuers", value: 340, icon: Building2, color: "text-primary", href: "/dashboard/issuers" },
-  { label: "Live Offerings", value: 1280, icon: Layers, color: "text-blue-600", href: "/dashboard/offerings" },
-  { label: "Sustainable Indices", value: 48, icon: BarChart3, color: "text-amber-600", href: "/dashboard/indices" },
-  { label: "Structured Documents", value: 5600, icon: FileText, color: "text-emerald-600", href: "/dashboard/documents" },
+  {
+    label: "Verified Issuers",
+    value: 340,
+    eyebrow: "Trusted Profiles",
+    description: "Curated issuers with clearer sustainability context and market identity.",
+    icon: Building2,
+    color: "text-primary",
+    href: "/dashboard/issuers",
+  },
+  {
+    label: "Live Offerings",
+    value: 1280,
+    eyebrow: "Capital Flow",
+    description: "Active instruments structured for faster comparison and review.",
+    icon: Layers,
+    color: "text-blue-600",
+    href: "/dashboard/offerings",
+  },
+  {
+    label: "Sustainable Indices",
+    value: 48,
+    eyebrow: "Benchmark Signals",
+    description: "Index views that frame performance through sustainability themes.",
+    icon: BarChart3,
+    color: "text-amber-600",
+    href: "/dashboard/indices",
+  },
+  {
+    label: "Structured Documents",
+    value: 5600,
+    eyebrow: "Research Layer",
+    description: "Standardized disclosures and files connected to the wider platform story.",
+    icon: FileText,
+    color: "text-emerald-600",
+    href: "/dashboard/documents",
+  },
 ];
 
 const PLATFORM_FEATURES = [
@@ -325,6 +359,30 @@ export default function Home() {
         <div className="container grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {displayStats.map((stat) => {
             const Icon = stat.icon;
+            const isIssuer = stat.label === "Verified Issuers";
+            const isOffering = stat.label === "Live Offerings";
+            const isIndex = stat.label === "Sustainable Indices";
+            const cardClass = isIssuer
+              ? "border-emerald-200 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.14),transparent_36%),linear-gradient(145deg,#f3fff8_0%,#ffffff_74%)]"
+              : isOffering
+                ? "border-blue-200 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_36%),linear-gradient(145deg,#f4f8ff_0%,#ffffff_74%)]"
+                : isIndex
+                  ? "border-amber-200 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.14),transparent_36%),linear-gradient(145deg,#fffaf0_0%,#ffffff_74%)]"
+                  : "border-teal-200 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.14),transparent_36%),linear-gradient(145deg,#f0fffd_0%,#ffffff_74%)]";
+            const iconClass = isIssuer
+              ? "bg-emerald-100 text-emerald-700"
+              : isOffering
+                ? "bg-blue-100 text-blue-700"
+                : isIndex
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-teal-100 text-teal-700";
+            const accentClass = isIssuer
+              ? "text-emerald-700 bg-emerald-500/8 border-emerald-200"
+              : isOffering
+                ? "text-blue-700 bg-blue-500/8 border-blue-200"
+                : isIndex
+                  ? "text-amber-700 bg-amber-500/8 border-amber-200"
+                  : "text-teal-700 bg-teal-500/8 border-teal-200";
             return (
               <button
                 key={stat.label}
@@ -332,46 +390,42 @@ export default function Home() {
                 onClick={() =>
                   navigate(isAuthenticated ? stat.href : `/login?next=${encodeURIComponent(stat.href)}`)
                 }
-                className={`rounded-3xl border p-6 text-center shadow-card transition-transform hover:-translate-y-1 hover:shadow-card-hover ${
-                  stat.label === "Verified Issuers"
-                    ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
-                    : stat.label === "Live Offerings"
-                      ? "border-blue-200 bg-gradient-to-br from-blue-50 to-white"
-                      : stat.label === "Sustainable Indices"
-                        ? "border-amber-200 bg-gradient-to-br from-amber-50 to-white"
-                        : "border-teal-200 bg-gradient-to-br from-teal-50 to-white"
-                }`}
+                className={`group relative overflow-hidden rounded-[30px] border p-6 text-left shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-card-hover ${cardClass}`}
               >
-                <div
-                  className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${
-                    stat.label === "Verified Issuers"
-                      ? "bg-emerald-100"
-                      : stat.label === "Live Offerings"
-                        ? "bg-blue-100"
-                        : stat.label === "Sustainable Indices"
-                          ? "bg-amber-100"
-                          : "bg-teal-100"
-                  } ${stat.color}`}
-                >
-                  <Icon className="h-5 w-5" />
+                <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-white/50 blur-2xl transition-transform duration-300 group-hover:scale-125" />
+                <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+
+                <div className="relative flex items-start justify-between gap-4">
+                  <div>
+                    <div className={`inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] ${accentClass}`}>
+                      {stat.eyebrow}
+                    </div>
+                    <div className="mt-5">
+                      <div className="text-[3rem] font-bold leading-none tracking-[-0.06em] text-foreground md:text-[3.4rem]">
+                        <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ${iconClass}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="mt-4 text-[2.9rem] font-bold leading-none text-foreground md:text-[3.25rem]">
-                  <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+
+                <div className="relative mt-5">
+                  <div className="text-[1.08rem] font-semibold tracking-[-0.03em] text-foreground">{stat.label}</div>
+                  <p className="mt-2 max-w-[24rem] text-sm leading-6 text-slate-600">
+                    {stat.description}
+                  </p>
                 </div>
-                <div className="mt-2 text-[0.95rem] font-medium text-muted-foreground">{stat.label}</div>
-                <div
-                  className={`mt-5 inline-flex items-center gap-1 text-sm font-semibold ${
-                    stat.label === "Verified Issuers"
-                      ? "text-emerald-700"
-                      : stat.label === "Live Offerings"
-                        ? "text-blue-700"
-                        : stat.label === "Sustainable Indices"
-                          ? "text-amber-700"
-                          : "text-teal-700"
-                  }`}
-                >
-                  Learn more
-                  <ArrowRight className="h-3.5 w-3.5" />
+
+                <div className="relative mt-6 flex items-center justify-between rounded-2xl border border-white/70 bg-white/75 px-4 py-3 backdrop-blur-sm">
+                  <span className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    Explore dataset
+                  </span>
+                  <div className={`inline-flex items-center gap-1 text-sm font-semibold ${stat.color}`}>
+                    Learn more
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
                 </div>
               </button>
             );
