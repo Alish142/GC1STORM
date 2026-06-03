@@ -320,13 +320,13 @@ export default function Login() {
                   const getGradient = (label: string) => {
                     switch (label) {
                       case "Verified Issuers":
-                        return "bg-gradient-to-br from-emerald-500/30 to-emerald-900/20 border-emerald-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.42)_0%,rgba(134,239,172,0.24)_34%,rgba(147,197,253,0.26)_100%)] border-emerald-300/38";
                       case "Active Offerings":
-                        return "bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-blue-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.28)_0%,rgba(134,239,172,0.2)_28%,rgba(147,197,253,0.42)_100%)] border-sky-300/38";
                       case "ESG Indices":
-                        return "bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-purple-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.24)_0%,rgba(110,231,183,0.18)_30%,rgba(147,197,253,0.34)_100%)] border-emerald-200/30";
                       case "Documents":
-                        return "bg-gradient-to-br from-amber-500/30 to-amber-900/20 border-amber-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.22)_0%,rgba(134,239,172,0.18)_26%,rgba(147,197,253,0.3)_100%)] border-white/22";
                       default:
                         return "bg-white/[0.04] border-white/10";
                     }
