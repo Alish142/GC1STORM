@@ -18,6 +18,16 @@ function normalizeBasePath(value?: string) {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
+function isPublicAssetPath(pathname: string) {
+  return (
+    pathname.startsWith("/src/") ||
+    pathname.startsWith("/@vite/") ||
+    pathname.startsWith("/node_modules/") ||
+    pathname.startsWith("/api/") ||
+    pathname.includes(".")
+  );
+}
+
 async function resolveViteConfig() {
   if (typeof viteConfig === "function") {
     return await viteConfig({
@@ -33,6 +43,7 @@ async function resolveViteConfig() {
 
 export async function setupVite(app: Express, server: Server) {
   const resolvedConfig = await resolveViteConfig();
+  const basePath = normalizeBasePath(process.env.VITE_APP_BASE_PATH);
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -51,14 +62,15 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
     const acceptsHtml = req.headers.accept?.includes("text/html");
     const pathname = req.path;
-    const looksLikeAssetRequest =
-      pathname.startsWith("/src/") ||
-      pathname.startsWith("/@vite/") ||
-      pathname.startsWith("/node_modules/") ||
-      pathname.includes(".");
+    const looksLikeAssetRequest = isPublicAssetPath(pathname);
 
     if (!acceptsHtml || looksLikeAssetRequest) {
       return next();
+    }
+
+    if (basePath && !pathname.startsWith(basePath)) {
+      const target = `${basePath}${pathname === "/" ? "" : pathname}${req.url.includes("?") ? `?${req.url.split("?")[1]}` : ""}`;
+      return res.redirect(target);
     }
 
     try {
@@ -95,6 +107,14 @@ export function serveStatic(app: Express) {
   if (basePath) {
     app.get("/", (_req, res) => {
       res.redirect(basePath);
+    });
+    app.get("*", (req, res, next) => {
+      const pathname = req.path;
+      if (pathname.startsWith(basePath) || pathname.startsWith("/api/") || isPublicAssetPath(pathname)) {
+        return next();
+      }
+
+      return res.redirect(`${basePath}${pathname === "/" ? "" : pathname}`);
     });
     app.use(basePath, express.static(distPath));
     app.get(`${basePath}/*`, (_req, res) => {
