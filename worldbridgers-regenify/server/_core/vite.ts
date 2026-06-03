@@ -5,6 +5,19 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
+function normalizeBasePath(value?: string) {
+  if (!value || value === "/") {
+    return "";
+  }
+
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
 async function resolveViteConfig() {
   if (typeof viteConfig === "function") {
     return await viteConfig({
@@ -71,10 +84,26 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
       : path.resolve(import.meta.dirname, "public");
+  const basePath = normalizeBasePath(process.env.VITE_APP_BASE_PATH);
+
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
+  }
+
+  if (basePath) {
+    app.get("/", (_req, res) => {
+      res.redirect(basePath);
+    });
+    app.use(basePath, express.static(distPath));
+    app.get(`${basePath}/*`, (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+    app.get(basePath, (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+    return;
   }
 
   app.use(express.static(distPath));

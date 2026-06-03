@@ -13,9 +13,25 @@ const normalizeBasePath = (value?: string) => {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 };
 
-export const APP_BASE_PATH = import.meta.env.PROD
-  ? normalizeBasePath(import.meta.env.VITE_APP_BASE_PATH)
-  : "";
+const DEPLOY_BASE_PATH = normalizeBasePath(import.meta.env.VITE_APP_BASE_PATH);
+
+const resolveRuntimeBasePath = () => {
+  if (!DEPLOY_BASE_PATH) {
+    return "";
+  }
+
+  if (import.meta.env.PROD) {
+    return DEPLOY_BASE_PATH;
+  }
+
+  if (typeof window !== "undefined" && window.location.pathname.startsWith(DEPLOY_BASE_PATH)) {
+    return DEPLOY_BASE_PATH;
+  }
+
+  return "";
+};
+
+export const APP_BASE_PATH = resolveRuntimeBasePath();
 
 export const appHref = (path: string) => {
   if (!path) {
