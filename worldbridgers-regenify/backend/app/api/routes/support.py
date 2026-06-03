@@ -146,6 +146,8 @@ def create_contact_request(
     ),
     db: Session = Depends(get_db),
 ):
+    # This public contact endpoint also handles demo scheduling requests.
+    # Home page demo requests are sent here with necessary guest contact data.
     record = ContactRequest(
         full_name=_require_text(payload.full_name, "Full name"),
         company_name=payload.company_name.strip() if payload.company_name and payload.company_name.strip() else None,
@@ -235,6 +237,83 @@ def list_contact_requests(
 ):
     records = db.scalars(select(ContactRequest).order_by(ContactRequest.created_at.desc())).all()
     return {"data": [_serialize_contact_request(record) for record in records]}
+
+
+@router.delete("/contact-requests/{request_id}")
+def delete_contact_request(
+    request_id: str,
+    req: Request,
+    current_user: User = Depends(require_admin_user),
+    db: Session = Depends(get_db),
+):
+    from uuid import UUID as _UUID
+
+    try:
+        rid = _UUID(request_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request id.")
+
+    record = db.get(ContactRequest, rid)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Contact request not found.")
+
+    db.delete(record)
+    db.commit()
+    log_audit_event(
+        db,
+        action="contact.request.deleted",
+        req=req,
+        actor_user=current_user,
+        resource_type="contact_request",
+        resource_id=str(rid),
+        details={"email": record.email, "companyName": record.company_name},
+    )
+    return {"success": True}
+
+
+class ContactRequestStatusUpdate(BaseModel):
+    status: str
+
+
+@router.patch("/contact-requests/{request_id}")
+def update_contact_request_status(
+    request_id: str,
+    payload: ContactRequestStatusUpdate,
+    req: Request,
+    current_user: User = Depends(require_admin_user),
+    db: Session = Depends(get_db),
+):
+    from uuid import UUID as _UUID
+
+    try:
+        rid = _UUID(request_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request id.")
+
+    record = db.get(ContactRequest, rid)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Contact request not found.")
+
+    new_status = payload.status.strip().lower()
+    if new_status not in ("new", "read", "unread", "handled", "closed"):
+        raise HTTPException(status_code=400, detail="Invalid status value.")
+
+    record.status = new_status
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    log_audit_event(
+        db,
+        action="contact.request.updated",
+        req=req,
+        actor_user=current_user,
+        resource_type="contact_request",
+        resource_id=str(rid),
+        details={"status": record.status, "email": record.email},
+    )
+
+    return {"success": True, "request": _serialize_contact_request(record)}
 
 
 @router.get("/call-requests")

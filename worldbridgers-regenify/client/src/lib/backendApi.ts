@@ -74,6 +74,17 @@ type ContactRequestPayload = {
   message: string;
 };
 
+type ContactRequestRecord = {
+  id: string;
+  fullName: string;
+  companyName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  message: string;
+  status: string;
+  createdAt: string;
+};
+
 type CallRequestPayload = {
   fullName?: string;
   email?: string;
@@ -99,16 +110,6 @@ type SupportRequestRecord = {
   createdAt: string;
 };
 
-type ContactRequestRecord = {
-  id: string;
-  fullName: string;
-  companyName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  message: string;
-  status: string;
-  createdAt: string;
-};
 
 type CallRequestRecord = {
   id: string;
@@ -544,9 +545,9 @@ function buildFallbackRecommendations(): RecommendationResponse {
     if (node.type === "Theme") {
       continue;
     }
-    const connectedTypes = [...(neighbors.get(node.id) ?? new Set<string>())]
+    const connectedTypes = ([...(neighbors.get(node.id) ?? new Set<string>())]
       .map((neighborId) => nodesById.get(neighborId)?.type)
-      .filter((value): value is string => Boolean(value));
+      .filter(Boolean) as string[]);
     addRecommendation(
       node,
       "entity",
@@ -674,6 +675,38 @@ export const backendApi = {
         phone_number: payload.phoneNumber,
         message: payload.message,
       }),
+    });
+  },
+  requestDemo: async (payload: ContactRequestPayload) => {
+    return request<SubmissionResponse<{
+      id: string;
+      fullName: string;
+      companyName: string | null;
+      email: string;
+      phoneNumber: string | null;
+      message: string;
+      status: string;
+      createdAt: string;
+    }>>("/api/support/contact-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: payload.fullName,
+        company_name: payload.companyName,
+        email: payload.email,
+        phone_number: payload.phoneNumber,
+        message: payload.message || "I would like to schedule a demo of Worldbridgers Regenify.",
+      }),
+    });
+  },
+  deleteContactRequest: async (id: string) => {
+    return request<{ success: boolean }>(`/api/support/contact-requests/${id}`, {
+      method: "DELETE",
+    });
+  },
+  updateContactRequestStatus: async (id: string, status: string) => {
+    return request<{ success: boolean; request?: unknown }>(`/api/support/contact-requests/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     });
   },
   createCallRequest: async (payload: CallRequestPayload) => {

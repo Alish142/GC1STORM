@@ -53,3 +53,32 @@ def send_password_reset_email(*, to_email: str, recipient_name: str, reset_url: 
         if settings.smtp_username:
             smtp.login(settings.smtp_username, settings.smtp_password or "")
         smtp.send_message(message)
+
+
+def send_email(*, to_emails: list[str], subject: str, text_body: str, html_body: str | None = None) -> None:
+    """Send a generic email to one or more recipients.
+
+    This uses the same SMTP configuration as other email helpers. Raises RuntimeError
+    if SMTP is not configured.
+    """
+    if not settings.smtp_enabled:
+        raise RuntimeError("SMTP is not configured for email delivery.")
+
+    message = EmailMessage()
+    from_name = settings.smtp_from_name.strip() or "Worldbridgers Regenify"
+    from_email = settings.smtp_from_email or ""
+    message["Subject"] = subject
+    message["From"] = f"{from_name} <{from_email}>"
+    message["To"] = ", ".join(to_emails)
+
+    message.set_content(text_body)
+    if html_body:
+        message.add_alternative(html_body, subtype="html")
+
+    smtp_cls = smtplib.SMTP_SSL if settings.smtp_use_ssl else smtplib.SMTP
+    with smtp_cls(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+        if not settings.smtp_use_ssl and settings.smtp_starttls:
+            smtp.starttls()
+        if settings.smtp_username:
+            smtp.login(settings.smtp_username, settings.smtp_password or "")
+        smtp.send_message(message)
