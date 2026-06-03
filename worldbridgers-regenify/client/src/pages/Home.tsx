@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PublicHeader from "@/components/PublicHeader";
+import { appHref } from "@/const";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { backendApi } from "@/lib/backendApi";
@@ -334,7 +335,7 @@ export default function Home() {
                   variant="outline"
                   className="h-16 rounded-xl border-white/30 bg-white/5 px-11 text-[1.05rem] font-semibold text-white hover:border-white/50 hover:bg-white/10"
                   onClick={() => {
-                    window.location.href = isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account";
+                    window.location.href = appHref(isAuthenticated ? "/dashboard/account?view=support" : "/login?mode=create-account");
                   }}
                 >
                   Sign Up
@@ -676,7 +677,7 @@ export default function Home() {
                 variant="outline"
                 className="px-10 font-semibold"
                 onClick={() => {
-                  window.location.href = "/contact";
+                  window.location.href = appHref("/contact");
                 }}
               >
                 Schedule a Demo

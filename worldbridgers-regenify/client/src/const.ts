@@ -1,5 +1,38 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+const normalizeBasePath = (value?: string) => {
+  if (!value || value === "/") {
+    return "";
+  }
+
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+};
+
+export const APP_BASE_PATH = import.meta.env.PROD
+  ? normalizeBasePath(import.meta.env.VITE_APP_BASE_PATH)
+  : "";
+
+export const appHref = (path: string) => {
+  if (!path) {
+    return APP_BASE_PATH || "/";
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  if (!path.startsWith("/")) {
+    return `${APP_BASE_PATH}/${path}`;
+  }
+
+  return `${APP_BASE_PATH}${path}` || path;
+};
+
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
@@ -8,7 +41,7 @@ export const getLoginUrl = () => {
 
   // Local dev fallback when OAuth env is not configured.
   if (!oauthPortalUrl || !appId) {
-    return "/login";
+    return appHref("/login");
   }
 
   try {
@@ -20,6 +53,6 @@ export const getLoginUrl = () => {
     url.searchParams.set("type", "signIn");
     return url.toString();
   } catch {
-    return "/login";
+    return appHref("/login");
   }
 };

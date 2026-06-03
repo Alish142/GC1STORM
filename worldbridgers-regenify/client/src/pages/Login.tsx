@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { appHref } from "@/const";
 import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +123,7 @@ export default function Login() {
     onSuccess: (result) => {
       toast.success(result.message);
       if (result.resetUrl) {
-        window.location.href = result.resetUrl;
+        window.location.href = appHref(result.resetUrl);
       }
     },
     onError: (err) => {
@@ -304,7 +305,7 @@ export default function Login() {
             <div className="mt-[94px] max-w-[540px]">
               <h1 className="max-w-[500px] text-[3.28rem] font-semibold leading-[1.08] tracking-[-0.03em]">
                 The intelligent platform for{" "}
-                <span className="bg-gradient-to-r from-emerald-300 via-sky-300 via-65% to-violet-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-emerald-300 via-emerald-200 to-sky-300 bg-clip-text text-transparent">
                   regenerative finance
                 </span>
               </h1>
@@ -376,7 +377,7 @@ export default function Login() {
                   <button
                     className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Log In
@@ -384,7 +385,7 @@ export default function Login() {
                   <button
                     className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "create-account" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
-                      window.location.href = "/login?mode=create-account";
+                      window.location.href = appHref("/login?mode=create-account");
                     }}
                   >
                     Sign Up
@@ -434,7 +435,7 @@ export default function Login() {
                         type="button"
                         className="text-xs font-medium text-primary hover:underline"
                         onClick={() => {
-                          window.location.href = "/login?mode=forgot-password";
+                          window.location.href = appHref("/login?mode=forgot-password");
                         }}
                       >
                         Forgot password?
@@ -497,7 +498,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login?mode=create-account";
+                      window.location.href = appHref("/login?mode=create-account");
                     }}
                   >
                     Create account
@@ -553,7 +554,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Back to login
@@ -715,7 +716,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Log in
