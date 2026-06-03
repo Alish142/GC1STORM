@@ -200,8 +200,8 @@ const PREVIEW_RING_NODES = [
 ];
 
 const HERO_BACKGROUND_SLIDES = [
-  "/hero-bg-1.jpg",
-  "/her0-bg-2.png",
+  appHref("/hero-bg-1.jpg"),
+  appHref("/her0-bg-2.png"),
 ];
 
 const FOOTER_LINKS: Record<string, string> = {

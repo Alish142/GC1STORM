@@ -1,4 +1,5 @@
 import PublicHeader from "@/components/PublicHeader";
+import { appHref } from "@/const";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Globe2, Network, ShieldCheck, Sparkles, Users, Leaf } from "lucide-react";
@@ -22,7 +23,7 @@ const TEAM_MEMBERS = [
   {
     name: "Platform Direction",
     role: "Public story and ecosystem positioning",
-    image: "/hero-bg-1.jpg",
+    image: appHref("/hero-bg-1.jpg"),
     description:
       "Defines how Worldbridgers Regenify introduces sustainable markets to public visitors and turns that first impression into a clearer path toward deeper platform use.",
     accentColor: COLORS.emerald,
@@ -31,7 +32,7 @@ const TEAM_MEMBERS = [
   {
     name: "Issuer and Offering Intelligence",
     role: "Structured capital-market presentation",
-    image: "/her0-bg-2.png",
+    image: appHref("/her0-bg-2.png"),
     description:
       "Organises issuers, offerings, documents, and indices into a cleaner review experience so users can move from overview to detailed comparison with less friction.",
     accentColor: COLORS.oceanBlue,
@@ -40,7 +41,7 @@ const TEAM_MEMBERS = [
   {
     name: "Relationship and Theme Discovery",
     role: "Graph exploration and connected market context",
-    image: "/hero-bg-1.jpg",
+    image: appHref("/hero-bg-1.jpg"),
     description:
       "Explains how themes, entities, investors, and markets connect across the Worldbridgers Regenify ecosystem through graph-led discovery.",
     accentColor: COLORS.purpleSage,
@@ -49,7 +50,7 @@ const TEAM_MEMBERS = [
   {
     name: "Access, Support, and Exchange Context",
     role: "Onboarding, guidance, and WBX ecosystem flow",
-    image: "/her0-bg-2.png",
+    image: appHref("/her0-bg-2.png"),
     description:
       "Supports account access, onboarding, support journeys, and the wider transition from public platform discovery into the Worldbridgers Exchange environment.",
     accentColor: COLORS.coralPink,
@@ -112,7 +113,7 @@ const TEAM_PROFILES = [
   },
 ];
 
-const VISION_CARD_BG_IMAGE = "/hero-bg-1.jpg";
+const VISION_CARD_BG_IMAGE = appHref("/hero-bg-1.jpg");
 
 const THEME_AREAS = [
   {
