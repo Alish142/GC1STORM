@@ -1,5 +1,54 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+const normalizeBasePath = (value?: string) => {
+  if (!value || value === "/") {
+    return "";
+  }
+
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+};
+
+const DEPLOY_BASE_PATH = normalizeBasePath(import.meta.env.VITE_APP_BASE_PATH);
+
+const resolveRuntimeBasePath = () => {
+  if (!DEPLOY_BASE_PATH) {
+    return "";
+  }
+
+  if (import.meta.env.PROD) {
+    return DEPLOY_BASE_PATH;
+  }
+
+  if (typeof window !== "undefined" && window.location.pathname.startsWith(DEPLOY_BASE_PATH)) {
+    return DEPLOY_BASE_PATH;
+  }
+
+  return "";
+};
+
+export const APP_BASE_PATH = resolveRuntimeBasePath();
+
+export const appHref = (path: string) => {
+  if (!path) {
+    return APP_BASE_PATH || "/";
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  if (!path.startsWith("/")) {
+    return `${APP_BASE_PATH}/${path}`;
+  }
+
+  return `${APP_BASE_PATH}${path}` || path;
+};
+
 // Generate login URL at runtime so redirect URI reflects the current origin.
 export const getLoginUrl = () => {
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
@@ -8,7 +57,7 @@ export const getLoginUrl = () => {
 
   // Local dev fallback when OAuth env is not configured.
   if (!oauthPortalUrl || !appId) {
-    return "/login";
+    return appHref("/login");
   }
 
   try {
@@ -20,6 +69,6 @@ export const getLoginUrl = () => {
     url.searchParams.set("type", "signIn");
     return url.toString();
   } catch {
-    return "/login";
+    return appHref("/login");
   }
 };

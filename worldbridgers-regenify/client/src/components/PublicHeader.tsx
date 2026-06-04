@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { appHref } from "@/const";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -169,17 +170,17 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=profile"; }}>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = appHref("/dashboard/account?view=profile"); }}>
                     <User className="h-3.5 w-3.5" /> Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=settings"; }}>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = appHref("/dashboard/account?view=settings"); }}>
                     <Settings className="h-3.5 w-3.5" /> Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = "/dashboard/account?view=support"; }}>
+                  <DropdownMenuItem className="gap-2.5 text-sm" onClick={() => { window.location.href = appHref("/dashboard/account?view=support"); }}>
                     <HelpCircle className="h-3.5 w-3.5" /> Help & Support
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="gap-2.5 text-sm text-destructive focus:text-destructive" onClick={() => { window.location.href = "/logout"; }}>
+                  <DropdownMenuItem className="gap-2.5 text-sm text-destructive focus:text-destructive" onClick={() => { window.location.href = appHref("/logout"); }}>
                     <LogOut className="h-3.5 w-3.5" /> Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -193,7 +194,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                     useLightStyle ? "text-foreground hover:bg-muted" : "text-white hover:bg-white/10"
                   }`}
                   onClick={() => {
-                    window.location.href = "/login";
+                    window.location.href = appHref("/login");
                   }}
                 >
                   Log In
@@ -203,7 +204,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
                   size="sm"
                   className="hidden lg:flex whitespace-nowrap text-sm font-semibold bg-primary px-4 hover:bg-primary/90 text-white shadow-brand"
                   onClick={() => {
-                    window.location.href = "/login?mode=create-account";
+                    window.location.href = appHref("/login?mode=create-account");
                   }}
                 >
                   Sign Up
@@ -295,7 +296,7 @@ export default function PublicHeader({ lightBackground = false }: PublicHeaderPr
               <Button variant="outline" className="w-full" onClick={() => navigate("/discover")}>Discover</Button>
               <Button variant="outline" className="w-full" onClick={() => navigate("/login")}>Log In</Button>
               <Button className="w-full bg-primary text-white" onClick={() => {
-                window.location.href = "/login?mode=create-account";
+                window.location.href = appHref("/login?mode=create-account");
               }}>Sign Up</Button>
             </div>
           </div>

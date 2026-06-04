@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { APP_BASE_PATH, appHref } from "@/const";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, Router as WouterRouter } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -46,11 +47,11 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    return <Redirect to="/login" />;
+    return <Redirect to={appHref("/login")} />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Redirect to={redirectTo ?? "/dashboard"} />;
+    return <Redirect to={appHref(redirectTo ?? "/dashboard")} />;
   }
 
   return <Component />;
@@ -91,7 +92,9 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <WouterRouter base={APP_BASE_PATH || undefined}>
+            <Router />
+          </WouterRouter>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

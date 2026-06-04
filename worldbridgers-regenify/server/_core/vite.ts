@@ -1,12 +1,49 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import { type Server } from "http";
-import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
+function normalizeBasePath(value?: string) {
+  if (!value || value === "/") {
+    return "";
+  }
+
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!trimmed || trimmed === "/") {
+    return "";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function isPublicAssetPath(pathname: string) {
+  return (
+    pathname.startsWith("/src/") ||
+    pathname.startsWith("/@vite/") ||
+    pathname.startsWith("/node_modules/") ||
+    pathname.startsWith("/api/") ||
+    pathname.includes(".")
+  );
+}
+
+async function resolveViteConfig() {
+  if (typeof viteConfig === "function") {
+    return await viteConfig({
+      command: "serve",
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      isSsrBuild: false,
+      isPreview: false,
+    });
+  }
+
+  return viteConfig;
+}
+
 export async function setupVite(app: Express, server: Server) {
+  const resolvedConfig = await resolveViteConfig();
+  const basePath = normalizeBasePath(process.env.VITE_APP_BASE_PATH);
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -14,15 +51,27 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
+    ...resolvedConfig,
     configFile: false,
     server: serverOptions,
     appType: "custom",
   });
 
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+  app.get("*", async (req, res, next) => {
     const url = req.originalUrl;
+    const acceptsHtml = req.headers.accept?.includes("text/html");
+    const pathname = req.path;
+    const looksLikeAssetRequest = isPublicAssetPath(pathname);
+
+    if (!acceptsHtml || looksLikeAssetRequest) {
+      return next();
+    }
+
+    if (basePath && !pathname.startsWith(basePath)) {
+      const target = `${basePath}${pathname === "/" ? "" : pathname}${req.url.includes("?") ? `?${req.url.split("?")[1]}` : ""}`;
+      return res.redirect(target);
+    }
 
     try {
       const clientTemplate = path.resolve(
@@ -32,12 +81,7 @@ export async function setupVite(app: Express, server: Server) {
         "index.html"
       );
 
-      // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -52,10 +96,34 @@ export function serveStatic(app: Express) {
     process.env.NODE_ENV === "development"
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
       : path.resolve(import.meta.dirname, "public");
+  const basePath = normalizeBasePath(process.env.VITE_APP_BASE_PATH);
+
   if (!fs.existsSync(distPath)) {
     console.error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
+  }
+
+  if (basePath) {
+    app.get("/", (_req, res) => {
+      res.redirect(basePath);
+    });
+    app.get("*", (req, res, next) => {
+      const pathname = req.path;
+      if (pathname.startsWith(basePath) || pathname.startsWith("/api/") || isPublicAssetPath(pathname)) {
+        return next();
+      }
+
+      return res.redirect(`${basePath}${pathname === "/" ? "" : pathname}`);
+    });
+    app.use(basePath, express.static(distPath));
+    app.get(`${basePath}/*`, (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+    app.get(basePath, (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
+    return;
   }
 
   app.use(express.static(distPath));

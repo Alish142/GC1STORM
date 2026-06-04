@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { appHref } from "@/const";
 import { backendApi } from "@/lib/backendApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +123,7 @@ export default function Login() {
     onSuccess: (result) => {
       toast.success(result.message);
       if (result.resetUrl) {
-        window.location.href = result.resetUrl;
+        window.location.href = appHref(result.resetUrl);
       }
     },
     onError: (err) => {
@@ -304,7 +305,7 @@ export default function Login() {
             <div className="mt-[94px] max-w-[540px]">
               <h1 className="max-w-[500px] text-[3.28rem] font-semibold leading-[1.08] tracking-[-0.03em]">
                 The intelligent platform for{" "}
-                <span className="bg-gradient-to-r from-emerald-300 via-sky-300 via-65% to-violet-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-emerald-300 via-emerald-200 to-sky-300 bg-clip-text text-transparent">
                   regenerative finance
                 </span>
               </h1>
@@ -319,13 +320,13 @@ export default function Login() {
                   const getGradient = (label: string) => {
                     switch (label) {
                       case "Verified Issuers":
-                        return "bg-gradient-to-br from-emerald-500/30 to-emerald-900/20 border-emerald-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.42)_0%,rgba(134,239,172,0.24)_34%,rgba(147,197,253,0.26)_100%)] border-emerald-300/38";
                       case "Active Offerings":
-                        return "bg-gradient-to-br from-blue-500/30 to-blue-900/20 border-blue-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.28)_0%,rgba(134,239,172,0.2)_28%,rgba(147,197,253,0.42)_100%)] border-sky-300/38";
                       case "ESG Indices":
-                        return "bg-gradient-to-br from-purple-500/30 to-purple-900/20 border-purple-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.24)_0%,rgba(110,231,183,0.18)_30%,rgba(147,197,253,0.34)_100%)] border-emerald-200/30";
                       case "Documents":
-                        return "bg-gradient-to-br from-amber-500/30 to-amber-900/20 border-amber-400/30";
+                        return "bg-[linear-gradient(135deg,rgba(74,222,128,0.22)_0%,rgba(134,239,172,0.18)_26%,rgba(147,197,253,0.3)_100%)] border-white/22";
                       default:
                         return "bg-white/[0.04] border-white/10";
                     }
@@ -376,7 +377,7 @@ export default function Login() {
                   <button
                     className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "login" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Log In
@@ -384,7 +385,7 @@ export default function Login() {
                   <button
                     className={`rounded-full px-4 py-2 text-sm font-medium ${mode === "create-account" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
                     onClick={() => {
-                      window.location.href = "/login?mode=create-account";
+                      window.location.href = appHref("/login?mode=create-account");
                     }}
                   >
                     Sign Up
@@ -434,7 +435,7 @@ export default function Login() {
                         type="button"
                         className="text-xs font-medium text-primary hover:underline"
                         onClick={() => {
-                          window.location.href = "/login?mode=forgot-password";
+                          window.location.href = appHref("/login?mode=forgot-password");
                         }}
                       >
                         Forgot password?
@@ -497,7 +498,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login?mode=create-account";
+                      window.location.href = appHref("/login?mode=create-account");
                     }}
                   >
                     Create account
@@ -553,7 +554,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Back to login
@@ -715,7 +716,7 @@ export default function Login() {
                     type="button"
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
-                      window.location.href = "/login";
+                      window.location.href = appHref("/login");
                     }}
                   >
                     Log in
