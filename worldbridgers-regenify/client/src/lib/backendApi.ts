@@ -213,6 +213,22 @@ class ApiRequestError extends Error {
   }
 }
 
+async function parseJsonResponse<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.toLowerCase().includes("application/json")) {
+    return (await res.json()) as T;
+  }
+
+  const body = await res.text();
+  const preview = body.slice(0, 80).trim();
+  throw new ApiRequestError(
+    preview.startsWith("<")
+      ? "The API returned an HTML page instead of JSON. Check CloudFront SPA fallback or backend routing."
+      : "The API returned an unexpected non-JSON response.",
+    res.status,
+  );
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...(init ?? {}),
@@ -236,7 +252,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiRequestError(errorMessage, res.status);
   }
 
-  return (await res.json()) as T;
+  return parseJsonResponse<T>(res);
 }
 
 function readCookie(name: string): string | null {
@@ -768,7 +784,7 @@ export const backendApi = {
       throw new ApiRequestError(errorMessage, res.status);
     }
 
-    return await res.json();
+    return parseJsonResponse<{ success: boolean; document: unknown }>(res);
   },
   updateDocument: async (documentId: string, payload: AdminDocumentPayload) =>
     request<{ success: boolean; document: unknown }>(`/api/admin/documents/${documentId}`, {
