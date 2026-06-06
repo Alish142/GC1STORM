@@ -144,6 +144,15 @@
 
 /* ─── Utility classes ───────────────────────────────────────────────────────── */
 @layer utilities {
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .backdrop-blur,
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
   .gradient-text {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, oklch(0.50 0.14 155), oklch(0.55 0.14 220));
@@ -195,11 +204,11 @@
     );
   }
   .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-white/40;
+    @apply bg-white/88 backdrop-blur-md border border-white/40;
     box-shadow: 0 2px 12px oklch(0.13 0.02 240 / 0.06);
   }
   .glass-card-dark {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    @apply bg-slate-950/70 backdrop-blur-md border border-white/10;
   }
   .shadow-brand {
     box-shadow: 0 4px 24px oklch(0.60 0.15 155 / 0.20);
@@ -215,6 +224,23 @@
   .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
   .scrollbar-thin::-webkit-scrollbar-track { @apply bg-muted rounded-full; }
   .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .backdrop-blur-sm,
+  .backdrop-blur,
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .glass-card-dark {
+    background: rgba(15, 23, 42, 0.84);
+  }
 }
 
 /* ─── Animations ────────────────────────────────────────────────────────────── */
